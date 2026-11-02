@@ -507,6 +507,9 @@ const FOCUS = {
 const mul = (c, k, v) => { c.mods[k] = (c.mods[k] || 1) * v; };
 const isWage = (P) => P.status === "wage";
 const isWork = (P) => P.status === "wage" || P.status === "self";
+/* 클라이언트 일을 하는 자리: 프리랜서이거나 에이전시·스튜디오·대행사·컨설팅사 */
+const isAgency = (P) => P.status === "self" || (P.status === "wage" && /에이전시|스튜디오|대행사|컨설팅/.test(P.company));
+const isClientWork = (P) => isAgency(P) || (isWage(P) && P.size === "S");
 const roleTxt = (P, des, dev) => P.role === "developer" ? dev : des;
 const CAT = { work: "일", people: "사람", company: "회사", free: "프리랜서", body: "몸", love: "연애·결혼", family: "가족", friend: "친구", growth: "성장", money: "돈" };
 const LEAVE_PAY = (w) => (Math.min(w, 250) * 3 + Math.min(w, 200) * 3 + Math.min(w * .8, 160) * 6) / 12;
@@ -871,7 +874,7 @@ const CARDS = [
       { label: "대출을 받아 계약한다", hint: "만족도 +, 지금 직장 유지 ×1.2, 쉼 ×0.7", apply: (P, c) => { P.flags.house = P.age; c.sat += .3; mul(c, "same_job", 1.2); mul(c, "not_employed", .7); return "대출 만기는 30년. 이제 쉽게 그만둘 수 없다."; } },
       { label: "포기한다", hint: "변화 없음", apply: () => "당첨 문자를 캡처해 뒀다." },
     ] },
-  { id: "pet", cat: "family", when: (P) => !P.flags.pet, title: "보호소에서 눈이 마주쳤다", body: "두 살 된 고양이. 이름은 아직 없다.",
+  { id: "pet", cat: "family", when: (P) => P.flags.pet == null, title: "보호소에서 눈이 마주쳤다", body: "두 살 된 고양이. 이름은 아직 없다.",
     why: "농림축산식품부 2025 반려동물 양육현황조사: 반려동물을 기르는 가구 29.2%. 효과는 설계상 가정.", grade: "C",
     choices: [
       { label: "데려온다", hint: "만족도 +, 매년 에너지 +2", apply: (P, c) => { P.flags.pet = P.t; c.sat += .2; return "이름을 '픽셀'로 지었다."; } },
@@ -1083,6 +1086,148 @@ const CARDS = [
     choices: [
       { label: "점심 모임을 만든다", hint: "에너지 −2, 만족도 +", apply: (P, c) => { P.energy -= 2; c.sat += .12; return "'수요일 국밥 모임' 멤버가 다섯 명이 됐다."; } },
       { label: "혼자가 편하다", hint: "에너지 +4", apply: (P) => { P.energy += 4; return "점심시간에 산책을 시작했다."; } },
+    ] },
+  /* ───── 피드백 (유머) ─────
+     디자이너라면 한 번쯤 들어 본 말들. 내용과 효과는 설계상 가정. */
+  { id: "fb_trendy_classic", cat: "work", when: isWork, title: "\"트렌디하면서 클래식하게요\"", body: "\"요즘 느낌인데, 10년 뒤에 봐도 촌스럽지 않게. 아시죠?\" 모른다. 아무도 모른다.",
+    choices: [
+      { label: "무드보드 두 장을 만들어 고르게 한다", hint: "실력 +4, 에너지 −5", apply: (P) => { P.skill += 4; P.energy -= 5; return "\"둘 다 좋은데 섞어 주세요.\" 예상했던 답이 나왔다."; } },
+      { label: "세리프 폰트에 그라데이션을 얹는다", hint: "만족도 ±", apply: (P, c) => { const ok = rand() < .5; c.sat += ok ? .15 : -.15; return ok ? "\"바로 이거예요!\" 나도 이유는 모르겠다." : "\"음… 이건 너무 클래식한데요?\""; } },
+    ] },
+  { id: "fb_simple_full", cat: "work", when: isWork, title: "\"심플한데 꽉 차 보이게\"", body: "여백을 살린 시안을 보더니 \"좀 비어 보여요. 근데 복잡하면 안 돼요\"라고 했다.",
+    choices: [
+      { label: "여백을 줄이고 아이콘을 넣는다", hint: "에너지 −4", apply: (P) => { P.energy -= 4; return "아이콘 열두 개가 들어갔다. 심플함은 어딘가로 떠났다."; } },
+      { label: "여백의 이유를 설명한다", hint: "실력 +3, 40% 확률로 통과", apply: (P, c) => { P.skill += 3; if (rand() < .4) { c.sat += .15; return "\"아, 그래서 고급스러워 보이는 거구나.\" 통과."; } c.sat -= .1; return "\"그래도 좀 채워 주세요.\""; } },
+    ] },
+  { id: "fb_bright_black", cat: "work", when: isWork, title: "\"블랙인데, 좀 화사한 블랙으로요\"", body: "#000000과 #111111 사이 어딘가에 정답이 있다고 한다.",
+    choices: [
+      { label: "#121212, #141414, #161616을 나란히 보낸다", hint: "에너지 −2", apply: (P) => { P.energy -= 2; return "\"두 번째가 확실히 화사하네요.\" 세 개는 사실 거의 같다."; } },
+      { label: "남색을 살짝 섞는다", hint: "실력 +2", apply: (P, c) => { P.skill += 2; c.sat += .1; return "\"오, 이게 화사한 블랙이죠.\" 그건 남색이었다."; } },
+    ] },
+  { id: "fb_ceo_daughter", cat: "people", when: isWage, title: "\"대표님 따님이 보시고 별로라고 하셨대요\"", body: "따님은 중학교 2학년이다. 요즘 애들 감성을 제일 잘 안다는 이유다.",
+    choices: [
+      { label: "따님 의견을 반영한다", hint: "에너지 −6, 만족도 −", apply: (P, c) => { P.energy -= 6; c.sat -= .15; return "버튼이 형광 보라색이 됐다. 의외로 클릭률이 올랐다."; } },
+      { label: "타깃 사용자 인터뷰를 제안한다", hint: "실력 +5, 에너지 −4", apply: (P) => { P.skill += 5; P.energy -= 4; return "인터뷰에서 30대 사용자 다섯 명이 원래 시안을 골랐다. 대표는 조용해졌다."; } },
+    ] },
+  { id: "fb_apple", cat: "work", when: isWork, title: "\"애플 느낌으로 가 주세요\"", body: "레퍼런스로 받은 링크 세 개가 전부 애플 홈페이지다. 예산은 애플의 0.0001%다.",
+    choices: [
+      { label: "흰 배경에 제품 사진만 크게 넣는다", hint: "에너지 −3", apply: (P) => { P.energy -= 3; return "\"너무 비어 보이는데요?\" 애플 느낌이 맞았다."; } },
+      { label: "애플 느낌이 무엇인지 같이 정의한다", hint: "실력 +4, 에너지 −5", apply: (P) => { P.skill += 4; P.energy -= 5; return "'정돈된, 자신감 있는' 두 단어로 합의했다. 그 뒤로 회의가 짧아졌다."; } },
+    ] },
+  { id: "fb_frankenstein", cat: "work", when: isWork, title: "\"A안 왼쪽이랑 C안 오른쪽을 합쳐 주세요\"", body: "A안은 세리프에 따뜻한 톤, C안은 고딕에 네온이다.",
+    choices: [
+      { label: "시키는 대로 합친다", hint: "에너지 −5, 만족도 −", apply: (P, c) => { P.energy -= 5; c.sat -= .1; return "결과물을 보고 클라이언트가 말했다. \"음… B안은 어땠죠?\""; } },
+      { label: "합쳤을 때의 문제를 한 장으로 보여 준다", hint: "실력 +3, 50% 확률로 설득", apply: (P, c) => { P.skill += 3; if (rand() < .5) { c.sat += .15; return "\"아, 이러면 이상하구나.\" A안으로 정리됐다."; } return "\"그래도 한번 보고 싶어요.\""; } },
+    ] },
+  { id: "fb_ai_5min", cat: "work", when: isWork, w: () => 1.3, title: "\"이거 AI로 하면 5분 아니에요?\"", body: "일정이 2주에서 3일로 줄었다. 이유는 저 한 문장이었다.",
+    choices: [
+      { label: "AI로 만든 시안을 그대로 보여 준다", hint: "에너지 −3, 만족도 ±", apply: (P, c) => { P.energy -= 3; c.sat += rand() < .5 ? .1 : -.2; return "손가락이 여섯 개인 모델이 웃고 있었다. 일정은 다시 2주가 됐다."; } },
+      { label: "AI로 초안, 사람이 마무리한다고 제안한다", hint: "실력 +5, 에너지 −6", apply: (P) => { P.skill += 5; P.energy -= 6; return "일정은 1주로 합의됐다. 진짜로 1주가 걸렸다."; } },
+    ] },
+  { id: "fb_final_final", cat: "work", when: isWork, title: "최종_진짜최종_수정3_이걸로.fig", body: "열두 번째 수정 끝에 클라이언트가 말했다. \"그냥 처음 1안으로 갈게요.\"",
+    choices: [
+      { label: "웃으며 1안을 다시 보낸다", hint: "에너지 −4, 만족도 −", apply: (P, c) => { P.energy -= 4; c.sat -= .1; return "1안 파일의 수정 날짜는 석 달 전이었다."; } },
+      { label: "다음 계약서에 수정 횟수를 넣는다", hint: "실력 +3, 앞으로 이런 일이 줄어든다", apply: (P, c) => { P.skill += 3; mul(c, "same_job", 1.03); P.flags.revCap = true; return "'수정은 3회까지, 이후 회당 별도 견적.' 가장 잘 쓴 문장이었다."; } },
+    ] },
+  { id: "fb_mz", cat: "work", when: isWork, title: "\"MZ 감성으로 부탁드려요\"", body: "회의실의 평균 나이는 52세. MZ 감성의 정의는 각자 달랐다.",
+    choices: [
+      { label: "밈과 이모지를 듬뿍 넣는다", hint: "에너지 −2, 만족도 ±", apply: (P, c) => { P.energy -= 2; c.sat += rand() < .5 ? .1 : -.1; return "부장님이 \"이게 요즘 애들 거구나\" 하며 캡처했다."; } },
+      { label: "실제 20대에게 물어본다", hint: "실력 +3", apply: (P) => { P.skill += 3; return "인턴이 말했다. \"MZ 감성이라고 하는 게 제일 MZ 감성이 아니에요.\""; } },
+    ] },
+
+  /* ───── 에이전시·클라이언트 ───── */
+  { id: "cl_unpaid", cat: "money", when: isClientWork, title: "잔금이 석 달째 안 들어온다", body: "\"이번 달 결재가 밀려서요.\" 세 번째 듣는 말이다. 결과물은 이미 홈페이지에 걸려 있다.",
+    choices: [
+      { label: "내용증명을 보낸다", hint: "에너지 −6, 60% 확률로 +400만", apply: (P, c) => { P.energy -= 6; if (rand() < .6) { P.bonus += 400; return "내용증명 도착 이틀 뒤 입금됐다. 인사는 없었다."; } c.sat -= .2; return "회사가 폐업 신고를 했다."; } },
+      { label: "다음 일을 같이 받는 조건으로 기다린다", hint: "만족도 −", apply: (P, c) => { c.sat -= .15; return "다음 일도 같은 방식으로 늦게 들어왔다."; } },
+    ] },
+  { id: "cl_pt_stolen", cat: "company", when: isClientWork, title: "경쟁 PT에서 떨어졌는데, 우리 시안이 쓰였다", body: "떨어졌다는 메일을 받은 지 두 달. 클라이언트 신제품 패키지가 우리 2안과 놀랍도록 닮았다.",
+    choices: [
+      { label: "법적 대응을 검토한다", hint: "에너지 −8, 30% 확률로 +500만", apply: (P, c) => { P.energy -= 8; if (rand() < .3) { P.bonus += 500; c.sat += .2; return "합의금이 나왔다. 그 회사와는 다시 일하지 않기로 했다."; } c.sat -= .2; return "\"참고했을 뿐\"이라는 답이 왔다. 증명하기 어려웠다."; } },
+      { label: "포트폴리오에 날짜와 함께 올린다", hint: "실력 +2, 만족도 +", apply: (P, c) => { P.skill += 2; c.sat += .05; return "댓글에 \"어? 이거…\"가 이어졌다."; } },
+    ] },
+  { id: "cl_friday", cat: "work", when: isClientWork, w: () => 1.3, title: "금요일 오후 5시 58분의 메일", body: "제목: [긴급] 월요일 오전 보고용 수정 요청 (간단합니다)",
+    choices: [
+      { label: "주말에 끝낸다", hint: "에너지 −10, 클라이언트 신뢰 +", apply: (P, c) => { P.energy -= 10; mul(c, "same_job", 1.05); return "월요일 아침, 보고는 다음 주로 미뤄졌다고 했다."; } },
+      { label: "월요일 오후로 일정을 다시 잡는다", hint: "에너지 +3, 만족도 −", apply: (P, c) => { P.energy += 3; c.sat -= .05; return "\"네 그럼 월요일 오후로 해 주세요.\" 처음부터 그래도 됐던 것이다."; } },
+    ] },
+  { id: "cl_scope", cat: "work", when: isClientWork, title: "\"이 김에 명함이랑 현수막도요\"", body: "계약서에는 웹사이트 메인 페이지 1장이라고 적혀 있다.",
+    choices: [
+      { label: "추가 견적을 보낸다", hint: "50% 확률로 +150만, 아니면 관계 −", apply: (P, c) => { if (rand() < .5) { P.bonus += 150; return "\"아 그렇죠, 별도죠.\" 의외로 쉽게 계약이 늘었다."; } mul(c, "same_job", .95); return "\"그 정도는 서비스로 해 주실 줄 알았는데….\""; } },
+      { label: "서비스로 해 준다", hint: "에너지 −6", apply: (P) => { P.energy -= 6; return "현수막 시안만 일곱 번 고쳤다."; } },
+    ] },
+  { id: "cl_new_pm", cat: "people", when: isClientWork, title: "클라이언트 담당자가 바뀌었다", body: "새 담당자의 첫마디. \"제가 보기엔 방향부터 다시 잡아야 할 것 같아요.\" 프로젝트는 80% 진행됐다.",
+    choices: [
+      { label: "처음부터 다시 한다", hint: "에너지 −12, 실력 +4", apply: (P) => { P.energy -= 12; P.skill += 4; return "두 번째 버전이 더 좋았다. 인정하기 싫었다."; } },
+      { label: "지난 합의 기록을 정리해 보낸다", hint: "에너지 −3, 50% 확률로 방어", apply: (P, c) => { P.energy -= 3; if (rand() < .5) { c.sat += .1; return "회의록 세 장이 프로젝트를 살렸다."; } c.sat -= .15; return "\"그건 전 담당자 의견이고요.\""; } },
+    ] },
+  { id: "cl_free_draft", cat: "money", when: isClientWork, title: "\"시안 먼저 보고 계약할게요\"", body: "\"세 곳에 받아 보고 제일 좋은 데랑 하려고요. 간단하게 콘셉트만요.\"",
+    choices: [
+      { label: "유료 시안 비용을 안내한다", hint: "만족도 +, 이번 일은 놓칠 수 있다", apply: (P, c) => { c.sat += .1; return "답장은 오지 않았다. 마음은 편했다."; } },
+      { label: "간단히 만들어 보낸다", hint: "에너지 −6, 35% 확률로 +300만", apply: (P, c) => { P.energy -= 6; if (rand() < .35) { P.bonus += 300; return "계약이 됐다. 그 시안이 거의 그대로 최종안이 됐다."; } c.sat -= .15; return "\"다른 곳이랑 하기로 했어요. 시안은 참고할게요.\""; } },
+    ] },
+
+  /* ───── 컨퍼런스·커뮤니티 ───── */
+  { id: "conf_attend", cat: "growth", when: (P) => isWork(P) && P.t >= 1, title: "디자인 컨퍼런스 티켓이 풀렸다", body: "이틀짜리, 얼리버드 39만 원. 연사 목록에 좋아하는 디자이너가 있다.",
+    choices: [
+      { label: "회사에 교육비 신청을 한다", hint: "실력 +5, 50% 확률로 회사 지원", ok: isWage, apply: (P) => { P.skill += 5; P.flags.confMet = P.t; if (rand() < .5) return "결재가 났다. 후기 공유회를 조건으로."; P.bonus -= 39; return "반려됐다. 결국 내 돈으로 갔다."; } },
+      { label: "내 돈으로 간다", hint: "실력 +5, −39만", apply: (P) => { P.skill += 5; P.bonus -= 39; P.flags.confMet = P.t; return "쉬는 시간에 명함 여섯 장을 주고받았다. 한 사람은 기억에 남았다."; } },
+      { label: "녹화본을 기다린다", hint: "실력 +2", apply: (P) => { P.skill += 2; return "녹화본은 1.5배속으로 봤다. 절반은 못 봤다."; } },
+    ] },
+  { id: "conf_contact", cat: "people", when: (P) => isWork(P) && P.flags.confMet != null && P.t - P.flags.confMet >= 1, w: () => 8, title: "컨퍼런스에서 만난 사람에게서 연락이 왔다", body: "\"그때 이야기 나눴던 디자인 시스템 건, 저희 팀에서 같이 해 보실래요?\"",
+    choices: [
+      { label: "만나 본다", hint: "같은 직군 이직 ×2.5, 이직 월급 +4%p", apply: (P, c) => { mul(c, "new_job_same_occupation", 2.5); c.mods.bonus = (c.mods.bonus || 0) + .04; return "커피 한 잔이 세 시간이 됐다."; } },
+      { label: "지금 회사에 남는다고 답한다", hint: "만족도 +", apply: (P, c) => { c.sat += .05; return "\"언제든 연락 주세요.\" 좋은 사람을 하나 알게 됐다."; } },
+    ] },
+  { id: "meetup", cat: "friend", when: (P) => P.age <= 45, title: "디자이너 동네 모임 공지", body: "목요일 저녁 7시, 성수동 카페. 주제는 '요즘 다들 피그마 어떻게 쓰세요'.",
+    choices: [
+      { label: "나간다", hint: "에너지 −2, 만족도 +, 커뮤니티 친구가 생긴다", apply: (P, c) => { P.energy -= 2; c.sat += .1; P.flags.community = P.t; return "다들 회사 욕을 하다가 결국 단축키 이야기로 끝났다. 즐거웠다."; } },
+      { label: "다음에 간다", hint: "에너지 +2", apply: (P) => { P.energy += 2; return "다음은 오지 않았다."; } },
+    ] },
+  { id: "side_project", cat: "growth", when: (P) => isWork(P) && P.flags.community != null, w: () => 8, title: "모임에서 만난 사람들과 사이드 프로젝트", body: "개발자 한 명, 기획자 한 명, 디자이너는 나. 주말마다 만들어 보는 작은 앱이다.",
+    choices: [
+      { label: "합류한다", hint: "실력 +7, 에너지 −8, 10% 확률로 작은 수익", apply: (P) => { P.skill += 7; P.energy -= 8; if (rand() < .1) { P.bonus += 300; return "앱이 앱스토어 추천에 올랐다. 한 달 수익 300만 원. 그다음 달은 30만 원."; } return "앱은 사용자 140명에서 멈췄다. 포트폴리오 한 장은 남았다."; } },
+      { label: "응원만 한다", hint: "변화 없음", apply: () => "출시 날 단톡방에 별점 다섯 개를 남겼다." },
+    ] },
+  { id: "pf_review", cat: "growth", when: (P) => P.t >= 1 && P.t <= 8, title: "포트폴리오 리뷰 모임", body: "10년 차 시니어가 내 포트폴리오를 3분 만에 넘겼다. \"과정이 안 보이네요.\"",
+    choices: [
+      { label: "처음부터 다시 쓴다", hint: "실력 +5, 에너지 −6, 이직 월급 +3%p", apply: (P, c) => { P.skill += 5; P.energy -= 6; c.mods.bonus = (c.mods.bonus || 0) + .03; return "결과물 대신 고민을 썼다. 분량이 반으로 줄었는데 더 좋아졌다."; } },
+      { label: "속으로만 반박한다", hint: "만족도 −", apply: (P, c) => { c.sat -= .1; return "집에 가는 길에 그 말이 계속 맴돌았다."; } },
+    ] },
+  { id: "favor_design", cat: "friend", when: () => true, title: "\"디자이너니까 이것 좀 해 줘\"", body: "사촌 결혼식 청첩장, 이모네 카페 메뉴판, 친구 회사 로고. 같은 주에 세 건이 왔다.",
+    choices: [
+      { label: "다 해 준다", hint: "에너지 −10, 만족도 ±", apply: (P, c) => { P.energy -= 10; c.sat += rand() < .5 ? .1 : -.1; return "이모가 메뉴판을 코팅해서 걸었다. 폰트는 이미 바뀌어 있었다."; } },
+      { label: "하나만 고른다", hint: "에너지 −3", apply: (P) => { P.energy -= 3; return "청첩장만 했다. 하객 세 명이 누가 만들었는지 물었다."; } },
+      { label: "정중하게 견적을 말한다", hint: "만족도 −, 명절이 어색해진다", apply: (P, c) => { c.sat -= .1; return "\"요즘 디자이너는 다 그렇게 받니?\" 할머니가 물었다."; } },
+    ] },
+  { id: "award_jury", cat: "growth", when: (P) => isWork(P) && P.age >= 40 && P.skill >= 55, w: () => .7, title: "공모전 심사위원 제안", body: "학생 공모전 본선 심사. 출품작 200점 중 절반이 같은 레퍼런스를 썼다.",
+    choices: [
+      { label: "맡는다", hint: "만족도 +, 에너지 −4, +50만", apply: (P, c) => { c.sat += .15; P.energy -= 4; P.bonus += 50; return "대상 작품의 학생이 수상 소감에서 내 작업 이야기를 했다."; } },
+      { label: "정중히 거절한다", hint: "변화 없음", apply: () => "대신 후배를 추천했다." },
+    ] },
+
+  /* ───── 강아지 ───── */
+  { id: "dog", cat: "family", when: (P) => P.flags.pet == null && P.age >= 27, title: "강아지를 데려올까", body: "임시보호 중인 세 살 믹스견. 사진 속 표정이 계속 생각난다. 산책은 하루 두 번이 필요하다고 한다.",
+    why: "농림축산식품부 2025 반려동물 양육현황조사: 반려동물을 기르는 가구 29.2%.", grade: "C",
+    choices: [
+      { label: "입양한다", hint: "만족도 +, 매년 에너지 +2, 산책 시간이 생긴다", apply: (P, c) => { P.flags.pet = P.t; P.flags.dog = true; c.sat += .2; return "이름을 '커닝'으로 지었다. 자간을 맞추듯 소파 사이를 비집고 들어갔다."; } },
+      { label: "임시보호만 해 본다", hint: "에너지 −3, 만족도 +", apply: (P, c) => { P.energy -= 3; c.sat += .1; return "석 달 뒤 좋은 가족에게 보냈다. 현관에 털이 한참 남았다."; } },
+      { label: "지금은 아니다", hint: "변화 없음", apply: () => "보호소 인스타그램에 하트만 눌렀다." },
+    ] },
+  { id: "dog_meeting", cat: "family", when: (P) => P.flags.dog && isWork(P), w: () => 6, title: "화상회의에 강아지가 등장했다", body: "클라이언트 보고 도중 커닝이 책상 위로 올라왔다. 화면의 반이 강아지 얼굴이 됐다.",
+    choices: [
+      { label: "자연스럽게 소개한다", hint: "만족도 +, 분위기 좋아짐", apply: (P, c) => { c.sat += .15; mul(c, "same_job", 1.03); return "클라이언트가 자기 고양이를 보여 줬다. 수정 요청이 절반으로 줄었다."; } },
+      { label: "급히 카메라를 끈다", hint: "에너지 −2", apply: (P) => { P.energy -= 2; return "\"괜찮아요, 귀여운데요.\" 채팅창에 하트가 올라왔다."; } },
+    ] },
+  { id: "dog_vet", cat: "money", when: (P) => P.flags.dog && P.t - P.flags.pet >= 3, w: () => 6, title: "강아지 슬개골 수술", body: "뒷다리를 절기 시작했다. 수의사가 수술 견적서를 내밀었다.",
+    choices: [
+      { label: "수술한다", hint: "−350만, 만족도 +", apply: (P, c) => { P.bonus -= 350; c.sat += .1; return "회복하는 두 달 동안 퇴근하자마자 집으로 뛰었다."; } },
+      { label: "재활 치료로 버텨 본다", hint: "−80만, 에너지 −5", apply: (P) => { P.bonus -= 80; P.energy -= 5; return "매일 저녁 수중 러닝머신 앞에 앉아 있었다."; } },
+    ] },
+  { id: "dog_walk", cat: "body", when: (P) => P.flags.dog, w: () => 8, title: "새벽 여섯 시, 산책 시간", body: "알람보다 먼저 커닝이 얼굴을 핥았다. 밖은 아직 어둡다.",
+    choices: [
+      { label: "나간다", hint: "에너지 +8", apply: (P) => { P.energy += 8; return "동네 강아지 친구들의 이름은 다 아는데, 주인 이름은 하나도 모른다."; } },
+      { label: "산책 대행을 부른다", hint: "−60만, 에너지 +2", apply: (P) => { P.bonus -= 60; P.energy += 2; return "커닝은 산책 대행 선생님을 더 좋아하는 것 같다."; } },
     ] },
   /* ───── 통계 확률로 일어나는 사건 (2026-11-02) ─────
      roll: 해마다 그 확률로 일어난다. 전국 연간 인원 ÷ 인구(2024년 약 5,120만 명)로 잡은 대략의 확률이고, 직업·나이 차이는 넣지 않았다. */
@@ -1632,7 +1777,7 @@ function epilogue(P, mc, earned) {
   const ma = P.life.find((e) => e.kind === "marry");
   if (ma) s.push(`${ma.age}세에 결혼했고${P.kids.length ? `, 아이 ${P.kids.length}명을 키웠다.` : ", 아이는 없었다."}`);
   else s.push("결혼은 하지 않았다.");
-  if (P.flags.pet != null) s.push("고양이 픽셀이 오래 곁에 있었다.");
+  if (P.flags.pet != null) s.push(P.flags.dog ? "강아지 커닝이 오래 곁에 있었다." : "고양이 픽셀이 오래 곁에 있었다.");
   const pr = percentile(mc.earn, earned);
   s.push(`일해서 번 돈은 모두 약 ${eok(earned)} 원. 같은 조건 ${mc.N.toLocaleString()}명의 중간값은 ${eok(mc.earn[Math.floor(mc.earn.length / 2)])} 원이었다${pr != null ? `(나는 ${topPct(pr)})` : ""}.`);
   const peerKeep = S.peers.filter((x) => !x.end && x.status !== "none" && x.role === x.origRole).length;
