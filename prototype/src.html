@@ -307,7 +307,25 @@ svg text.me { fill: var(--accent); font-weight: 700; font-size: 11px; }
 .bub { position: absolute; bottom: 14px; font-size: 11.5px; font-weight: 700; color: #fff; padding: 2px 9px; border-radius: 999px; opacity: 0; animation: bub 1.2s ease-out forwards; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,.18); }
 @keyframes bub { 0% { opacity: 0; transform: translateY(0) scale(.5); } 15% { opacity: 1; transform: translateY(-14px) scale(1.08); } 100% { opacity: 0; transform: translateY(-130px) scale(.95); } }
 .makebar { position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: var(--line); }
-.makebar i { display: block; height: 100%; background: var(--accent); transform-origin: left; animation: autofill linear forwards; }
+.makebar i { display: block; height: 100%; background: var(--accent); transform-origin: left; animation: mkfill linear forwards; }
+@keyframes mkfill { from { transform: scaleX(var(--a, 0)); } to { transform: scaleX(var(--b, 1)); } }
+.make.paused { height: 70px; }
+.evcard { border: 2px solid var(--accent); border-radius: 8px; padding: 12px 14px; background: var(--surface); animation: stampin .3s ease-out; }
+.evcard .ev-k { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--accent); }
+.evcard h3 { margin: 2px 0 4px; font-size: 17px; }
+.evcard p { margin: 0; font-size: 14px; color: var(--muted); }
+.evres { margin-top: 10px; font-size: 13.5px; border-left: 3px solid var(--accent); padding: 4px 10px; display: flex; flex-direction: column; gap: 2px; opacity: 0; animation: stampin .3s ease-out forwards; }
+.make ~ .evres { opacity: 1; animation: none; margin-top: 0; }
+.evres b { font-size: 12px; color: var(--accent); }
+.teamh { font-size: 11px; font-weight: 700; color: var(--accent); }
+.axbar { display: flex; }
+.axbar i.tm { opacity: .38; }
+.team { border-top: 1px dashed var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.team-h { display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.mem { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.mem-n { display: flex; flex-direction: column; font-weight: 700; font-size: 14px; }
+.mem-n .ins { align-self: flex-start; margin: 1px 0; }
+.mem-ax { display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid var(--line); background: var(--sunk); border-radius: 999px; padding: 6px 12px; min-height: 36px; font-size: 13px; white-space: nowrap; }
 .revs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .rev { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--sunk); display: flex; flex-direction: column; gap: 2px; opacity: 0; animation: stampin .35s cubic-bezier(.2,1.4,.4,1) forwards; }
 .rev-who { font-size: 12px; color: var(--muted); }
@@ -326,7 +344,7 @@ svg text.me { fill: var(--accent); font-weight: 700; font-size: 11px; }
 .promo b, .newins b { display: block; font-size: 11px; letter-spacing: .08em; opacity: .8; }
 .newins { border: 1px dashed var(--accent); display: flex; flex-direction: column; gap: 2px; }
 .newins b { color: var(--accent); }
-.static .rev, .static .avgbox, .static .gains, .static .promo, .static .newins { animation: none; opacity: 1; }
+.static .rev, .static .avgbox, .static .gains, .static .promo, .static .newins, .static .evres { animation: none; opacity: 1; }
 .line.proj { border-left: 3px solid var(--accent); padding-left: 8px; margin-left: -11px; }
 .meters .best { font-size: 12px; } .meters .best b { color: var(--accent); }
 .toasts { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 10px); left: 50%; transform: translateX(-50%); z-index: 60; display: flex; flex-direction: column; gap: 6px; width: min(calc(100vw - 32px), 420px); pointer-events: none; }
@@ -345,7 +363,7 @@ svg text.me { fill: var(--accent); font-weight: 700; font-size: 11px; }
 .achs div.me { border-color: var(--accent); }
 .instab td, .instab th { text-align: center; padding: 5px 4px; } .instab td:first-child, .instab th:first-child { text-align: left; }
 .instab .hi { color: var(--accent); font-weight: 700; } .instab .lo { color: var(--muted); } .instab .unk { color: var(--line); }
-@media (prefers-reduced-motion: reduce) { * { animation: none !important; } .rev, .avgbox, .gains, .promo, .newins { opacity: 1; } .bub { display: none; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; } .rev, .avgbox, .gains, .promo, .newins, .evres { opacity: 1; } .bub { display: none; } }
 
 /* ── 반응형 ── */
 /* 장면은 화면 높이의 1/4을 넘지 않게(비율 유지) */
@@ -789,23 +807,30 @@ function newProject(P) {
   const types = Object.keys(PTYPES).filter((k) => (PTYPES[k].where === "any" || PTYPES[k].where === where) && (PTYPES[k].rank || 0) <= P.rank);
   const type = pick(Object.fromEntries(types.map((k) => [k, done.has(k) ? 1 : 2])));
   const crunch = P.lastAlloc ? P.lastAlloc.crunch : "norm";
-  return { type, topic: choose(Object.keys(TOPICS)), code: choose(CODENAMES), where, crunch, alloc: spread([1, 1, 1, 1], CRUNCH[crunch].B), stage: "plan", t: P.t };
+  const fresh = syncTeam(P), team = teamSize(P) ? [...P.team.members] : [];
+  return { type, topic: choose(Object.keys(TOPICS)), code: choose(CODENAMES), where, crunch, alloc: spread([1, 1, 1, 1], CRUNCH[crunch].B), stage: "plan", t: P.t,
+    team, assign: team.map((m) => AX.indexOf(m.ax)), fresh, evQ: 1, revAdj: {}, extra: [0, 0, 0, 0] };
 }
 /* 아는 인사이트로 배분을 짐작한다(자동 선택용) */
 function guessAlloc(pr, B) {
   const m = loadIns();
-  return spread(AX.map((k) => { const v = m[`t:${pr.type}:${k}`]; return (v === "hi" ? 4.5 : v === "mid" ? 2.5 : v === "lo" ? .6 : 2.5) + (m[`p:${pr.topic}`] === k ? 2 : 0); }), B);
+  const w = AX.map((k) => { const v = m[`t:${pr.type}:${k}`]; return (v === "hi" ? 4.5 : v === "mid" ? 2.5 : v === "lo" ? .6 : 2.5) + (m[`p:${pr.topic}`] === k ? 2 : 0); });
+  const t = teamHours(pr), s = sum(w);
+  if (!sum(t)) return spread(w, B);
+  // 팀이 채우는 만큼 빼고 나머지를 내가 맡는다
+  return spread(w.map((x, i) => Math.max(0, x / s * (B + sum(t)) - t[i]) + .001), B);
 }
 function projResolve(P, pr) {
-  const tgt = projTarget(pr), B = sum(pr.alloc) || 1, s = pr.alloc.map((x) => x / B);
+  const eff = effAlloc(pr), tgt = projTarget(pr), B = sum(eff) || 1, s = eff.map((x) => x / B);
+  const mood = pr.team && pr.team.length ? .96 + sum(pr.team.map((m) => m.mood)) / pr.team.length / 100 * .08 : 1;
   const fit = 1 - sum(s.map((x, i) => Math.abs(x - tgt[i]))) / 2;
   const abil = Math.min(1, .6 * Math.min(100, P.skill) / 100 + .4 * sum(AX.map((k, i) => s[i] * P.xp[k] / 100)));
-  const q = Math.pow(fit, 1.3) * (.6 + .4 * abil) * CRUNCH[pr.crunch].q * (pr.focus === "work" ? 1.05 : 1) * (P.energy < 25 ? .85 : 1) * Math.exp(.07 * normal());
+  const q = Math.pow(fit, 1.3) * (.6 + .4 * abil) * CRUNCH[pr.crunch].q * (pr.focus === "work" ? 1.05 : 1) * (P.energy < 25 ? .85 : 1) * (pr.evQ || 1) * mood * Math.exp(.07 * normal());
   const base = 1 + 9 * Math.pow(Math.max(0, Math.min(1, q)), .7);
   pr.revs = (pr.where === "out" ? REV_OUT : REV_IN).map((r) => {
     const i = AX.indexOf(r.ax), d = r.ax ? s[i] - tgt[i] : 0;
     // 자기 영역이 모자라면 크게 깎고, 넘치면 조금 더 준다
-    const score = Math.round(Math.max(1, Math.min(10, base + (d < 0 ? d * 14 : d * 4) + .45 * normal())));
+    const score = Math.round(Math.max(1, Math.min(10, base + (d < 0 ? d * 14 : d * 4) + ((pr.revAdj || {})[r.who] || 0) + .45 * normal())));
     const quote = r.ax && d < -.07 ? LACK[r.ax] : r.ax && d > .12 ? MUCH[r.ax] : choose(TIER.find(([m]) => score >= m)[1]);
     return { who: r.who, ax: r.ax, score, quote };
   });
@@ -813,8 +838,8 @@ function projResolve(P, pr) {
   pr.avg = Math.round(sum(pr.revs.map((r) => r.score)) / pr.revs.length * 10) / 10;
 }
 function discover(P, pr) {
-  const m = loadIns(), out = [], tgt = projTarget(pr), B = sum(pr.alloc) || 1, w = PTYPES[pr.type].w;
-  const order = AX.map((k, i) => ({ k, i, off: Math.abs(pr.alloc[i] / B - tgt[i]) })).sort((a, b) => b.off - a.off);
+  const m = loadIns(), out = [], tgt = projTarget(pr), eff = effAlloc(pr), B = sum(eff) || 1, w = PTYPES[pr.type].w;
+  const order = AX.map((k, i) => ({ k, i, off: Math.abs(eff[i] / B - tgt[i]) })).sort((a, b) => b.off - a.off);
   for (const o of order) {
     const key = `t:${pr.type}:${o.k}`;
     if (m[key]) continue;
@@ -846,8 +871,106 @@ function projApply(P, pr, ctx) {
   const r1 = Math.max(P.rank, rankOf(P));
   if (r1 > P.rank) { P.rank = r1; if (P.status === "wage") P.p *= 1.03; ctx.sat += .15; pr.promo = RANKS[r1].name; }
   pr.insights = discover(P, pr);
+  pr.teamNotes = teamAfter(P, pr);
   pr.gain = { rep: P.rep - rep0, skill: Math.min(100, P.skill) - Math.min(100, sk0), energy: CRUNCH[pr.crunch].energy };
-  ctx.notes.push({ kind: "proj", big: true, text: `프로젝트 ${projName(pr)} — 리뷰 평균 ${a.toFixed(1)}점, ${verdict(a)}.${pr.promo ? ` ${josaRo(pr.promo)} 승진했다.` : ""}`, why: "", grade: "D" });
+  ctx.notes.push({ kind: "proj", big: true, text: `프로젝트 ${projName(pr)} — 리뷰 평균 ${a.toFixed(1)}점, ${verdict(a)}.${pr.evRes ? ` 돌발 상황 ‘${pr.evRes.title}’.` : ""}${pr.promo ? ` ${josaRo(pr.promo)} 승진했다.` : ""}`, why: "", grade: "D" });
+  pr.teamNotes.forEach((t) => ctx.notes.push({ kind: "proj", text: t, why: "", grade: "D" }));
+}
+
+/* ── 돌발 상황: 만드는 도중 한 번 끼어든다 ──
+   선택지마다 리뷰어 점수·완성도·에너지·평판이 조금씩 달라진다. 일부는 그 영역 경험으로 성공 여부를 굴린다.
+   확률과 효과 크기는 모두 설계상 가정(D). */
+const chance = (P, ax) => Math.min(.92, .25 + P.xp[ax] / 100 * .65);
+const evQ = (pr, m) => { pr.evQ *= m; };
+const evAdj = (pr, who, d) => { pr.revAdj[who] = (pr.revAdj[who] || 0) + d; };
+const evEn = (P, d) => { P.energy = Math.max(0, Math.min(100, P.energy + d)); };
+const evX = (pr, ax, n) => { pr.extra[AX.indexOf(ax)] += n; };
+const bossOf = (pr) => pr.where === "out" ? "대표" : "팀장";
+const PEV = [
+  { id: "scope", where: "in", title: "기획이 바뀌었다", text: "PM이 중간에 기능 두 개를 더 넣자고 한다. 마감은 그대로다.", opts: [
+    { label: "주말을 써서 다 넣는다", hint: "에너지 −10 · PM 점수 ↑", f: (P, pr) => { evEn(P, -10); evAdj(pr, "PM", 1); return "다 넣었다. 주말은 없었다."; } },
+    { label: "우선순위부터 정하자고 설득한다", chk: "com", f: (P, pr, ok) => ok ? (evQ(pr, 1.05), evAdj(pr, "PM", 1), "하나만 넣기로 했다. 결과물이 오히려 단단해졌다.") : (evAdj(pr, "PM", -2), "PM은 납득하지 않았다. 회의실 공기가 차가워졌다.") }] },
+  { id: "logo", where: "out", title: "“로고를 더 크게 해 주세요”", text: "클라이언트가 시안을 보더니 로고를 두 배로 키워 달라고 한다.", opts: [
+    { label: "말한 대로 키운다", hint: "클라이언트 점수 ↑ · 완성도 ↓", f: (P, pr) => { evAdj(pr, "클라이언트", 2); evAdj(pr, "마케터", -1); evQ(pr, .97); return "로고가 커졌다. 클라이언트는 만족했다."; } },
+    { label: "왜 지금 크기가 맞는지 설명한다", chk: "com", f: (P, pr, ok) => ok ? (evQ(pr, 1.05), evAdj(pr, "클라이언트", 1), "근거를 보여 주자 클라이언트가 고개를 끄덕였다.") : (evAdj(pr, "클라이언트", -3), "“그래서 안 된다는 거죠?” 통화가 길어졌다.") }] },
+  { id: "sick", where: "in", title: "동료가 병가를 냈다", text: "같이 하던 동료가 2주 동안 나오지 못한다.", opts: [
+    { label: "그 몫까지 맡는다", hint: "에너지 −10 · 평판 +2", f: (P, pr) => { evEn(P, -10); P.rep = Math.min(100, P.rep + 2); return "두 사람 몫을 했다. 다들 알아봤다."; } },
+    { label: "일정을 미루자고 한다", hint: "팀장 점수 ↓", f: (P, pr) => { evAdj(pr, "팀장", -1); evEn(P, 2); return "일정이 일주일 밀렸다. 팀장은 한숨을 쉬었다."; } }] },
+  { id: "rival", where: "any", title: "경쟁사가 먼저 냈다", text: "거의 똑같은 걸 경쟁사가 어제 출시했다.", opts: [
+    { label: "차별점을 다시 찾는다", chk: "res", f: (P, pr, ok) => ok ? (evQ(pr, 1.08), "사용자가 경쟁사 제품에서 불편해하는 지점을 찾았다.") : (evQ(pr, .95), evEn(P, -6), "며칠을 헤맸지만 뾰족한 답은 없었다.") },
+    { label: "흔들리지 않고 그대로 간다", hint: "완성도 조금 ↓", f: (P, pr) => { evQ(pr, .96); return "그대로 갔다. 비교하는 말은 피할 수 없었다."; } }] },
+  { id: "interview", where: "any", title: "인터뷰 자리가 났다", text: "사용자 인터뷰 한 자리가 비었다. 반나절이 든다.", opts: [
+    { label: "인터뷰하러 간다", hint: "리서치 +1 · 에너지 −3", f: (P, pr) => { evX(pr, "res", 1); evEn(P, -3); P.xp.res = Math.min(100, P.xp.res + 3); return "생각지 못한 말을 들었다. 노트가 한 장 늘었다."; } },
+    { label: "그 시간에 시안을 하나 더 만든다", hint: "비주얼 +1", f: (P, pr) => { evX(pr, "vis", 1); return "시안이 하나 늘었다."; } }] },
+  { id: "ceo", where: "any", title: "“좀 더 쨍하게 안 돼?”", text: "대표가 지나가다 화면을 보고 한마디 던졌다.", opts: [
+    { label: "쨍하게 바꾼다", hint: "윗선 점수 ↑ · 완성도 ↓", f: (P, pr) => { evAdj(pr, bossOf(pr), 2); evQ(pr, .96); return "채도가 올라갔다. 대표는 만족했다."; } },
+    { label: "웃으며 넘긴다", hint: "윗선 점수 ↓", f: (P, pr) => { evAdj(pr, bossOf(pr), -1); return "대표는 다시 묻지 않았다. 기억은 하는 눈치였다."; } }] },
+  { id: "pull", where: "in", title: "일정이 당겨졌다", text: "개발 일정이 일주일 앞당겨졌다는 공지가 왔다.", opts: [
+    { label: "야근해서 맞춘다", hint: "에너지 −12", f: (P, pr) => { evEn(P, -12); P.flags.crunchN = (P.flags.crunchN || 0) + 1; return "맞췄다. 일주일 내내 막차를 탔다."; } },
+    { label: "범위를 줄이자고 한다", chk: "com", f: (P, pr, ok) => ok ? (evAdj(pr, "PM", 1), "꼭 필요한 것만 남겼다. 오히려 깔끔해졌다.") : (evQ(pr, .92), "줄이긴 했는데, 중요한 게 같이 빠졌다.") }] },
+  { id: "file", where: "any", title: "작업 파일이 깨졌다", text: "파일이 열리지 않는다. 마지막 저장은 사흘 전이다.", opts: [
+    { label: "사흘 치를 다시 만든다", hint: "에너지 −8", f: (P, pr) => { evEn(P, -8); return "두 번째 만든 게 처음보다 나았다. 그래도 억울했다."; } },
+    { label: "기억나는 대로 빨리 복구한다", hint: "완성도 ↓", f: (P, pr) => { evQ(pr, .94); return "대충 복구했다. 디테일 몇 개가 사라졌다."; } }] },
+  { id: "idea", where: "any", title: "아이디어가 떠올랐다", text: "산책하다가 막혀 있던 부분의 답이 갑자기 보였다.", opts: [
+    { label: "바로 시안에 넣는다", hint: "완성도 ↑ · 에너지 −3", f: (P, pr) => { evQ(pr, 1.06); evEn(P, -3); return "밤늦게까지 손이 멈추지 않았다."; } },
+    { label: "메모만 하고 오늘은 쉰다", hint: "에너지 +5", f: (P, pr) => { evEn(P, 5); evQ(pr, 1.02); return "다음 날 아침, 메모가 그대로 쓸 만했다."; } }] },
+  { id: "dev", where: "in", title: "“이건 구현이 어려워요”", text: "개발자가 핵심 인터랙션을 이번엔 못 만든다고 한다.", opts: [
+    { label: "같이 대안을 찾는다", chk: "ux", f: (P, pr, ok) => ok ? (evAdj(pr, "개발자", 2), evQ(pr, 1.03), "더 단순하고 더 나은 방법을 찾았다.") : (evEn(P, -5), evAdj(pr, "개발자", -1), "대안을 세 개 냈지만 다 어렵다고 했다.") },
+    { label: "원래대로 해 달라고 밀어붙인다", hint: "개발자 점수 ↓", f: (P, pr) => { evAdj(pr, "개발자", -2); evQ(pr, 1.02); return "만들긴 했다. 개발자는 말이 줄었다."; } }] },
+  { id: "reset", where: "out", title: "담당자가 바뀌었다", text: "클라이언트 담당자가 바뀌었다. 새 담당자는 처음부터 다시 보자고 한다.", opts: [
+    { label: "처음부터 다시 맞춘다", hint: "에너지 −10 · 클라이언트 점수 ↑", f: (P, pr) => { evEn(P, -10); evAdj(pr, "클라이언트", 1); return "처음부터 다시 했다. 새 담당자는 만족했다."; } },
+    { label: "지난 합의 문서를 보여 준다", chk: "com", f: (P, pr, ok) => ok ? (evAdj(pr, "클라이언트", 1), "정리해 둔 문서가 일을 살렸다.") : (evAdj(pr, "클라이언트", -2), evQ(pr, .97), "“전 담당자랑 하신 얘기잖아요.”") }] },
+  { id: "junior", where: "any", when: (P) => P.rank >= 2, title: "후배가 막혔다", text: "후배가 사흘째 같은 화면에서 막혀 있다. 도움을 청한다.", opts: [
+    { label: "옆에 앉아 같이 본다", hint: "에너지 −4 · 평판 +2 · 팀원 성장", f: (P, pr) => { evEn(P, -4); P.rep = Math.min(100, P.rep + 2); pr.mentor = true; return "한 시간 같이 보니 풀렸다. 후배 얼굴이 밝아졌다."; } },
+    { label: "내 일부터 끝낸다", hint: "완성도 조금 ↑", f: (P, pr) => { evQ(pr, 1.02); return "내 일은 끝났다. 후배는 혼자 풀었다. 어떻게든."; } }] },
+  { id: "fight", where: "any", when: (P, pr) => (pr.team || []).length >= 2, title: "팀원끼리 부딪혔다", text: "두 팀원이 같은 일을 두고 서로 자기 방식이 맞다고 한다.", opts: [
+    { label: "직접 역할을 나눠 준다", chk: "com", f: (P, pr, ok) => { (pr.team || []).forEach((m) => { m.mood = Math.max(0, Math.min(100, m.mood + (ok ? 10 : -10))); }); return ok ? "둘 다 납득했다. 오히려 손발이 맞기 시작했다." : "한쪽 편을 든 셈이 됐다. 팀 분위기가 가라앉았다."; } },
+    { label: "알아서 정리하게 둔다", hint: "완성도 조금 ↓", f: (P, pr) => { evQ(pr, .98); const m = choose(pr.team); m.mood = Math.max(0, m.mood - 8); return "결국 정리는 됐다. 시간이 꽤 걸렸다."; } }] },
+];
+function rollEvent(P, pr) {
+  if (!P.projects.length || rand() > .55) return null;
+  const ok = PEV.filter((e) => (e.where === "any" || e.where === pr.where) && (!e.when || e.when(P, pr)));
+  if (!ok.length) return null;
+  return pick(Object.fromEntries(ok.map((e) => [e.id, 1 / (1 + 3 * (P.flags["ev_" + e.id] || 0))])));
+}
+function evHint(P, o) { return o.chk ? `성공 확률 ${Math.round(chance(P, o.chk) * 100)}% · ${AXN[o.chk]} 경험이 높을수록 올라가요` : o.hint; }
+function autoEv(P, ev) { const i = ev.opts.findIndex((o) => o.chk && chance(P, o.chk) >= .55); return i >= 0 ? i : ev.opts.findIndex((o) => !o.chk) >= 0 ? ev.opts.findIndex((o) => !o.chk) : 0; }
+
+/* ── 팀: 리드부터 팀원이 생긴다 (회사에 다닐 때만) ──
+   팀원을 영역에 두면 그 영역에 시간이 더해진다. 강점 영역이면 더 많이. 팀원은 자라서 떠나기도, 지쳐서 떠나기도 한다. 모두 설계상 가정(D). */
+const TEAM_NAMES = ["지윤", "민서", "하준", "서연", "도윤", "예린", "시우", "다은", "준호", "수아", "태오", "유나", "은채", "현우", "나연", "우진"];
+const moodText = (m) => m >= 65 ? "의욕 높음" : m >= 35 ? "보통" : "지침";
+const teamSize = (P) => P.status === "wage" && P.rank >= 3 ? P.rank - 1 : 0; // 리드 2명, 디렉터 3명
+function syncTeam(P) {
+  const n = teamSize(P), fresh = [];
+  if (!n) return fresh;
+  if (!P.team || P.team.company !== P.company) P.team = { company: P.company, members: [] };
+  while (P.team.members.length < n) {
+    const used = new Set(P.team.members.map((m) => m.name));
+    const m = { name: choose(TEAM_NAMES.filter((x) => !used.has(x))), ax: choose(AX), lvl: 1, mood: 55 + Math.floor(rand() * 25), yrs: 0 };
+    P.team.members.push(m); fresh.push(m);
+  }
+  P.flags.teamEver = true;
+  return fresh;
+}
+const memberH = (m, i) => Math.ceil(m.lvl / 2) + (AX[i] === m.ax ? 1 : 0);
+function teamHours(pr) { const h = [0, 0, 0, 0]; (pr.team || []).forEach((m, j) => { h[pr.assign[j]] += memberH(m, pr.assign[j]); }); return h; }
+function effAlloc(pr) { const t = teamHours(pr), x = pr.extra || [0, 0, 0, 0]; return pr.alloc.map((a, i) => a + t[i] + x[i]); }
+function teamAfter(P, pr) {
+  const out = [];
+  if (!pr.team || !pr.team.length) return out;
+  const keep = [];
+  pr.team.forEach((m, j) => {
+    const strong = AX[pr.assign[j]] === m.ax;
+    m.yrs++;
+    m.lvl = Math.min(5, m.lvl + .5 + (pr.avg >= 7 ? .5 : 0) + (pr.mentor ? .5 : 0));
+    m.mood = Math.max(0, Math.min(100, m.mood + (strong ? 3 : -9) + (pr.crunch === "crunch" ? -15 : pr.crunch === "off" ? 6 : -1) + (pr.avg >= 8 ? 5 : pr.avg <= 4 ? -8 : 0) + (pr.mentor ? 8 : 0)));
+    if (m.lvl >= 5 && m.yrs >= 3) { P.flags.grads = (P.flags.grads || 0) + 1; P.rep = Math.min(100, P.rep + 3); out.push(`${m.name} 씨가 시니어가 되어 자기 팀을 맡았다. 평판 +3`); }
+    else if (m.mood < 25 && rand() < .6) { P.flags.quits = (P.flags.quits || 0) + 1; out.push(`${m.name} 씨가 지쳐서 회사를 떠났다.`); }
+    else keep.push(m);
+  });
+  P.team.members = keep;
+  return out;
 }
 
 /* ── 업적 (이 브라우저에 저장) ── */
@@ -863,6 +986,9 @@ const ACH = [
   ["rank2", "시니어", "시니어 디자이너가 됐다", (P) => P.rank >= 2],
   ["rank3", "리드", "리드 디자이너가 됐다", (P) => P.rank >= 3],
   ["rank4", "디렉터", "디자인 디렉터가 됐다", (P) => P.rank >= 4],
+  ["clutch", "임기응변", "한 판에 돌발 상황 판정 3번 성공", (P) => (P.flags.chkWin || 0) >= 3],
+  ["team", "우리 팀", "리드가 되어 팀원이 생겼다", (P) => !!P.flags.teamEver],
+  ["mentor", "사람을 키우는 사람", "팀원이 시니어로 자랐다", (P) => (P.flags.grads || 0) >= 1],
   ["self", "독립", "프리랜서로 독립했다", (P) => P.statuses.includes("self")],
   ["comeback", "돌아온 디자이너", "디자인을 떠났다가 돌아왔다", (P) => !!P.flags.comeback],
   ["burnout", "다 타 버렸다", "번아웃을 겪었다", (P) => !!P.flags.card_burnout],
@@ -2331,7 +2457,8 @@ function schedule() {
     if (!S.autoPick) return;
     const pr = S.proj;
     if (pr.stage === "plan") projTimer = setTimeout(() => { if (S.proj !== pr) return; pr.crunch = autoCrunch(S.player); pr.alloc = guessAlloc(pr, CRUNCH[pr.crunch].B); projStart(); }, 1400);
-    if (pr.stage === "review") projTimer = setTimeout(() => { if (S.proj === pr) { projDone(); schedule(); } }, 3600);
+    if (pr.stage === "event") { const ev = PEV.find((e) => e.id === pr.ev); projTimer = setTimeout(() => { if (S.proj === pr && pr.stage === "event") projEvent(autoEv(S.player, ev)); }, 2600); }
+    if (pr.stage === "review") projTimer = setTimeout(() => { if (S.proj === pr) { projDone(); schedule(); } }, 3600 + (pr.teamNotes && pr.teamNotes.length ? 800 : 0));
     return;
   }
   if (S.check) { if (S.autoPick) { const a = autoArm(S.check, 45); if (!a.hold) timer = setTimeout(() => { S.check = null; render(); schedule(); }, autoLeft(a)); } return; }
@@ -2361,14 +2488,45 @@ function ffTick() {
 /* ── 프로젝트 진행: 배분 → 만드는 중 → 리뷰 ── */
 let makeTimer = null, projTimer = null;
 const makeDur = () => (S.autoPick || S.speed >= 2 ? 1500 : 2600);
+/* 만드는 중은 둘로 나뉜다: 돌발 상황이 있으면 절반에서 멈추고 고른 다음 나머지를 만든다. 점수는 다 만든 뒤에 정한다. */
+function makePts(pr) { const pts = []; effAlloc(pr).forEach((n, i) => { for (let j = 0; j < n; j++) pts.push(i); }); for (let i = pts.length - 1; i > 0; i--) { const j = (i * 7 + pr.t) % (i + 1); [pts[i], pts[j]] = [pts[j], pts[i]]; } return pts; }
+const segOf = (pr) => !pr.ev ? [0, 1] : pr.seg ? [.5, 1] : [0, .5];
+const segDur = (pr) => { const [a, b] = segOf(pr); return Math.round(makeDur() * (b - a)) + (pr.ev ? 250 : 0); };
 function projStart() {
   const P = S.player, pr = S.proj;
   if (!pr || pr.stage !== "plan" || sum(pr.alloc) !== CRUNCH[pr.crunch].B) return;
-  projResolve(P, pr); projApply(P, pr, pr.ctx);
-  pr.stage = "make"; pr.seen = false;
-  render();
+  if (pr.team.length) P.flags.teamCoach = true;
+  pr.stage = "make"; pr.seg = 0; pr.ev = rollEvent(P, pr);
+  render(); runMake(pr);
+}
+function runMake(pr) {
   clearTimeout(makeTimer);
-  makeTimer = setTimeout(() => { if (S.proj === pr) { pr.stage = "review"; render(); schedule(); } }, makeDur());
+  makeTimer = setTimeout(() => {
+    if (S.proj !== pr || pr.stage !== "make") return;
+    if (pr.ev && !pr.seg) { pr.stage = "event"; SFX.card(); render(); schedule(); }
+    else projFinish(pr);
+  }, segDur(pr));
+}
+function projEvent(k) {
+  const P = S.player, pr = S.proj;
+  if (!pr || pr.stage !== "event") return;
+  clearTimeout(projTimer);
+  const ev = PEV.find((e) => e.id === pr.ev), o = ev.opts[k];
+  let ok = null;
+  if (o.chk) { ok = rand() < chance(P, o.chk); if (ok) P.flags.chkWin = (P.flags.chkWin || 0) + 1; }
+  P.flags["ev_" + ev.id] = (P.flags["ev_" + ev.id] || 0) + 1;
+  pr.evRes = { title: ev.title, label: o.label, ok, text: o.f(P, pr, ok) };
+  ok === true ? SFX.up() : ok === false ? SFX.bad() : SFX.tap();
+  pr.stage = "make"; pr.seg = 1;
+  render(); runMake(pr);
+}
+function projFinish(pr) {
+  const P = S.player;
+  if (S.proj !== pr || pr.stage === "review") return;
+  clearTimeout(makeTimer);
+  projResolve(P, pr); projApply(P, pr, pr.ctx);
+  pr.stage = "review"; pr.seen = false;
+  render(); schedule();
 }
 function projDone() {
   const pr = S.proj; if (!pr) return;
@@ -2429,7 +2587,8 @@ function renderStart() {
     <h1>디자이너로 살아보기</h1>
     <p class="challenge">과연 정년까지 일할 수 있을까요?</p>
     <ol class="howto">
-      <li><b>프로젝트</b> 일하는 해마다 대표 프로젝트를 맡아 시간을 나누고 리뷰를 받습니다.</li>
+      <li><b>프로젝트</b> 일하는 해마다 대표 프로젝트를 맡아 시간을 나누고 리뷰를 받습니다. 만드는 도중 돌발 상황이 끼어들기도 합니다.</li>
+      <li><b>팀</b> 리드 디자이너가 되면 팀원이 생깁니다. 영역에 배치해 키우세요. 지치면 떠납니다.</li>
       <li><b>성장</b> 잘하면 평판이 오르고 승진하며, 디자이너로 오래 남을 가능성이 커집니다.</li>
       <li><b>현실</b> 그래도 이직·전향·공백은 실제 통계의 확률대로 찾아옵니다.</li>
     </ol>
@@ -2573,7 +2732,7 @@ function renderPlay() {
         <span class="meter ${P.energy < 25 ? "low" : ""}">에너지 <i style="--v:${P.energy}%"></i></span>
         <span class="meter">실력 <i style="--v:${P.skill}%"></i></span>
         <span class="meter rep">평판 <i style="--v:${P.rep}%"></i></span>
-        ${(() => { const b = S.proj && S.proj.stage === "make" ? Math.max(0, ...P.projects.slice(0, -1).map((x) => x.avg)) : P.best; return b ? `<span class="best">최고 리뷰 <b class="num">${b.toFixed(1)}</b></span>` : ""; })()}
+        ${(() => { const b = P.best; return b ? `<span class="best">최고 리뷰 <b class="num">${b.toFixed(1)}</b></span>` : ""; })()}
       </div>
     </div>
     ${sceneHtml(P)}
@@ -2643,14 +2802,18 @@ function insBadge(m, pr, k) {
 }
 function projPlanBody() {
   const P = S.player, pr = S.proj, m = loadIns(), B = CRUNCH[pr.crunch].B, left = B - sum(pr.alloc);
+  const th = teamHours(pr), TB = B + sum(th);
   return `
     <div class="crunch" role="group" aria-label="일하는 강도"><span>강도</span><div class="seg">${Object.entries(CRUNCH).map(([k, c]) => `<button data-crunch="${k}" aria-pressed="${pr.crunch === k}">${c.label} <span class="num">${c.B}</span></button>`).join("")}</div>
       <span class="fine">${pr.crunch === "crunch" ? "시간이 늘지만 에너지 −12" : pr.crunch === "off" ? "시간이 줄지만 에너지 +4" : "에너지 −2"}</span></div>
     <div class="axrows">${AX.map((k, i) => `<div class="axrow">
-      <span class="axn"><i class="ax-dot" style="background:${AXC[k]}"></i>${AXN[k]} <span class="xp num" title="이 영역 경험">경험 ${Math.round(P.xp[k])}</span></span>
+      <span class="axn"><i class="ax-dot" style="background:${AXC[k]}"></i>${AXN[k]} <span class="xp num" title="이 영역 경험">경험 ${Math.round(P.xp[k])}</span>${th[i] ? `<span class="teamh num">팀 +${th[i]}</span>` : ""}</span>
       <span class="hintb">${insBadge(m, pr, k)}</span>
       <div class="stepper"><button data-ax="${i}" data-d="-1" ${pr.alloc[i] <= 0 ? "disabled" : ""} aria-label="${AXN[k]} 줄이기">−</button><b class="num">${pr.alloc[i]}</b><button data-ax="${i}" data-d="1" ${left <= 0 ? "disabled" : ""} aria-label="${AXN[k]} 늘리기">+</button></div>
-      <div class="axbar"><i style="width:${(pr.alloc[i] / B * 100).toFixed(0)}%;background:${AXC[k]}"></i></div></div>`).join("")}</div>
+      <div class="axbar"><i style="width:${(pr.alloc[i] / TB * 100).toFixed(0)}%;background:${AXC[k]}"></i>${th[i] ? `<i class="tm" style="width:${(th[i] / TB * 100).toFixed(0)}%;background:${AXC[k]}"></i>` : ""}</div></div>`).join("")}</div>
+    ${pr.team.length ? `<div class="team" role="group" aria-label="팀 배치"><div class="team-h"><b>팀</b><span class="fine">누르면 맡길 영역이 바뀌어요. 강점 영역에 두면 더 많이 돕고 의욕도 올라요.</span></div>
+      ${pr.team.map((mm, j) => `<div class="mem"><span class="mem-n">${esc(mm.name)}${pr.fresh.includes(mm) ? ' <span class="ins topic">새 팀원</span>' : ""}<span class="fine">${AXN[mm.ax]} 강점 · 숙련 ${Math.floor(mm.lvl)} · ${moodText(mm.mood)}</span></span>
+        <button class="mem-ax" data-mem="${j}" style="border-color:${AXC[AX[pr.assign[j]]]}" aria-label="${esc(mm.name)}에게 맡길 영역 바꾸기"><i class="ax-dot" style="background:${AXC[AX[pr.assign[j]]]}"></i>${AXN[AX[pr.assign[j]]]} <b class="num">+${memberH(mm, pr.assign[j])}</b></button></div>`).join("")}</div>` : ""}
     <div class="left">${left > 0 ? `남은 시간 <b class="num">${left}</b> · 모두 나눠야 시작할 수 있어요` : `시간 <b class="num">${B}</b>을 모두 나눴어요`}</div>
     <div class="form-row">
       <button class="btn" id="proj-go" ${left ? "disabled" : ""}>작업 시작</button>
@@ -2666,14 +2829,22 @@ function projHtml() {
   if (pr.stage === "plan") {
     const first = !P.projects.length && !Object.keys(loadIns()).length;
     body = `<p class="brief">${esc(T.brief)}</p>
+      ${pr.team.length && !P.flags.teamCoach ? (`<p class="coach">${esc(RANKS[P.rank].name)}가 되어 팀원 ${pr.team.length}명이 생겼어요. 팀원을 영역에 배치하면 그 영역에 시간이 더해집니다. 야근이 잦거나 강점과 다른 일만 주면 지쳐서 떠날 수 있어요.</p>`) : ""}
       ${first ? `<p class="coach">시간을 네 영역에 나눠 쓰세요. 프로젝트 유형과 업계마다 중요한 영역이 다르고, 리뷰어의 한마디가 힌트예요. 알아낸 것은 '인사이트'로 쌓여 다음 판에도 남습니다.</p>` : ""}
       <div id="proj-body">${projPlanBody()}</div>`;
-  } else if (pr.stage === "make") {
-    const dur = makeDur(), pts = []; pr.alloc.forEach((n, i) => { for (let j = 0; j < n; j++) pts.push(i); });
-    const bubbles = pts.map((i, j) => `<span class="bub" style="left:${(8 + ((j * 37) % 76))}%;background:${AXC[AX[i]]};animation-delay:${Math.round(j / pts.length * (dur - 700))}ms">${AXN[AX[i]]} +1</span>`).join("");
-    body = `<div class="make" aria-live="polite"><div class="make-label" id="make-label">${AXV[AX[pts[0] ?? 0]][0]}…</div>${bubbles}
-      <div class="makebar"><i style="animation-duration:${dur}ms"></i></div></div>
-      <p class="fine">${CRUNCH[pr.crunch].label} 모드 · 시간 ${sum(pr.alloc)}</p>`;
+  } else if (pr.stage === "make" || pr.stage === "event") {
+    const [a0, b0] = pr.stage === "event" ? [.5, .5] : segOf(pr), dur = segDur(pr), all = makePts(pr), pts = all.slice(Math.floor(a0 * all.length), Math.floor(b0 * all.length));
+    const bubbles = pr.stage === "event" ? "" : pts.map((i, j) => `<span class="bub" style="left:${(8 + (((j + Math.floor(a0 * all.length)) * 37) % 76))}%;background:${AXC[AX[i]]};animation-delay:${Math.round(j / Math.max(1, pts.length) * (dur - 700))}ms">${AXN[AX[i]]} +1</span>`).join("");
+    body = `<div class="make${pr.stage === "event" ? " paused" : ""}" aria-live="polite"><div class="make-label" id="make-label">${pr.stage === "event" ? "작업이 멈췄다" : AXV[AX[pts[0] ?? 0]][0] + "…"}</div>${bubbles}
+      <div class="makebar"><i style="--a:${a0};--b:${b0};animation-duration:${pr.stage === "event" ? 1 : dur}ms"></i></div></div>`;
+    if (pr.stage === "event") {
+      const ev = PEV.find((e) => e.id === pr.ev);
+      body += `<div class="evcard"><div class="ev-k">돌발 상황</div><h3>${esc(ev.title)}</h3><p>${esc(ev.text)}</p></div>
+        <div class="choices">${ev.opts.map((o, k) => `<button class="choice" data-ev="${k}"><span>${esc(o.label)}</span><small>${esc(evHint(P, o))}</small></button>`).join("")}</div>`;
+    } else {
+      body += `${pr.evRes ? `<div class="evres"><b>${pr.evRes.ok === true ? "성공" : pr.evRes.ok === false ? "실패" : "선택"}</b> ${esc(pr.evRes.text)}</div>` : ""}
+      <p class="fine">${CRUNCH[pr.crunch].label} 모드 · 시간 ${sum(pr.alloc)}${pr.team.length ? ` · 팀 +${sum(teamHours(pr))}` : ""}</p>`;
+    }
   } else {
     const a = pr.avg, cls = (x) => x >= 8 ? "hi" : x <= 4 ? "lo" : "";
     body = `<div class="${pr.seen ? "static" : ""}" id="rev-box">
@@ -2686,6 +2857,8 @@ function projHtml() {
         ${a >= 8 ? "<span>올해 디자인을 떠날 가능성 ↓</span>" : a <= 4 ? "<span>올해 디자인을 떠날 가능성 ↑</span>" : ""}
       </div>
       ${pr.promo ? `<div class="promo" style="animation-delay:2500ms"><b>승진</b> ${esc(pr.promo)}${josaRo(pr.promo).slice(pr.promo.length)} 올라섰다. 월급 +3%</div>` : ""}
+      ${pr.evRes ? `<div class="evres" style="animation-delay:2600ms"><b>돌발 상황 · ${esc(pr.evRes.title)}</b> ${esc(pr.evRes.label)}${pr.evRes.ok === true ? " — 성공" : pr.evRes.ok === false ? " — 실패" : ""}</div>` : ""}
+      ${pr.teamNotes.length ? `<div class="evres team-note" style="animation-delay:2650ms"><b>팀 소식</b>${pr.teamNotes.map((t) => `<span>${esc(t)}</span>`).join("")}</div>` : ""}
       ${pr.insights.length ? `<div class="newins" style="animation-delay:2700ms"><b>새 인사이트</b>${pr.insights.map((t) => `<span>${esc(t)}</span>`).join("")}</div>` : ""}
       </div>
       <div class="form-row"><button class="btn" id="proj-done">계속</button></div>`;
@@ -2700,16 +2873,19 @@ function bindProj() {
     $app.querySelectorAll("[data-crunch]").forEach((b) => b.onclick = () => { pr.crunch = b.dataset.crunch; pr.alloc = spread(sum(pr.alloc) ? pr.alloc : [1, 1, 1, 1], CRUNCH[pr.crunch].B); SFX.tap(); re(); });
     const last = $app.querySelector("#proj-last"); if (last) last.onclick = () => { const L = S.player.lastAlloc; pr.alloc = spread(L.alloc, CRUNCH[pr.crunch].B); re(); };
     const g = $app.querySelector("#proj-guess"); if (g) g.onclick = () => { pr.alloc = guessAlloc(pr, CRUNCH[pr.crunch].B); re(); };
+    $app.querySelectorAll("[data-mem]").forEach((b) => b.onclick = () => { const j = +b.dataset.mem; pr.assign[j] = (pr.assign[j] + 1) % 4; SFX.tap(); re(); });
     const go = $app.querySelector("#proj-go"); if (go) go.onclick = () => { clearTimeout(projTimer); projStart(); };
+  } else if (pr.stage === "event") {
+    $app.querySelectorAll("[data-ev]").forEach((b) => b.onclick = () => projEvent(+b.dataset.ev));
   } else if (pr.stage === "make") {
     // 단계 문구와 효과음: 배분한 영역 순서대로
-    const pts = []; pr.alloc.forEach((n, i) => { for (let j = 0; j < n; j++) pts.push(i); });
-    const dur = makeDur();
+    const [a0, b0] = segOf(pr), all = makePts(pr), pts = all.slice(Math.floor(a0 * all.length), Math.floor(b0 * all.length));
+    const dur = segDur(pr);
     pts.forEach((i, j) => setTimeout(() => {
       if (S.proj !== pr || pr.stage !== "make") return;
       SFX.pop(j);
       const el = document.getElementById("make-label"); if (el) el.textContent = AXV[AX[i]][j % 2] + "…";
-    }, Math.round(j / pts.length * (dur - 700))));
+    }, Math.round(j / Math.max(1, pts.length) * (dur - 700))));
   } else {
     if (!pr.seen) {
       pr.seen = true;
@@ -2991,6 +3167,7 @@ function portfolioHtml(P) {
     <div class="facts" style="margin-bottom:10px">
       <div><b>${esc(RANKS[P.rank].name)}</b><span>오른 직급</span></div>
       <div><b class="num">${avg.toFixed(1)}</b><span>리뷰 평균 (최고 ${P.best.toFixed(1)})</span></div>
+      ${P.flags.teamEver ? `<div><b class="num">${P.flags.grads || 0}명</b><span>시니어로 키운 팀원</span></div>` : ""}
     </div>
     <ul class="jobs">${top.map((x) => `<li><span class="num">${START_YEAR + x.t}</span> · ${esc(x.name)} <b class="num">${x.avg.toFixed(1)}</b> <span class="fine">${verdict(x.avg)}</span></li>`).join("")}</ul></section>`;
 }
@@ -3166,6 +3343,7 @@ function renderData() {
     <section><h2>설계상 가정 (D)</h2><ul class="sources" style="list-style:disc">
       <li>한 턴은 1년입니다. PRD의 반기 턴은 연간 자료를 그대로 쓰기 위해 1년으로 바꿨습니다.</li>
       <li>프로젝트: 프로젝트 유형 ${Object.keys(PTYPES).length}종과 업계 ${Object.keys(TOPICS).length}종의 '맞는 배분', 리뷰 점수 공식, 직급 조건(일한 햇수·평판), 승진 때 월급 +3%. 리뷰 평균이 8점 이상이면 그해 다른 직업으로 옮길 확률 ×0.75·쉬게 될 확률 ×0.85, 4점 이하면 ×1.3·×1.2. 평판은 이직 확률에 ×0.9~1.3, 떠나 있는 동안 최고 리뷰 점수는 복귀 확률에 ×0.8~1.25를 겁니다. 점수에 따른 월급 변화는 해마다 ±2% 안쪽입니다. 확률표 자체는 노동패널 그대로입니다.</li>
+      <li>돌발 상황과 팀: 돌발 상황 ${PEV.length}종의 발생 확률(일하는 해의 약 55%, 첫 프로젝트 제외), 선택지별 효과, 경험에 따른 성공 확률(25~92%). 리드 2명·디렉터 3명의 팀 규모, 팀원의 기여 시간·성장·의욕·이탈 규칙.</li>
       <li>올해의 초점이 거는 확률 배수(쉬거나 다른 직업으로 일하는 동안의 적극 지원 ×2, 포트폴리오 정비 ×1.4 포함), 일하는 동안 일·회사·성장 카드를 1.6배 자주 뽑는 비중, 이번 판 목표의 행복 기준(평균 만족도 ${HAPPY}), 사건 카드 ${CARD_N}종의 내용과 효과, 에너지·실력·만족도 계산. 사건은 한 판에서 한 번씩만 나옵니다. 근거 통계가 있는 카드는 '왜?'에 출처와 함께 등급 C로 표시했습니다.</li>
       <li>육아휴직 뒤 원래 직장 복귀, 석사 뒤 월급 +3~6%, 부수입·지출 카드의 금액.</li>
       <li>60세 종료, 공백 ${BREAK_MAX}년째 종료, 다른 직업 ${AWAY_MAX}년 종료, 쉬게 된 이유(노동패널에 없어 청년패널 퇴사 사유나 최근 출산으로 붙임), 회사 이름 예시.</li>
