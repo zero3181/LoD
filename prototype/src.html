@@ -1680,16 +1680,23 @@ function renderStart() {
   $app.querySelector("#go-manual").onclick = () => startGame(S.pickRole, S.pickSex);
 }
 
+/* 같은 성별 신입의 첫 월급 분포 (게임과 같은 방식으로 3,000명) */
+const FW = {};
+function firstWageDist(role, sex) {
+  const k = role + sex;
+  if (!FW[k]) FW[k] = Array.from({ length: 3000 }, () => currentWage(newPerson(role, sex))).sort((a, b) => a - b);
+  return FW[k];
+}
 function renderReveal() {
   const P = S.player, r = R[P.role];
   const share = P.size9 ? sizeShare(P.role, P.size9) : null;
   const sexShare = P.sex === "female" ? r.female_share : 1 - r.female_share;
   const sameSex = ROLE_W[P.role] * sexShare, sameStart = sameSex * (share || 0);
-  // 100칸 와플: 같은 성별·같은 규모(진하게) → 같은 성별(옅게) → 나머지(회색). 한 칸 ≈ 한 해 첫 출근 디자이너의 1%
-  const nSex = Math.round(100 * sexShare), nStart = Math.max(1, Math.min(nSex, Math.round(100 * sexShare * (share || 0))));
-  const meIdx = Math.floor(rand() * nStart);
-  const dots = Array.from({ length: 100 }, (_, i) => `<span class="dot ${i === meIdx ? "me" : i < nStart ? "m" : i < nSex ? "s" : ""}"></span>`).join("");
-  const per = Math.round(ENT_TOTAL / 100);
+  // 100칸 와플: 같은 성별 신입 디자이너 100명을 첫 월급 순으로 세운 줄. 왼쪽 위가 가장 적게, 오른쪽 아래가 가장 많이 받는 사람.
+  const dist = firstWageDist(P.role, P.sex), myW = currentWage(P);
+  const below = percentile(dist, myW), rank = Math.max(0, Math.min(99, Math.floor(below * 100)));
+  const q = (f) => won(dist[Math.floor(f * (dist.length - 1))]);
+  const dots = Array.from({ length: 100 }, (_, i) => `<span class="dot ${i === rank ? "me" : i < rank ? "s" : ""}"></span>`).join("");
   const sizes = Object.entries(r.first_size9 || {});
   const sizeBar = sizes.map(([k, v]) => `<span class="${k === P.size9 ? "on" : ""}" style="flex:${v}" title="직원 ${k}명 ${pct(v, 1)}">${v >= .12 || k === P.size9 ? k : ""}</span>`).join("");
   const step = (cls, lab, n, w) => `<div class="step ${cls}"><span>${lab}</span><b class="num">${people(n)}명</b><div class="bar"><i style="width:${(w * 100).toFixed(1)}%"></i></div></div>`;
@@ -1699,9 +1706,11 @@ function renderReveal() {
     <h1 style="font-size:28px">${P.age}세 ${SEX[P.sex]} ${ROLE[P.role]}</h1>
     <div class="bigstat">첫 직장은 <b>직원 ${P.size9}명</b> 규모의 ${esc(P.company)}. ${P.regular ? "정규직" : "계약직"}이고 첫 월급은 <b>${won(currentWage(P))}만 원</b>입니다.</div>
     <section style="display:flex;flex-direction:column;gap:10px">
-      <div class="waffle" role="img" aria-label="한 해 첫 출근 디자이너 100칸 중 같은 성별 ${nSex}칸, 같은 출발선 ${nStart}칸">${dots}</div>
-      <div class="legend" style="margin-top:0"><span><i style="background:var(--accent)"></i>나와 같은 출발선 (${SEX[P.sex]}, 직원 ${P.size9}명 회사)</span><span><i style="background:color-mix(in oklab, var(--accent) 38%, var(--surface))"></i>같은 ${SEX[P.sex]}</span><span><i style="background:var(--line)"></i>${SEX[P.sex === "female" ? "male" : "female"]}</span></div>
-      <p class="fine">한 칸이 약 ${per.toLocaleString("ko-KR")}명입니다. 테두리 친 칸 안에 당신이 있습니다.</p>
+      <h2 style="font-size:17px">${SEX[P.sex]} 신입 디자이너 100명을 첫 월급 순으로 세우면</h2>
+      <div class="bigstat" style="font-size:15px">나는 아래에서 <b>${rank + 1}번째</b>, ${topPct(below)}입니다.</div>
+      <div class="waffle" role="img" aria-label="${SEX[P.sex]} 신입 디자이너 100명 중 첫 월급이 아래에서 ${rank + 1}번째">${dots}</div>
+      <div class="legend" style="margin-top:0"><span><i style="background:color-mix(in oklab, var(--accent) 38%, var(--surface))"></i>나보다 적게 받는 사람</span><span><i style="background:var(--accent)"></i>나</span><span><i style="background:var(--line)"></i>나보다 많이 받는 사람</span></div>
+      <p class="fine">왼쪽 위가 가장 적게, 오른쪽 아래가 가장 많이 받는 사람입니다. 하위 10% ${q(.1)}만 원 · 중간 ${q(.5)}만 원 · 상위 10% ${q(.9)}만 원. 첫 월급은 청년패널 신입 디자이너 첫 월급(n=112, 중앙 225만 원, 등급 B)에 회사 규모 배수와 개인차를 더해 정합니다. 이 줄은 같은 방식으로 ${dist.length.toLocaleString()}명을 뽑아 세운 것입니다.</p>
     </section>
     <section class="steps">
       ${step("l1", `올해 ${ROLE[P.role]}로 첫 출근`, ROLE_W[P.role], 1)}
