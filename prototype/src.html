@@ -76,10 +76,18 @@ details.manual summary { cursor: pointer; color: var(--muted); font-size: 13px; 
 details.manual[open] summary { margin-bottom: 10px; }
 
 /* ── 배정 연출 ── */
-.waffle { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; max-width: 300px; }
+.waffle { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; width: 104px; flex: none; }
+.wage-rank { display: flex; gap: 14px; align-items: center; }
+.wage-rank .ends { display: flex; flex-direction: column; justify-content: space-between; align-self: stretch; font-size: 11px; color: var(--muted); }
+.nextfocus { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.nextfocus .q { font-size: 14px; font-weight: 700; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button { border: 1px solid var(--line); background: var(--sunk); border-radius: 999px; padding: 8px 14px; font-size: 14px; min-height: 40px; }
+.chips button:hover { border-color: var(--accent); }
+.chips button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent); color: var(--surface); font-weight: 600; }
 .waffle .dot.s { background: color-mix(in oklab, var(--accent) 38%, var(--surface)); }
 .waffle .dot.m { background: var(--accent); }
-.waffle .dot.me { background: var(--accent); }
+.waffle .dot.me { background: var(--accent); outline-width: 1.5px; outline-offset: 1px; }
 .steps { display: flex; flex-direction: column; gap: 10px; }
 .step { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; font-size: 13px; }
 .step b { font-size: 15px; }
@@ -1433,7 +1441,7 @@ function lifeWhy(P, kind) {
 
 /* ── 상태 ── */
 let S = null;
-function freshState() { return { screen: "start", manual: false, pickRole: "designer", pickSex: "female", focus: "flow", ask: false, autoPick: false, speed: 0, feed: [], card: null, check: null, player: null, peers: [] }; }
+function freshState() { return { screen: "start", manual: false, pickRole: "designer", pickSex: "female", focus: "flow", autoPick: false, speed: 0, feed: [], card: null, check: null, player: null, peers: [] }; }
 
 function startGame(role, sex) {
   const P = newPerson(role, sex, { name: "나" });
@@ -1611,7 +1619,7 @@ function schedule() {
     }
     return;
   }
-  timer = setTimeout(() => { if (S.autoPick) { S.focus = autoFocus(); S.ask = false; } playYear(); schedule(); }, 1600 / S.speed);
+  timer = setTimeout(() => { if (S.autoPick) S.focus = autoFocus(); playYear(); schedule(); }, 1600 / S.speed);
 }
 function setAutoPick(v) { S.autoPick = v; if (v && !S.speed) S.speed = 1; for (const o of [S.card, S.check]) if (o) delete o.auto; render(); schedule(); }
 
@@ -1696,7 +1704,8 @@ function renderReveal() {
   const dist = firstWageDist(P.role, P.sex), myW = currentWage(P);
   const below = percentile(dist, myW), rank = Math.max(0, Math.min(99, Math.floor(below * 100)));
   const q = (f) => won(dist[Math.floor(f * (dist.length - 1))]);
-  const dots = Array.from({ length: 100 }, (_, i) => `<span class="dot ${i === rank ? "me" : i < rank ? "s" : ""}"></span>`).join("");
+  // 아래 줄부터 채운다: 아래쪽이 적게, 위쪽이 많이 받는 사람
+  const dots = Array.from({ length: 100 }, (_, j) => { const i = (9 - Math.floor(j / 10)) * 10 + (j % 10); return `<span class="dot ${i === rank ? "me" : i < rank ? "s" : ""}"></span>`; }).join("");
   const sizes = Object.entries(r.first_size9 || {});
   const sizeBar = sizes.map(([k, v]) => `<span class="${k === P.size9 ? "on" : ""}" style="flex:${v}" title="직원 ${k}명 ${pct(v, 1)}">${v >= .12 || k === P.size9 ? k : ""}</span>`).join("");
   const step = (cls, lab, n, w) => `<div class="step ${cls}"><span>${lab}</span><b class="num">${people(n)}명</b><div class="bar"><i style="width:${(w * 100).toFixed(1)}%"></i></div></div>`;
@@ -1708,9 +1717,10 @@ function renderReveal() {
     <section style="display:flex;flex-direction:column;gap:10px">
       <h2 style="font-size:17px">${SEX[P.sex]} 신입 디자이너 100명을 첫 월급 순으로 세우면</h2>
       <div class="bigstat" style="font-size:15px">나는 아래에서 <b>${rank + 1}번째</b>, ${topPct(below)}입니다.</div>
-      <div class="waffle" role="img" aria-label="${SEX[P.sex]} 신입 디자이너 100명 중 첫 월급이 아래에서 ${rank + 1}번째">${dots}</div>
+      <div class="wage-rank"><div class="waffle" role="img" aria-label="${SEX[P.sex]} 신입 디자이너 100명 중 첫 월급이 아래에서 ${rank + 1}번째">${dots}</div>
+        <div class="ends"><span>↑ 많이 받음 · 상위 10% ${q(.9)}만</span><span>중간 ${q(.5)}만</span><span>↓ 적게 받음 · 하위 10% ${q(.1)}만</span></div></div>
       <div class="legend" style="margin-top:0"><span><i style="background:color-mix(in oklab, var(--accent) 38%, var(--surface))"></i>나보다 적게 받는 사람</span><span><i style="background:var(--accent)"></i>나</span><span><i style="background:var(--line)"></i>나보다 많이 받는 사람</span></div>
-      <p class="fine">왼쪽 위가 가장 적게, 오른쪽 아래가 가장 많이 받는 사람입니다. 하위 10% ${q(.1)}만 원 · 중간 ${q(.5)}만 원 · 상위 10% ${q(.9)}만 원. 첫 월급은 청년패널 신입 디자이너 첫 월급(n=112, 중앙 225만 원, 등급 B)에 회사 규모 배수와 개인차를 더해 정합니다. 이 줄은 같은 방식으로 ${dist.length.toLocaleString()}명을 뽑아 세운 것입니다.</p>
+      <p class="fine">한 칸이 한 사람입니다. 아래 줄일수록 적게, 위 줄일수록 많이 받습니다. 첫 월급은 청년패널 신입 디자이너 첫 월급(n=112, 중앙 225만 원, 등급 B)에 회사 규모 배수와 개인차를 더해 정합니다. 이 줄은 같은 방식으로 ${dist.length.toLocaleString()}명을 뽑아 세운 것입니다.</p>
     </section>
     <section class="steps">
       ${step("l1", `올해 ${ROLE[P.role]}로 첫 출근`, ROLE_W[P.role], 1)}
@@ -1749,7 +1759,12 @@ function renderPlay() {
     <div class="yr"><div class="y">${y.year}<br>${y.age}세</div><div class="lines">
       ${y.lines.map((l) => `<div class="line ${l.big ? "big" : ""} ${l.kind === "peer" ? "peer" : ""}">${esc(l.text)}${whyHtml(l.why, l.grade)}</div>`).join("")}
     </div></div>`).join("");
-  const intro = !S.feed.length ? `<div class="yr"><div class="y">${START_YEAR}<br>${P.age}세</div><div class="lines"><div class="line">${esc(P.company)}에 첫 출근했다. '1년 보내기'를 누르면 올해 어디에 힘을 쓸지 묻습니다.</div></div></div>` : "";
+  const intro = !S.feed.length ? `<div class="yr"><div class="y">${START_YEAR}<br>${P.age}세</div><div class="lines"><div class="line">${esc(P.company)}에 첫 출근했다. '1년 보내기'를 누르면 첫해가 지나갑니다. 첫해는 흐름대로 보내고, 해가 지날 때마다 결과 아래에서 다음 해의 초점을 고를 수 있습니다.</div></div></div>` : "";
+  const nf = S.feed.length && !S.card && !S.check && !P.end && !P.pause && !S.autoPick ? `<div class="nextfocus">
+      <div class="q">${START_YEAR + P.t}년에는 어디에 힘을 쓸까?</div>
+      <div class="chips" role="group" aria-label="다음 해 초점">${Object.entries(FOCUS).map(([k, f]) => `<button id="focus-${k}" data-focus="${k}" aria-pressed="${S.focus === k}">${f.label}</button>`).join("")}</div>
+      <div class="fine">${esc(FOCUS[S.focus].hint)} 고르면 바로 한 해가 지나갑니다. '1년 보내기'는 '${FOCUS[S.focus].label}' 그대로.</div>
+    </div>` : "";
   $app.innerHTML = `
     <div class="idcard">
       <div><div class="who">${P.status === "away" ? `디자이너를 떠난 지 ${P.awayYears + 1}년째` : `${P.t + 1}년차 ${ROLE[P.role]}`}</div><div class="where">${P.age}세 ${SEX[P.sex]} · ${START_YEAR + P.t}년 · ${statusText(P)}</div></div>
@@ -1759,25 +1774,24 @@ function renderPlay() {
         <span class="meter">실력 <i style="--v:${P.skill}%"></i></span>
       </div>
     </div>
-    <div class="scroll" id="feed"><div class="feed">${intro}${feed}</div></div>
+    <div class="scroll" id="feed"><div class="feed">${intro}${feed}${nf}</div></div>
     <div class="controls">
-      <div class="focus-hint">${S.autoPick ? `자동 선택 중 · 올해 초점 '${FOCUS[S.focus].label}'` : `자동 진행은 마지막에 고른 '${FOCUS[S.focus].label}'로 이어집니다.`}</div>
+      <div class="focus-hint">${S.autoPick ? `자동 선택 중 · 올해 초점 '${FOCUS[S.focus].label}'` : `올해 초점 '${FOCUS[S.focus].label}' · 자동 진행도 이 초점으로 이어집니다.`}</div>
       <div class="go">
         <button class="btn" id="go-year">1년 보내기</button>
         <div class="seg" role="group" aria-label="자동 진행">${[0, 1, 2, 4].map((v) => `<button id="speed-${v}" data-speed="${v}" aria-pressed="${S.speed === v}">${v ? v + "×" : "Ⅱ"}</button>`).join("")}</div>
       </div>
       <label class="autopick"><input type="checkbox" id="auto-pick" ${S.autoPick ? "checked" : ""}> 자동 선택 <span class="fine">선택지를 잠깐 보여 준 뒤 알아서 골라요. 카드를 누르면 멈추고 직접 고를 수 있어요</span></label>
     </div>
-    ${S.card ? cardHtml() : ""}${S.check ? checkHtml() : ""}${S.ask && !S.card && !S.check ? focusHtml() : ""}`;
+    ${S.card ? cardHtml() : ""}${S.check ? checkHtml() : ""}`;
   const feedEl = $app.querySelector("#feed"); feedEl.scrollTop = feedEl.scrollHeight;
-  $app.querySelectorAll("[data-focus]").forEach((b) => b.onclick = () => { S.focus = b.dataset.focus; S.ask = false; playYear(); render(); schedule(); });
-  const fx = $app.querySelector("#focus-close"); if (fx) fx.onclick = () => { S.ask = false; render(); };
+  $app.querySelectorAll("[data-focus]").forEach((b) => b.onclick = () => { S.focus = b.dataset.focus; playYear(); render(); schedule(); });
   $app.querySelectorAll("[data-speed]").forEach((b) => b.onclick = () => setSpeed(+b.dataset.speed));
   const ap = $app.querySelector("#auto-pick"); if (ap) ap.onchange = () => setAutoPick(ap.checked);
   $app.querySelector("#go-year").onclick = () => {
     if (S.player.pause) { playYear(); return; }
-    if (S.autoPick) { S.focus = autoFocus(); playYear(); render(); schedule(); return; }
-    S.ask = true; render();
+    if (S.autoPick) S.focus = autoFocus();
+    playYear(); render(); schedule();
   };
   $app.querySelectorAll("[data-choice]").forEach((b) => b.onclick = () => { chooseCard(+b.dataset.choice); schedule(); });
   const hold = (o) => { if (o && o.auto && !o.auto.hold) { o.auto.hold = true; clearTimeout(timer); render(); } };
@@ -1786,18 +1800,15 @@ function renderPlay() {
   const ah = $app.querySelector("#auto-hold"); if (ah) ah.onclick = (e) => { e.stopPropagation(); hold(S.card || S.check); };
   const mi = $app.querySelector("#mood"); if (mi && S.check) { mi.onfocus = (() => { if (S.check.auto && !S.check.auto.hold) { S.check.auto.hold = true; clearTimeout(timer); const ab = $app.querySelector(".autobar"); ab?.nextElementSibling?.remove(); ab?.remove(); } }); }
   const m = $app.querySelector("#mood-save");
-  if (m) m.onclick = () => { const v = $app.querySelector("#mood").value.trim(); if (v) S.player.moods[S.check.t] = v; S.check = null; render(); schedule(); };
+  // 체크포인트의 초점 칩: 고르기만 하고(입력한 한 줄은 그대로), '계속'을 누르면 그 초점으로 다음 해가 지나간다
+  $app.querySelectorAll("[data-cfocus]").forEach((b) => b.onclick = (e) => {
+    e.stopPropagation(); S.focus = b.dataset.cfocus;
+    if (S.check.auto && !S.check.auto.hold) { S.check.auto.hold = true; clearTimeout(timer); const ab = $app.querySelector(".autobar"); ab?.nextElementSibling?.remove(); ab?.remove(); }
+    $app.querySelectorAll("[data-cfocus]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    $app.querySelector("#cfocus-hint").textContent = FOCUS[S.focus].hint;
+  });
+  if (m) m.onclick = () => { const v = $app.querySelector("#mood").value.trim(); if (v) S.player.moods[S.check.t] = v; S.check = null; if (!S.speed && !S.player.pause) playYear(); render(); schedule(); };
   schedule();
-}
-
-function focusHtml() {
-  const P = S.player;
-  return `<div class="sheet-wrap"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="focus-title">
-    <div class="label">${START_YEAR + P.t}년 · ${P.age}세 · ${P.t + 1}년차</div>
-    <h2 id="focus-title">올해는 어디에 힘을 쓸까?</h2>
-    <div class="choices">${Object.entries(FOCUS).map(([k, f]) => `<button class="choice" id="focus-${k}" data-focus="${k}"${S.focus === k && S.feed.length ? ' aria-current="true"' : ""}><span>${f.label}${S.focus === k && S.feed.length ? " <em class=\"fine\">지난해</em>" : ""}</span><small>${esc(f.hint)}</small></button>`).join("")}</div>
-    <button class="btn ghost" id="focus-close" style="margin-top:4px">닫기</button>
-  </div></div>`;
 }
 
 function cardHtml() {
@@ -1833,6 +1844,11 @@ function checkHtml() {
     <div class="tw"><table><thead><tr><th>이름</th><th>직군</th><th>지금</th><th class="r">월급</th></tr></thead><tbody>
       ${rowFor(P, true)}${S.peers.map((x) => rowFor(x, false)).join("")}
     </tbody></table></div>
+    <div class="nextfocus" style="background:var(--sunk)">
+      <div class="q">${START_YEAR + P.t}년에는 어디에 힘을 쓸까?</div>
+      <div class="chips" role="group" aria-label="다음 해 초점">${Object.entries(FOCUS).map(([k, f]) => `<button id="cfocus-${k}" data-cfocus="${k}" aria-pressed="${S.focus === k}">${f.label}</button>`).join("")}</div>
+      <div class="fine" id="cfocus-hint">${esc(FOCUS[S.focus].hint)}</div>
+    </div>
     <label class="label" for="mood">지금 기분을 한 줄로 (기록부에 남습니다)</label>
     <div class="mood"><input id="mood" maxlength="60" placeholder="예: 생각보다 버틸 만하다"><button class="btn" id="mood-save">계속</button></div>
     ${autoOn() && !autoArm(S.check, 45).hold ? autoBar(S.check.auto, "잠시 후 다음 해로 넘어가요") : ""}
