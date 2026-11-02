@@ -17,4 +17,20 @@
 <meta name="twitter:description" content="과연 정년까지 일할 수 있을까요?">
 <meta name="twitter:image" content="https://zero3181.github.io/LoD/prototype/og-image.png">
 <meta http-equiv="refresh" content="0; url=prototype/designer.html?v=f7888ab">
-</head><body><a href="prototype/designer.html?v=f7888ab">디자이너로 살아보기</a></body></html>
+<meta name="theme-color" content="#e9ecef">
+<style>
+:root { --bg: #e9ecef; --ink: #15181c; --muted: #5b6470; --accent: #2541b2; --line: #cfd5db; color-scheme: light; }
+@media (prefers-color-scheme: dark) { :root { --bg: #101316; --ink: #e5e8eb; --muted: #9aa3ad; --accent: #8197ff; --line: #2d333a; color-scheme: dark; } }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); }
+body { display: grid; place-items: center; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif; letter-spacing: -0.02em; }
+.splash { display: flex; flex-direction: column; align-items: center; gap: 14px; text-decoration: none; color: inherit; animation: in .4s ease-out both; }
+.mark { width: 14px; height: 14px; background: var(--accent); border-radius: 3px; }
+.title { font-size: 22px; font-weight: 800; }
+.bar { width: 120px; height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 40%; background: var(--accent); border-radius: 2px; animation: slide 1s ease-in-out infinite; }
+@keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+@keyframes in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .splash, .bar i { animation: none; } }
+</style>
+<script>location.replace("prototype/designer.html?v=f7888ab" + location.hash);</script>
+</head><body><a class="splash" href="prototype/designer.html?v=f7888ab" aria-label="디자이너로 살아보기 시작"><i class="mark"></i><span class="title">디자이너로 살아보기</span><span class="bar"><i></i></span></a></body></html>

@@ -467,8 +467,8 @@ function mEff(P) { const h = R[P.origRole] && R[P.origRole].hetero; if (!h || !h
 function normal() { let u = 0, v = 0; while (!u) u = rand(); while (!v) v = rand(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
 const choose = (arr) => arr[Math.floor(rand() * arr.length)];
 const pct = (x, d = 0) => (x * 100).toFixed(d) + "%";
-/* 분위(아래에서 몇 %)를 위쪽 절반은 '상위 N%', 아래쪽 절반은 '하위 N%'로 쓴다. */
-const topPct = (below) => below >= .5 ? `상위 ${Math.max(1, Math.round((1 - below) * 100))}%` : `하위 ${Math.max(1, Math.round(below * 100))}%`;
+/* 분위(아래에서 몇 %)를 늘 '상위 N%'로 쓴다. 상위 73%면 10명 중 7.3명이 나보다 위. */
+const topPct = (below) => `상위 ${Math.min(100, Math.max(1, Math.round((1 - below) * 100)))}%`;
 const won = (x) => Math.round(x).toLocaleString("ko-KR");
 const band = (age) => BANDS[Math.max(0, Math.min(8, Math.floor((age - 20) / 5)))];
 const age3 = (age) => age <= 34 ? "~34" : age <= 44 ? "35~44" : "45+";
@@ -2867,7 +2867,7 @@ function renderReveal() {
   const below = percentile(dist, myW), rank = Math.max(0, Math.min(99, Math.floor(below * 100)));
   const q = (f) => won(dist[Math.floor(f * (dist.length - 1))]);
   // 사람 10명 그림: 왼쪽부터 나보다 많이 받는 사람을 칠한다. 문장도 늘 '상위 N%'로 써서 그림 방향(← 많이 받음)과 맞춘다. 상위 73%면 7.3명.
-  const share10 = (1 - below) * 10, topN = Math.min(100, Math.max(1, Math.round((1 - below) * 100)));
+  const share10 = (1 - below) * 10;
   const people10 = personRow(share10);
   const sizes = Object.entries(r.first_size9 || {});
   const sizeBar = sizes.map(([k, v]) => `<span class="${k === P.size9 ? "on" : ""}" style="flex:${v}" title="직원 ${k}명 ${pct(v, 1)}">${v >= .12 ? k : ""}</span>`).join("");
@@ -2880,10 +2880,10 @@ function renderReveal() {
     ${sceneHtml(P)}
     <section style="display:flex;flex-direction:column;gap:10px">
       <h2 style="font-size:17px">${SEX[P.sex]} 신입 디자이너 10명 중 나는</h2>
-      <div class="bigstat" style="font-size:15px">내 첫 월급은 <b>상위 ${topN}%</b>. 10명 중 ${share10.toFixed(1)}명이 나보다 많이 받습니다.</div>
+      <div class="bigstat" style="font-size:15px">내 첫 월급은 <b>${topPct(below)}</b>. 10명 중 ${share10.toFixed(1)}명이 나보다 많이 받습니다.</div>
       <div class="people10" role="img" aria-label="10명 중 ${share10.toFixed(1)}명이 나보다 많이 받음">${people10}
         <div class="ends10"><span>← 많이 받음</span><span>적게 받음 →</span></div></div>
-      <p class="fine">하위 10% ${q(.1)}만 원 · 중간 ${q(.5)}만 원 · 상위 10% ${q(.9)}만 원. 첫 월급은 청년패널 신입 디자이너 첫 월급(n=112, 중앙 225만 원, 등급 B)에 회사 규모 배수와 개인차를 더해 정합니다. 이 줄은 같은 방식으로 ${dist.length.toLocaleString()}명을 뽑아 세운 것입니다.</p>
+      <p class="fine">상위 10% ${q(.9)}만 원 · 상위 50% ${q(.5)}만 원 · 상위 90% ${q(.1)}만 원. 첫 월급은 청년패널 신입 디자이너 첫 월급(n=112, 중앙 225만 원, 등급 B)에 회사 규모 배수와 개인차를 더해 정합니다. 이 줄은 같은 방식으로 ${dist.length.toLocaleString()}명을 뽑아 세운 것입니다.</p>
     </section>
     <section class="steps">
       ${step("l1", `올해 ${ROLE[P.role]}로 첫 출근`, ROLE_W[P.role], 1)}
