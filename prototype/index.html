@@ -112,6 +112,9 @@ details.manual[open] summary { margin-bottom: 10px; }
 @keyframes pop { from { transform: scale(2.2); } to { transform: scale(1); } }
 
 /* ── 사원증 헤더 ── */
+.scene-wrap { flex: none; margin-top: 8px; }
+.scene { display: block; width: 100%; height: auto; image-rendering: pixelated; border-radius: 6px; border: 1px solid var(--line); background: #bfe3f5; }
+.scene-cap { font-size: 12px; color: var(--muted); margin-top: 3px; }
 .idcard {
   position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; margin-top: 12px;
   background: var(--surface); border: 1px solid var(--line); border-top: 6px solid var(--accent); border-radius: 6px;
@@ -1440,6 +1443,346 @@ function lifeWhy(P, kind) {
   return `${SRC.klips}: 기혼 ${SEX[P.sex]}이 다음 해 이혼·별거 상태인 비율 연 ${pct(divorceP(P), 2)}.`;
 }
 
+/* ── 장면 (픽셀아트, 코드로 그린다) ──
+   지금 상태(회사 규모·프리랜서·쉼·육아휴직·다른 직업)에 맞는 장소를 고르고,
+   계절·시간·가족·반려동물·피로·카드 종류를 얹는다. 192×60 논리 픽셀을 늘려 그린다. */
+const SW = 192, SH = 60;
+function srng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function hstr(s) { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+const PX = (g, x, y, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
+const SKIN = ["#f1c7a5", "#e3ad86", "#c98e66"], HAIR = ["#2a2420", "#3b2b22", "#5a3a28", "#1c1c24", "#7a4b2a"];
+const SHIRT = ["#e76f51", "#2a9d8f", "#e9c46a", "#8d99ae", "#f4a261", "#6d597a", "#90be6d", "#ef476f", "#118ab2", "#ffffff", "#3d405b"];
+const SEASONS = ["spring", "summer", "autumn", "winter"];
+
+function looksFor(seed) {
+  const r = srng(seed);
+  return { hair: HAIR[Math.floor(r() * HAIR.length)], skin: SKIN[Math.floor(r() * SKIN.length)], shirt: SHIRT[Math.floor(r() * SHIRT.length)], pants: r() < .5 ? "#3a3f4b" : "#4a5a78", long: r() < .55 };
+}
+function myLook(P) {
+  const l = looksFor(hstr(P.name + P.startAge));
+  return { ...l, shirt: "#2541b2", long: P.sex === "female", gray: P.age >= 50 };
+}
+
+/* 사람: 뒷모습(모니터를 보며 앉음) / 앞모습(서 있음) / 아이 */
+function personBack(g, x, y, L) {
+  const hair = L.gray ? "#a7a7a7" : L.hair;
+  PX(g, x + 1, y, 4, 1, hair); PX(g, x, y + 1, 6, 3, hair);
+  if (L.long) PX(g, x, y + 4, 6, 2, hair);
+  PX(g, x - 1, y + (L.long ? 5 : 4), 8, 5, L.shirt);
+  if (L.long) PX(g, x + 1, y + 4, 4, 2, hair);
+}
+function personFront(g, x, y, L, frame = 0, opt = {}) {
+  const hair = L.gray ? "#a7a7a7" : L.hair;
+  PX(g, x + 1, y, 4, 1, hair); PX(g, x, y + 1, 6, 1, hair);
+  PX(g, x + 1, y + 2, 4, 3, L.skin); PX(g, x, y + 2, 1, L.long ? 4 : 2, hair); PX(g, x + 5, y + 2, 1, L.long ? 4 : 2, hair);
+  PX(g, x + 2, y + 3, 1, 1, "#2a2420"); PX(g, x + 4, y + 3, 1, 1, "#2a2420");
+  PX(g, x, y + 5, 6, 5, L.shirt);
+  const swing = opt.wave && frame % 4 < 2 ? -2 : 0;
+  PX(g, x - 1, y + 5 + swing, 1, 4, L.skin); PX(g, x + 6, y + 5, 1, 4, L.skin);
+  if (opt.sit) { PX(g, x, y + 10, 7, 2, L.pants); return; }
+  PX(g, x + 1, y + 10, 2, 4, L.pants); PX(g, x + 3, y + 10, 2, 4, L.pants);
+  const step = opt.walk && frame % 2 ? 1 : 0;
+  PX(g, x + 1 - step, y + 14, 2, 1, "#222"); PX(g, x + 3 + step, y + 14, 2, 1, "#222");
+}
+function kid(g, x, y, L) {
+  PX(g, x, y, 4, 1, L.hair); PX(g, x, y + 1, 4, 2, L.skin); PX(g, x, y + 3, 4, 3, L.shirt); PX(g, x, y + 6, 1, 2, "#3a3f4b"); PX(g, x + 3, y + 6, 1, 2, "#3a3f4b");
+}
+function dog(g, x, y, frame) {
+  const c = "#b07a45";
+  PX(g, x, y + 1, 7, 3, c); PX(g, x + 6, y - 1, 3, 3, c); PX(g, x + 8, y, 1, 1, "#2a2420"); PX(g, x + 7, y - 2, 1, 1, "#7a4f2a");
+  PX(g, x - 1, y + (frame % 2 ? 0 : 1), 1, 2, c); PX(g, x, y + 4, 1, 2, c); PX(g, x + 5, y + 4, 1, 2, c);
+}
+function cat(g, x, y, frame) {
+  const c = "#8a8f99";
+  PX(g, x, y + 1, 6, 3, c); PX(g, x + 5, y - 1, 3, 3, c); PX(g, x + 5, y - 2, 1, 1, c); PX(g, x + 7, y - 2, 1, 1, c);
+  PX(g, x - 1, y + (frame % 4 < 2 ? 0 : -1), 1, 3, c);
+}
+
+/* 하늘·창문·계절 */
+function skyColors(tod) {
+  return tod === "night" ? ["#141a38", "#1f2850"] : tod === "dusk" ? ["#f0a07a", "#f7c98f"] : ["#8ccbee", "#bfe3f5"];
+}
+function drawSky(g, x, y, w, h, env, frame) {
+  const [a, b] = skyColors(env.tod);
+  PX(g, x, y, w, h, b); PX(g, x, y, w, Math.ceil(h / 2), a);
+  if (env.tod === "night") { PX(g, x + w - 10, y + 3, 4, 4, "#f4f1d0"); for (let i = 0; i < 6; i++) PX(g, x + ((i * 29) % w), y + 2 + ((i * 11) % Math.max(1, h - 4)), 1, 1, "#e8e8ff"); }
+  else PX(g, x + w - 10, y + 3, 4, 4, env.tod === "dusk" ? "#ffd27a" : "#fff3b0");
+  if (env.tod !== "night") for (let i = 0; i < 2; i++) { const cx = x + ((i * 70 + frame * .4) % (w + 16)) - 12; PX(g, cx, y + 3 + i * 5, 10, 2, "#ffffff"); PX(g, cx + 2, y + 2 + i * 5, 5, 1, "#ffffff"); }
+  if (env.rain) { PX(g, x, y, w, Math.ceil(h / 2), "#7d8796"); for (let i = 0; i < 12; i++) PX(g, x + ((i * 17 + frame * 2) % w), y + ((i * 7 + frame * 3) % h), 1, 2, "#c8d3e6"); }
+}
+function weather(g, x, y, w, h, env, frame) {
+  const s = env.season, n = s === "summer" ? 0 : 10, col = s === "spring" ? "#f6b5cc" : s === "autumn" ? "#e08a3c" : "#ffffff";
+  for (let i = 0; i < n; i++) PX(g, x + ((i * 37 + frame * (0.5 + (i % 3) * .3)) % w), y + ((i * 23 + frame * (0.6 + (i % 2) * .4)) % h), 1, 1, col);
+}
+function win(g, x, y, w, h, env, frame) {
+  PX(g, x - 1, y - 1, w + 2, h + 2, "#6b5b4b");
+  g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
+  drawSky(g, x, y, w, h, env, frame);
+  PX(g, x, y + h - 5, w, 5, env.season === "winter" ? "#e8eef3" : "#7fb77e");
+  if (env.season !== "winter") for (let i = 0; i < w; i += 7) PX(g, x + i + 1, y + h - 8, 4, 3, env.season === "autumn" ? "#d98c3a" : env.season === "spring" ? "#f2b8cf" : "#4f9a5a");
+  weather(g, x, y, w, h, env, frame);
+  g.restore();
+  PX(g, x + Math.floor(w / 2), y, 1, h, "#6b5b4b");
+}
+function plant(g, x, y) { PX(g, x, y + 6, 6, 5, "#c0703a"); PX(g, x + 1, y, 4, 6, "#4c9a5b"); PX(g, x - 1, y + 2, 2, 3, "#5aae67"); PX(g, x + 5, y + 1, 2, 3, "#5aae67"); }
+
+/* 모니터 화면 */
+function screen(g, x, y, w, h, kind, frame, seed) {
+  const r = srng(seed);
+  if (kind === "off") { PX(g, x, y, w, h, "#20242c"); return; }
+  if (kind === "code") { PX(g, x, y, w, h, "#16202a"); for (let i = 0; i < h - 1; i += 2) PX(g, x + 1 + (i % 4), y + 1 + i, 2 + Math.floor(r() * (w - 4)), 1, ["#6bdc8b", "#7fb2ff", "#f5d76e"][i % 3]); return; }
+  if (kind === "sheet") { PX(g, x, y, w, h, "#ffffff"); for (let i = 2; i < h; i += 2) PX(g, x, y + i, w, 1, "#cfe3cf"); for (let j = 3; j < w; j += 4) PX(g, x + j, y, 1, h, "#cfe3cf"); return; }
+  if (kind === "call") { PX(g, x, y, w, h, "#2b3140"); PX(g, x + 2, y + 2, 4, 4, "#f1c7a5"); PX(g, x + 2, y + 1, 4, 1, "#3b2b22"); PX(g, x + w - 6, y + 2, 4, 4, "#e3ad86"); PX(g, x + w - 6, y + 1, 4, 1, "#1c1c24"); return; }
+  // 디자인 툴: 회색 캔버스 + 대지 + 색 블록 + 커서
+  PX(g, x, y, w, h, "#3a3f4b"); PX(g, x, y, 2, h, "#2a2e37");
+  PX(g, x + 3, y + 1, w - 5, h - 2, "#ffffff");
+  const cols = ["#ff6b6b", "#ffd93d", "#6bcb77", "#4d96ff", "#c77dff"];
+  PX(g, x + 4, y + 2, w - 7, 2, cols[Math.floor(r() * 5)]);
+  PX(g, x + 4, y + 5, Math.floor((w - 7) / 2), 2, cols[Math.floor(r() * 5)]);
+  PX(g, x + 5 + Math.floor((w - 7) / 2), y + 5, Math.floor((w - 7) / 2) - 1, 2, cols[Math.floor(r() * 5)]);
+  if (kind === "feedback") { PX(g, x + 4, y + 2, 2, 2, "#e63946"); PX(g, x + w - 5, y + 5, 2, 2, "#e63946"); if (frame % 4 < 2) PX(g, x + 7, y + 4, 3, 1, "#e63946"); }
+  else { const cx = x + 4 + (Math.floor(frame / 2) % Math.max(1, w - 8)); PX(g, cx, y + 4, 1, 1, "#111"); }
+}
+/* 책상 + 모니터 + (뒷모습) 사람 + 의자. 반환: 머리 위치 */
+function desk(g, x, floorY, o) {
+  const top = floorY - 11;
+  PX(g, x, top, 24, 2, o.wood || "#8a6a4a"); PX(g, x + 1, top + 2, 2, 9, "#6b5038"); PX(g, x + 21, top + 2, 2, 9, "#6b5038");
+  PX(g, x + 4, top - 11, 16, 10, "#2b2f36"); screen(g, x + 5, top - 10, 14, 8, o.screen, o.frame, o.seed);
+  PX(g, x + 11, top - 1, 2, 1, "#2b2f36");
+  if (o.mug) PX(g, x + 20, top - 3, 2, 3, "#ffffff");
+  if (o.photo) { PX(g, x + 1, top - 4, 3, 4, "#d4a373"); PX(g, x + 2, top - 3, 1, 2, "#8ecae6"); }
+  if (o.lamp) { PX(g, x + 1, top - 7, 1, 7, "#444"); PX(g, x, top - 8, 3, 2, "#f4d35e"); }
+  let head = null;
+  if (o.who) { personBack(g, x + 9, top - 6, o.who); head = { x: x + 12, y: top - 6 }; }
+  PX(g, x + 7, top + 3, 10, 5, o.chair || "#3d4451"); PX(g, x + 11, top + 8, 2, 3, "#2a2e37");
+  return head;
+}
+
+/* 장소들. 모두 { me: {x,y} } 를 돌려준다 */
+function roomBase(g, env, wall, floor) {
+  const dark = env.tod === "night";
+  PX(g, 0, 0, SW, 46, dark ? shade(wall, .55) : wall); PX(g, 0, 46, SW, 14, dark ? shade(floor, .6) : floor);
+  PX(g, 0, 45, SW, 1, "#00000022");
+  for (let i = 0; i < SW; i += 16) PX(g, i, 46, 1, 14, "#00000018");
+}
+function shade(hex, f) { const n = parseInt(hex.slice(1, 7), 16); const r = (n >> 16) * f, gg = ((n >> 8) & 255) * f, b = (n & 255) * f; return `rgb(${r | 0},${gg | 0},${b | 0})`; }
+
+function sceneSmallOffice(g, P, env, frame) {
+  const r = srng(hstr(P.company));
+  roomBase(g, env, env.agency ? "#efe6da" : "#e8ece9", "#b89b7a");
+  win(g, 4, 6, 30, 22, env, frame);
+  if (env.agency) { PX(g, 40, 6, 34, 20, "#c9a27a"); const cols = ["#ff6b6b", "#ffd93d", "#4d96ff", "#6bcb77", "#2a2a2a", "#c77dff"]; for (let i = 0; i < 9; i++) PX(g, 42 + (i % 5) * 6 + (i > 4 ? 3 : 0), 8 + Math.floor(i / 5) * 9, 5, 6, cols[i % 6]); }
+  else { PX(g, 44, 8, 12, 16, "#ffffff"); PX(g, 45, 9, 10, 9, "#4d96ff"); PX(g, 45, 19, 6, 1, "#222"); PX(g, 60, 10, 8, 8, "#ffffff"); PX(g, 63, 11, 2, 4, "#222"); }
+  if (P.kids.length) { PX(g, 76, 9, 8, 7, "#fff"); PX(g, 77, 12, 3, 3, "#ff6b6b"); PX(g, 80, 10, 2, 2, "#ffd93d"); }
+  plant(g, 182, 35);
+  const n = { "1~4": 2 + Math.floor(r() * 3), "5~9": 5 }[P.size9] ?? 5, back = P.size9 === "10~29" || (!P.size9 && P.size === "S" && r() < .5);
+  if (back) for (let i = 0; i < 7; i++) { const bx = 88 + i * 14; PX(g, bx, 30, 11, 6, "#2b2f36"); PX(g, bx + 1, 31, 9, 4, i % 2 ? "#4d96ff" : "#ffffff"); PX(g, bx - 1, 36, 13, 1, "#8a6a4a"); }
+  const meI = Math.floor(r() * n), rr = srng(hstr(P.company) + P.t);
+  let me = null;
+  for (let i = 0; i < n; i++) {
+    const span = 146, gap = Math.min(32, span / n), x = 40 + (span - gap * n) / 2 + i * gap + (gap - 24) / 2;
+    const isMe = i === meI, here = isMe || rr() < .8;
+    const h = desk(g, x, 58, { screen: isMe ? env.screen : here ? (rr() < .5 ? "design" : "sheet") : "off", frame, seed: hstr(P.company) + i, who: isMe ? env.look : here ? looksFor(hstr(P.company) + i * 7) : null, mug: rr() < .5, photo: isMe && P.married, lamp: env.tod === "night" && (isMe || rr() < .3) });
+    if (isMe) me = h;
+  }
+  return { me };
+}
+function sceneMidOffice(g, P, env, frame) {
+  roomBase(g, env, "#e4e8ee", "#a9a9a9");
+  PX(g, 4, 6, 50, 30, "#bcd8ea"); PX(g, 4, 6, 50, 1, "#8aa"); PX(g, 28, 6, 1, 30, "#8aa");
+  PX(g, 8, 12, 16, 9, "#ffffff"); PX(g, 9, 13, 3, 3, "#ffd93d"); PX(g, 13, 13, 3, 3, "#ff9fb2"); PX(g, 17, 13, 3, 3, "#9be7a6"); PX(g, 10, 17, 3, 3, "#9fd3ff");
+  personFront(g, 34, 18, looksFor(11), frame, { wave: true }); personFront(g, 44, 19, looksFor(12), frame);
+  win(g, 60, 4, 40, 16, env, frame); win(g, 108, 4, 40, 16, env, frame);
+  for (let i = 0; i < 6; i++) { const bx = 58 + i * 21; PX(g, bx, 26, 14, 8, "#2b2f36"); PX(g, bx + 1, 27, 12, 6, ["#ffffff", "#4d96ff", "#16202a"][i % 3]); PX(g, bx - 2, 34, 18, 2, "#c9b79c"); personBack(g, bx + 4, 30, looksFor(30 + i)); }
+  plant(g, 182, 35);
+  const rr = srng(hstr(P.company) + P.t);
+  let me = null;
+  for (let i = 0; i < 4; i++) { const x = 62 + i * 30, isMe = i === 1; const h = desk(g, x, 58, { screen: isMe ? env.screen : "design", frame, seed: 90 + i, who: isMe ? env.look : looksFor(50 + i), photo: isMe && P.married, mug: rr() < .6, wood: "#d8c3a5", chair: "#2f3e5c" }); if (isMe) me = h; }
+  return { me };
+}
+function sceneTower(g, P, env, frame) {
+  drawSky(g, 0, 0, SW, 50, env, frame);
+  PX(g, 0, 22, 30, 28, "#9aa7b8"); PX(g, 160, 16, 32, 34, "#8f9bb0");
+  for (let y = 25; y < 48; y += 5) for (let x = 3; x < 28; x += 6) PX(g, x, y, 3, 2, env.tod === "night" ? "#3a4660" : "#cfe0f0");
+  const bx = 50, by = 4, cols = 8, rows = 7, wv = 10, wh = 5;
+  PX(g, bx - 3, by - 2, cols * 12 + 4, 48, "#5d6b85"); PX(g, bx + 30, by - 4, 38, 2, "#2541b2");
+  const rr = srng(hstr(P.company));
+  const myC = 3, myR = 4;
+  let me = null;
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const x = bx + c * 12, y = by + 2 + r * 6, isMe = r === myR && c === myC;
+    const lit = env.tod === "night" ? rr() < (env.overtime ? .55 : .25) : true;
+    PX(g, x, y, wv, wh, isMe ? "#fff2c8" : env.tod === "night" ? (lit ? "#ffe39a" : "#2c3550") : (r + c) % 3 ? "#b9d6ee" : "#d6e8f6");
+    if (isMe) { PX(g, x - 1, y - 1, wv + 2, wh + 2, "#ffd23f"); PX(g, x, y, wv, wh, "#fff2c8"); PX(g, x + 5, y + 1, 4, 3, "#2b2f36"); PX(g, x + 6, y + 2, 2, 1, "#ff6b6b"); PX(g, x + 2, y + 2, 2, 3, env.look.shirt); PX(g, x + 2, y + 1, 2, 1, env.look.hair); me = { x: x + 3, y: y - 1 }; }
+  }
+  PX(g, 0, 50, SW, 10, "#b5b5b5"); PX(g, 0, 50, SW, 1, "#8f8f8f");
+  for (let i = 0; i < 3; i++) { const tx = 10 + i * 160 / 1; if (tx < SW) { PX(g, tx + 2, 42, 2, 8, "#6b5038"); PX(g, tx, 36, 7, 7, env.season === "autumn" ? "#d98c3a" : env.season === "winter" ? "#dfe7ee" : env.season === "spring" ? "#f2b8cf" : "#4f9a5a"); } }
+  for (let i = 0; i < 3; i++) { const m = SW + 10, v = i * 67 + frame * (i % 2 ? 1 : -1) * .7; personFront(g, ((v % m) + m) % m - 5, 35, looksFor(70 + i), frame, { walk: true }); }
+  weather(g, 0, 0, SW, 50, env, frame);
+  return { me };
+}
+function sceneCafe(g, P, env, frame) {
+  roomBase(g, env, "#d9b99b", "#7b5a43");
+  win(g, 90, 6, 60, 26, env, frame);
+  PX(g, 4, 30, 50, 16, "#5b3a29"); PX(g, 4, 28, 50, 2, "#8a5a3c"); PX(g, 10, 20, 10, 8, "#c0c0c0"); PX(g, 12, 22, 6, 4, "#333"); PX(g, 30, 22, 4, 6, "#fff");
+  PX(g, 8, 6, 34, 12, "#2a2a2a"); for (let i = 0; i < 4; i++) PX(g, 11, 8 + i * 2, 12 + (i % 2) * 6, 1, "#f2f2f2");
+  personFront(g, 22, 15, looksFor(5), frame);
+  // 사람(앞모습)이 테이블 뒤에 앉고, 노트북 화면이 이쪽을 본다
+  const table = (x, who, isMe) => { if (who) personFront(g, x + 6, 29, who, frame, { sit: true }); PX(g, x, 42, 22, 2, "#3b2a1f"); PX(g, x + 10, 44, 2, 12, "#3b2a1f"); PX(g, x + 4, 35, 11, 7, "#c0c4cc"); PX(g, x + 5, 36, 9, 5, isMe ? "#ffffff" : "#4d96ff"); if (isMe) { PX(g, x + 6, 37, 4, 1, "#ff6b6b"); PX(g, x + 6, 39, 6, 1, "#4d96ff"); if (frame % 4 < 2) PX(g, x + 11, 37, 1, 1, "#111"); } PX(g, x + 17, 39, 2, 3, "#ffffff"); };
+  table(64, looksFor(61), false); table(160, looksFor(62), false);
+  table(112, env.look, true);
+  return { me: { x: 121, y: 29 } };
+}
+function sceneHome(g, P, env, frame, mode) {
+  roomBase(g, env, "#f1e6d6", "#c19a6b");
+  win(g, 70, 6, 34, 22, env, frame);
+  PX(g, 150, 10, 30, 36, "#8a6a4a"); for (let s = 0; s < 4; s++) { PX(g, 151, 17 + s * 8, 28, 1, "#6b5038"); for (let b = 0; b < 6; b++) PX(g, 153 + b * 4, 11 + s * 8, 3, 6, SHIRT[(s * 6 + b) % SHIRT.length]); }
+  if (P.flags.book) PX(g, 153, 11, 3, 6, "#2541b2");
+  let me;
+  if (mode === "work") {
+    me = desk(g, 20, 58, { screen: env.screen, frame, seed: 3, who: env.look, mug: true, lamp: true });
+    plant(g, 4, 35);
+  } else {
+    PX(g, 14, 36, 44, 10, "#4f6d7a"); PX(g, 12, 32, 48, 6, "#5f7f8c"); PX(g, 12, 32, 4, 14, "#4f6d7a"); PX(g, 56, 32, 4, 14, "#4f6d7a");
+    personFront(g, 24, 24, env.look, frame, { sit: true }); me = { x: 27, y: 24 };
+    if (P.married) personFront(g, 40, 24, looksFor(hstr(P.name) + 9), frame, { sit: true });
+    PX(g, 108, 30, 30, 18, "#2b2f36"); PX(g, 110, 32, 26, 13, env.tod === "night" ? "#4d96ff" : "#3a4660"); PX(g, 120, 48, 6, 4, "#444");
+  }
+  if (P.kids.length) { const k = P.kids.length; for (let i = 0; i < Math.min(2, k); i++) kid(g, 64 + i * 8 + (frame % 8 < 4 ? 0 : 1), 50, looksFor(hstr(P.name) + 20 + i)); }
+  if (P.flags.pet != null) (P.flags.dog ? dog : cat)(g, mode === "work" ? 50 : 88, 52, frame);
+  return { me };
+}
+function scenePark(g, P, env, frame) {
+  drawSky(g, 0, 0, SW, 44, env, frame);
+  PX(g, 0, 40, SW, 20, env.season === "winter" ? "#e6eef2" : "#8cc084"); PX(g, 0, 50, SW, 4, "#d9c9a8");
+  for (let i = 0; i < 5; i++) { const tx = 6 + i * 42; PX(g, tx + 4, 28, 3, 14, "#6b5038"); PX(g, tx, 16, 12, 13, env.season === "autumn" ? "#d98c3a" : env.season === "winter" ? "#f2f6f8" : env.season === "spring" ? "#f2b8cf" : "#4f9a5a"); }
+  PX(g, 130, 42, 26, 2, "#8a6a4a"); PX(g, 132, 44, 2, 5, "#6b5038"); PX(g, 152, 44, 2, 5, "#6b5038");
+  const x = 40 + (frame % 120) * .6;
+  personFront(g, x, 36, env.look, frame, { walk: true });
+  PX(g, x + 8, 44, 10, 5, "#6d597a"); PX(g, x + 8, 41, 4, 3, "#6d597a"); PX(g, x + 9, 49, 2, 2, "#222"); PX(g, x + 15, 49, 2, 2, "#222"); PX(g, x + 6, 43, 3, 1, "#444");
+  if (P.flags.pet != null && P.flags.dog) dog(g, x - 12, 46, frame);
+  weather(g, 0, 0, SW, 44, env, frame);
+  return { me: { x: x + 3, y: 36 } };
+}
+function sceneLibrary(g, P, env, frame) {
+  roomBase(g, env, "#e9e1cf", "#9c7b5b");
+  for (let s = 0; s < 3; s++) { const sx = 4 + s * 64; PX(g, sx, 4, 56, 36, "#7a5a3c"); for (let row = 0; row < 4; row++) { PX(g, sx + 1, 12 + row * 9, 54, 1, "#5a3f28"); for (let b = 0; b < 13; b++) PX(g, sx + 2 + b * 4, 5 + row * 9, 3, 7, SHIRT[(s + row * 13 + b) % SHIRT.length]); } }
+  PX(g, 40, 46, 110, 3, "#6b5038");
+  personFront(g, 60, 34, env.look, frame, { sit: true }); PX(g, 58, 44, 10, 2, "#ffffff");
+  personFront(g, 110, 34, looksFor(81), frame, { sit: true }); PX(g, 108, 44, 10, 2, "#ffffff");
+  return { me: { x: 63, y: 34 } };
+}
+function sceneAway(g, P, env, frame) {
+  const k = P.awayKind;
+  if (k === "developer") {
+    roomBase(g, { ...env, tod: "night" }, "#2c3140", "#2a2e37");
+    let me = null;
+    for (let i = 0; i < 4; i++) { const h = desk(g, 30 + i * 38, 58, { screen: "code", frame, seed: 200 + i + frame % 3, who: i === 1 ? env.look : looksFor(90 + i), mug: true, wood: "#4a4f5c", chair: "#1e222b" }); if (i === 1) me = h; }
+    PX(g, 4, 6, 16, 10, "#16202a"); PX(g, 6, 8, 12, 1, "#6bdc8b"); PX(g, 6, 11, 8, 1, "#7fb2ff");
+    return { me };
+  }
+  if (k === "planner") {
+    roomBase(g, env, "#eef0f4", "#a9a9a9");
+    PX(g, 20, 6, 80, 30, "#ffffff"); PX(g, 19, 5, 82, 1, "#999"); PX(g, 19, 36, 82, 1, "#999");
+    const box = (x, y) => PX(g, x, y, 12, 6, "#9fd3ff"); box(26, 10); box(52, 10); box(78, 10); box(52, 24);
+    PX(g, 38, 13, 14, 1, "#333"); PX(g, 64, 13, 14, 1, "#333"); PX(g, 58, 16, 1, 8, "#333");
+    personFront(g, 104, 31, env.look, frame, { wave: true });
+    PX(g, 120, 44, 64, 3, "#c9b79c");
+    for (let i = 0; i < 3; i++) personFront(g, 126 + i * 20, 32, looksFor(100 + i), frame, { sit: true });
+    return { me: { x: 107, y: 31 } };
+  }
+  roomBase(g, env, "#f3efe6", "#bfb3a0");
+  win(g, 130, 6, 54, 26, env, frame);
+  PX(g, 4, 6, 70, 34, "#a0805a"); for (let row = 0; row < 3; row++) { PX(g, 5, 16 + row * 11, 68, 1, "#7a5a3c"); for (let b = 0; b < 9; b++) PX(g, 7 + b * 7, 9 + row * 11, 5, 6, ["#ef476f", "#ffd166", "#06d6a0", "#118ab2", "#f4a261"][(row + b) % 5]); }
+  PX(g, 80, 36, 46, 12, "#6b5038"); PX(g, 80, 34, 46, 2, "#8a6a4a"); PX(g, 112, 28, 8, 6, "#2b2f36"); PX(g, 113, 29, 6, 3, "#6bdc8b");
+  const L = { ...env.look, shirt: "#e76f51" };
+  personFront(g, 94, 20, L, frame); PX(g, 94, 25, 6, 5, "#f4f1de");
+  personFront(g, 150, 34, looksFor(110), frame, { walk: true });
+  return { me: { x: 97, y: 20 } };
+}
+function sceneFarewell(g, P, env, frame) {
+  roomBase(g, env, "#e8ece9", "#b89b7a");
+  for (let i = 0; i < 12; i++) PX(g, 20 + i * 13, 4 + (i % 2) * 2, 8, 6, ["#ff6b6b", "#ffd93d", "#4d96ff", "#6bcb77"][i % 4]);
+  PX(g, 18, 3, 160, 1, "#888");
+  PX(g, 76, 40, 40, 3, "#8a6a4a"); PX(g, 86, 32, 20, 8, "#fff"); PX(g, 86, 32, 20, 2, "#ff9fb2"); PX(g, 95, 28, 1, 4, "#ffd93d");
+  personFront(g, 92, 18, env.look, frame); PX(g, 99, 22, 5, 6, "#ef476f"); PX(g, 100, 20, 3, 2, "#6bcb77");
+  for (let i = 0; i < 4; i++) personFront(g, [40, 56, 130, 146][i], 30, looksFor(120 + i), frame, { wave: frame % 4 === i });
+  return { me: { x: 95, y: 18 } };
+}
+
+/* 상태 → 장면 */
+function sceneEnv(P) {
+  const season = SEASONS[(P.t + (hstr(P.name) % 4)) % 4];
+  const card = S.card ? CARDS.find((c) => c.id === S.card.id) : null;
+  const tired = P.energy < 30;
+  const tod = tired || S.focus === "work" || (card && /overtime|no_weekend|unpaid_ot|crunch/.test(card.id)) ? "night" : S.focus === "grow" || S.focus === "side" ? "dusk" : "day";
+  const fb = card && /^(fb_|cl_)/.test(card.id);
+  return {
+    season, tod, tired, card, overtime: tod === "night", rain: card && card.id === "burnout",
+    agency: typeof isAgency === "function" && isAgency(P), look: myLook(P),
+    screen: fb ? "feedback" : card && /call|meeting/.test(card.id) ? "call" : "design",
+  };
+}
+function scenePlace(P) {
+  if (P.end) return P.end.type === "retire" ? "farewell" : P.status === "away" || P.end.type !== "break" ? "away" : "home";
+  if (P.status === "away") return "away";
+  if (P.status === "none") return "home";
+  if (P.status === "leave") return "park";
+  if (P.status === "school") return "library";
+  if (P.status === "self") return P.t % 2 ? "cafe" : "homework";
+  return P.size === "L" ? "tower" : P.size === "M" ? "mid" : "small";
+}
+const SCENE_CAP = {
+  small: (P) => `${P.size9 ? "직원 " + P.size9 + "명" : "작은"} ${isAgency(P) ? "스튜디오" : "회사"} · 책상 ${({ "1~4": "몇", "5~9": "다섯" })[P.size9] || "여러"} 개`,
+  mid: () => "오픈 오피스 · 회의실 화이트보드",
+  tower: () => "큰 건물 · 창문 하나가 내 자리",
+  cafe: () => "프리랜서 · 동네 카페 창가",
+  homework: () => "프리랜서 · 집 작업실",
+  home: () => "집 · 쉬는 중",
+  park: () => "육아휴직 · 동네 공원",
+  library: () => "대학원 · 도서관",
+  away: (P) => `${AWAY_NAME[P.awayKind] || "다른 직업"}로 일하는 곳`,
+  farewell: () => "마지막 출근 · 송별회",
+};
+function sceneCaption(P) {
+  const e = sceneEnv(P), place = scenePlace(P);
+  const when = { spring: "봄", summer: "여름", autumn: "가을", winter: "겨울" }[e.season] + (e.tod === "night" ? " 밤" : e.tod === "dusk" ? " 저녁" : "");
+  const extra = [P.married ? "가족과 함께" : "", e.tired ? "많이 지침" : ""].filter(Boolean);
+  return [SCENE_CAP[place](P), when, ...extra].join(" · ");
+}
+function drawScene(c, frame) {
+  const g = c.getContext && c.getContext("2d"); if (!g || !S || !S.player) return;
+  const P = S.player, env = sceneEnv(P), place = scenePlace(P);
+  g.imageSmoothingEnabled = false; g.clearRect(0, 0, SW, SH);
+  const fn = { small: sceneSmallOffice, mid: sceneMidOffice, tower: sceneTower, cafe: sceneCafe, homework: (g, P, e, f) => sceneHome(g, P, e, f, "work"), home: (g, P, e, f) => sceneHome(g, P, e, f, "rest"), park: scenePark, library: sceneLibrary, away: sceneAway, farewell: sceneFarewell }[place];
+  const { me } = fn(g, P, env, frame) || {};
+  if (!me) return;
+  // 피로: zzz / 카드: 말풍선 아이콘
+  if (env.tired && !env.card) { const k = frame % 6; PX(g, me.x + 4, me.y - 4 - k, 2, 1, "#ffffff"); PX(g, me.x + 5, me.y - 3 - k, 1, 1, "#ffffff"); PX(g, me.x + 4, me.y - 2 - k, 2, 1, "#ffffff"); }
+  if (env.card) {
+    const bx = Math.max(1, Math.min(SW - 12, me.x - 5)), by = Math.max(0, me.y - 12 - (frame % 4 < 2 ? 0 : 1));
+    PX(g, bx, by, 11, 8, "#ffffff"); PX(g, bx + 4, by + 8, 2, 2, "#ffffff"); PX(g, bx - 1, by + 1, 1, 6, "#00000033"); PX(g, bx + 11, by + 1, 1, 6, "#00000033");
+    const ic = { work: ["#e63946", [[5, 1, 1, 4], [5, 6, 1, 1]]], money: ["#2a9d8f", [[3, 2, 5, 1], [3, 4, 5, 1], [5, 1, 1, 6]]], love: ["#ef476f", [[3, 2, 2, 2], [6, 2, 2, 2], [3, 3, 5, 2], [4, 5, 3, 1], [5, 6, 1, 1]]], family: ["#e9c46a", [[5, 1, 1, 1], [4, 2, 3, 1], [3, 3, 5, 1], [3, 4, 5, 3]]], body: ["#e63946", [[5, 1, 1, 6], [3, 3, 5, 2]]], friend: ["#f4a261", [[3, 2, 1, 1], [7, 2, 1, 1], [3, 5, 5, 1], [2, 4, 1, 1], [8, 4, 1, 1]]], growth: ["#f4d35e", [[5, 1, 1, 1], [4, 2, 3, 1], [2, 3, 7, 1], [3, 4, 5, 1], [3, 5, 2, 2], [6, 5, 2, 2]]] };
+    const [col, parts] = ic[env.card.cat] || ["#555", [[2, 4, 1, 1], [5, 4, 1, 1], [8, 4, 1, 1]]];
+    for (const [x, y, w, h] of parts) PX(g, bx + x, by + y, w, h, col);
+  }
+}
+let sceneRAF = null, sceneFrame = 0, sceneLast = 0;
+function sceneTick(ts) {
+  const c = document.getElementById("scene");
+  if (!c || !c.getContext) { sceneRAF = null; return; }
+  if (ts - sceneLast > 140) { sceneLast = ts; sceneFrame++; drawScene(c, sceneFrame); }
+  sceneRAF = requestAnimationFrame(sceneTick);
+}
+function mountScene() {
+  const c = document.getElementById("scene");
+  if (!c || !c.getContext) return;
+  drawScene(c, sceneFrame);
+  const still = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!still && !sceneRAF && typeof requestAnimationFrame === "function") sceneRAF = requestAnimationFrame(sceneTick);
+}
+const sceneHtml = (P) => `<div class="scene-wrap"><canvas id="scene" class="scene" width="${SW}" height="${SH}" role="img" aria-label="${esc(sceneCaption(P))}"></canvas><div class="scene-cap">${esc(sceneCaption(P))}</div></div>`;
+
 /* ── 상태 ── */
 let S = null;
 function freshState() { return { screen: "start", manual: false, pickRole: "designer", pickSex: "female", focus: "flow", autoPick: false, speed: 0, feed: [], card: null, check: null, player: null, peers: [] }; }
@@ -1724,6 +2067,7 @@ function renderReveal() {
     <div class="label">올해 첫 출근하는 디자이너 약 ${ENT_TOTAL.toLocaleString("ko-KR")}명 중 1명</div>
     <h1 style="font-size:28px">${P.age}세 ${SEX[P.sex]} ${ROLE[P.role]}</h1>
     <div class="bigstat">첫 직장은 <b>직원 ${P.size9}명</b> 규모의 ${esc(P.company)}. ${P.regular ? "정규직" : "계약직"}이고 첫 월급은 <b>${won(currentWage(P))}만 원</b>입니다.</div>
+    ${sceneHtml(P)}
     <section style="display:flex;flex-direction:column;gap:10px">
       <h2 style="font-size:17px">${SEX[P.sex]} 신입 디자이너 10명 중 나는</h2>
       <div class="bigstat" style="font-size:15px">내 첫 월급은 <b>${topPct(below)}</b>. 10명 중 ${share10.toFixed(1)}명이 나보다 ${top ? "많이" : "적게"} 받습니다.</div>
@@ -1748,6 +2092,7 @@ function renderReveal() {
     <div class="form-row"><button class="btn" id="go-play">첫 출근</button></div>
   </div></div>`;
   $app.querySelector("#go-play").onclick = () => { S.screen = "play"; render(); };
+  mountScene();
 }
 
 function statusText(P) {
@@ -1782,6 +2127,7 @@ function renderPlay() {
         <span class="meter">실력 <i style="--v:${P.skill}%"></i></span>
       </div>
     </div>
+    ${sceneHtml(P)}
     <div class="scroll" id="feed"><div class="feed">${intro}${feed}${nf}</div></div>
     <div class="controls">
       <div class="focus-hint">${S.autoPick ? `자동 선택 중 · 올해 초점 '${FOCUS[S.focus].label}'` : `올해 초점 '${FOCUS[S.focus].label}' · 자동 진행도 이 초점으로 이어집니다.`}</div>
@@ -1817,6 +2163,7 @@ function renderPlay() {
   });
   if (m) m.onclick = () => { const v = $app.querySelector("#mood").value.trim(); if (v) S.player.moods[S.check.t] = v; S.check = null; if (!S.speed && !S.player.pause) playYear(); render(); schedule(); };
   schedule();
+  mountScene();
 }
 
 function cardHtml() {
@@ -2048,6 +2395,7 @@ function renderRecord() {
       <p>${P.startAge}세 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작해 ${P.age}세에 기록을 마쳤다. 디자이너로 일한 ${workYears(P)}년, 일자리 ${P.jobs.filter((j) => j.kind !== "school").length}곳. ${esc(P.end.text)}</p>
       <span class="stamp">${STAMP[P.end.type]}</span>
     </header>
+    ${sceneHtml(P)}
     <section class="odds">
       <div class="odds-n"><b class="num">${rr.hit.toLocaleString()}</b><span>/ ${mc.N.toLocaleString()}명</span></div>
       <p>같은 해 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작한 ${mc.N.toLocaleString()}명을 같은 확률로 굴리면, ${rr.what}은 ${rr.hit.toLocaleString()}명(${pct(rr.hit / mc.N, 1)})이었다.${rr.hit / mc.N < .05 ? " 드문 기록이다." : ""}</p>
@@ -2082,6 +2430,7 @@ function renderRecord() {
     <p class="fine" id="copy-note" aria-live="polite"></p>
   </div></div>`;
   $app.querySelector("#again").onclick = () => { S = freshState(); render(); };
+  mountScene();
   $app.querySelector("#data").onclick = () => { S.screen = "data"; S.back = "record"; render(); };
   const note = (t) => { $app.querySelector("#copy-note").textContent = t; };
   const shortTxt = `[${title}] ${P.startAge}세 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작해 디자이너로 ${sp.me}년, ${STAMP[P.end.type]}. 같은 조건 ${sp.N.toLocaleString()}명 중 오래 일한 순서로 ${topPct(sp.below)}. 과연 정년까지 일할 수 있을까요?`;
