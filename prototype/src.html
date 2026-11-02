@@ -274,7 +274,78 @@ svg text.me { fill: var(--accent); font-weight: 700; font-size: 11px; }
 .jobs { list-style: none; padding: 0; margin: 0; font-size: 14px; }
 .sources { font-size: 12px; color: var(--muted); padding-left: 18px; margin: 0; display: flex; flex-direction: column; gap: 4px; }
 .sources a { color: var(--accent); }
-@media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+
+/* ── 프로젝트 ── */
+.sheet.proj { gap: 12px; }
+.proj .brief { font-size: 14px; color: var(--muted); }
+.coach { font-size: 12.5px; line-height: 1.55; background: color-mix(in oklab, var(--accent) 8%, var(--sunk)); border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--line)); border-radius: 6px; padding: 8px 10px; }
+.crunch { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.crunch .seg button { padding: 6px 10px; min-height: 36px; font-size: 13px; }
+.axrows { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.axrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "n s" "h s" "b b"; align-items: center; gap: 2px 10px; }
+.axrow .axn { grid-area: n; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+.axrow .xp { font-size: 11px; font-weight: 500; color: var(--muted); }
+.axrow .hintb { grid-area: h; display: flex; gap: 4px; flex-wrap: wrap; }
+.axrow .stepper { grid-area: s; display: flex; align-items: center; gap: 4px; }
+.stepper button { width: 44px; height: 44px; border: 1px solid var(--line); background: var(--sunk); border-radius: 8px; font-size: 22px; line-height: 1; touch-action: manipulation; }
+.stepper button:not(:disabled):active { transform: scale(.94); background: color-mix(in oklab, var(--accent) 14%, var(--sunk)); }
+.stepper button:disabled { opacity: .35; cursor: default; }
+.stepper b { min-width: 26px; text-align: center; font-size: 20px; font-weight: 800; }
+.axbar { grid-area: b; height: 6px; background: var(--sunk); border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+.axbar i { display: block; height: 100%; transition: width .15s ease-out; }
+.ax-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+.ins { font-size: 11px; line-height: 1.5; padding: 0 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.ins.hi { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.ins.mid { color: var(--ink); }
+.ins.lo { border-style: dashed; }
+.ins.unk { opacity: .7; }
+.ins.topic { background: color-mix(in oklab, var(--accent) 14%, transparent); border-color: transparent; color: var(--accent); font-weight: 600; }
+.left { font-size: 13px; color: var(--muted); } .left b { color: var(--ink); font-size: 15px; }
+.btn.icon { padding: 0; width: 44px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.make { position: relative; height: 190px; border: 1px solid var(--line); border-radius: 8px; background: var(--sunk); overflow: hidden; }
+.make-label { position: absolute; left: 12px; top: 10px; font-size: 14px; font-weight: 700; }
+.bub { position: absolute; bottom: 14px; font-size: 11.5px; font-weight: 700; color: #fff; padding: 2px 9px; border-radius: 999px; opacity: 0; animation: bub 1.2s ease-out forwards; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,.18); }
+@keyframes bub { 0% { opacity: 0; transform: translateY(0) scale(.5); } 15% { opacity: 1; transform: translateY(-14px) scale(1.08); } 100% { opacity: 0; transform: translateY(-130px) scale(.95); } }
+.makebar { position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: var(--line); }
+.makebar i { display: block; height: 100%; background: var(--accent); transform-origin: left; animation: autofill linear forwards; }
+.revs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.rev { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--sunk); display: flex; flex-direction: column; gap: 2px; opacity: 0; animation: stampin .35s cubic-bezier(.2,1.4,.4,1) forwards; }
+.rev-who { font-size: 12px; color: var(--muted); }
+.rev-score { font-size: 34px; font-weight: 800; line-height: 1.05; }
+.rev-score.hi { color: var(--accent); } .rev-score.lo { color: var(--stamp); }
+.rev-q { font-size: 12.5px; line-height: 1.45; }
+@keyframes stampin { from { opacity: 0; transform: scale(1.35) rotate(-4deg); } to { opacity: 1; transform: none; } }
+.avgbox { display: flex; align-items: center; gap: 12px; margin-top: 12px; opacity: 0; animation: stampin .45s cubic-bezier(.2,1.4,.4,1) forwards; }
+.avgbox b { font-size: 48px; font-weight: 800; line-height: 1; color: var(--accent); }
+.verdict { font-size: 17px; font-weight: 800; color: var(--muted); border: 2px solid currentColor; border-radius: 4px; padding: 0 9px; transform: rotate(-5deg); letter-spacing: .06em; }
+.verdict.hi { color: var(--accent); } .verdict.lo { color: var(--stamp); }
+.gains { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12.5px; margin-top: 10px; opacity: 0; animation: stampin .3s ease-out forwards; }
+.gains span { background: var(--sunk); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
+.promo, .newins { margin-top: 10px; border-radius: 8px; padding: 10px 12px; font-size: 14px; opacity: 0; animation: stampin .4s ease-out forwards; }
+.promo { background: var(--accent); color: var(--surface); font-weight: 600; }
+.promo b, .newins b { display: block; font-size: 11px; letter-spacing: .08em; opacity: .8; }
+.newins { border: 1px dashed var(--accent); display: flex; flex-direction: column; gap: 2px; }
+.newins b { color: var(--accent); }
+.static .rev, .static .avgbox, .static .gains, .static .promo, .static .newins { animation: none; opacity: 1; }
+.line.proj { border-left: 3px solid var(--accent); padding-left: 8px; margin-left: -11px; }
+.meters .best { font-size: 12px; } .meters .best b { color: var(--accent); }
+.toasts { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 10px); left: 50%; transform: translateX(-50%); z-index: 60; display: flex; flex-direction: column; gap: 6px; width: min(calc(100vw - 32px), 420px); pointer-events: none; }
+.toast { background: var(--ink); color: var(--surface); border-radius: 10px; padding: 10px 14px; font-size: 14px; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,.25); animation: toastin .35s cubic-bezier(.2,1.3,.4,1), toastout .4s ease-in 3s forwards; }
+.toast b { display: block; font-size: 11px; letter-spacing: .08em; opacity: .7; font-weight: 600; }
+@keyframes toastin { from { opacity: 0; transform: translateY(-16px) scale(.96); } }
+@keyframes toastout { to { opacity: 0; transform: translateY(-10px); } }
+.howto { margin: -12px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.howto b { display: inline-block; min-width: 56px; color: var(--accent); font-size: 12.5px; letter-spacing: .04em; }
+.vault summary { cursor: pointer; font-size: 14px; font-weight: 700; }
+.vault[open] { display: flex; flex-direction: column; gap: 14px; }
+.achs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.achs div { border: 1px dashed var(--line); border-radius: 6px; padding: 6px 9px; font-size: 12.5px; color: var(--muted); }
+.achs div.got { border-style: solid; background: var(--surface); color: var(--ink); }
+.achs div b { display: block; font-size: 13px; }
+.achs div.me { border-color: var(--accent); }
+.instab td, .instab th { text-align: center; padding: 5px 4px; } .instab td:first-child, .instab th:first-child { text-align: left; }
+.instab .hi { color: var(--accent); font-weight: 700; } .instab .lo { color: var(--muted); } .instab .unk { color: var(--line); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; } .rev, .avgbox, .gains, .promo, .newins { opacity: 1; } .bub { display: none; } }
 
 /* ── 반응형 ── */
 /* 장면은 화면 높이의 1/4을 넘지 않게(비율 유지) */
@@ -440,6 +511,7 @@ function newPerson(role, sex, opts = {}) {
     wages: [], sats: [], statuses: [], roles: [], jobs: [{ company, size, size9, role, from: 0, to: null, kind: "wage" }],
     moods: {}, flags: {}, switchedAt: null,
     married: false, marriedAt: null, kids: [], life: [], dating: 1, study: null, pause: null, bonus: 0, picks: [],
+    rep: 10, rank: 0, xp: { res: 8, ux: 8, vis: 12, com: 6 }, projects: [], best: 0, lastAlloc: null,
   };
 }
 function currentWage(P) {
@@ -472,7 +544,7 @@ function fxLine(w0, w1, extra) {
   let best = extra && extra.a ? { ...extra, r: Math.abs(Math.log(extra.b / extra.a)) } : null;
   for (const k in a) { if (!FX_LABEL[k] || !a[k]) continue; const r = Math.abs(Math.log(b[k] / a[k])); if (r > .03 && (!best || r > best.r)) best = { k, a: a[k], b: b[k], r }; }
   if (!best || best.r <= .03) return null;
-  return { kind: "fx", text: `올해 선택으로 ${FX_LABEL[best.k]} 가능성 ${pct(best.a, 1)} → ${pct(best.b, 1)}`, why: "초점과 카드 선택이 거는 배수는 게임 설계상 가정이다.", grade: "D" };
+  return { kind: "fx", text: `올해 선택·성과로 ${FX_LABEL[best.k]} 가능성 ${pct(best.a, 1)} → ${pct(best.b, 1)}`, why: "초점·카드·프로젝트가 거는 배수는 게임 설계상 가정이다.", grade: "D" };
 }
 
 /* ── 1년 진행 ──
@@ -489,7 +561,7 @@ function step(P, mods = {}) {
     P.awayYears++;
     const c = P.awayYears === 1 ? RET.other_first : RET.other_later;
     const pb = c.back * (mods.back || 1);
-    if (pb !== c.back) out.push(fxLine({ back: c.back, stay: 1 - c.back }, { back: pb, stay: 1 - c.back }));
+    const fxa = pb !== c.back ? fxLine({ back: c.back, stay: 1 - c.back }, { back: pb, stay: 1 - c.back }) : null; if (fxa) out.push(fxa);
     const why = `${SRC.klips}: 디자이너를 떠나 다른 직업으로 일하던 사람이 다음 해 디자이너로 돌아온 비율 — 떠난 첫해 ${pct(c === RET.other_first ? c.back : RET.other_first.back, 1)}(${RET.other_first.n}건), 그 뒤 해마다 ${pct(RET.other_later.back, 1)}(${RET.other_later.n}건).${mods.back ? " 이번 해 선택이 이 비율에 배수를 걸었다(설계상 가정 D)." : ""}`;
     if (rand() < pb) {
       comeback(P, out, `${AWAY_NAME[P.awayKind]} 일을 정리하고 디자이너로 돌아왔다.`, why);
@@ -640,8 +712,8 @@ function percentile(sorted, x) { if (!sorted.length) return null; let lo = 0; wh
 /* ── 반기 초점 (게임에서는 1년 초점) ── */
 const FOCUS = {
   flow: { label: "흐름대로", hint: "애쓰지 않고 통계 그대로 한 해를 보낸다. 에너지가 조금 찬다.", mods: {}, energy: 6, skill: 2 },
-  work: { label: "지금 일에 집중", hint: "지금 회사에 조금 더 오래 남게 된다. 실력이 오르지만 지친다.", mods: { same_job: 1.15 }, energy: -4, skill: 4 },
-  grow: { label: "실력 키우기", hint: "실력이 크게 오르고, 다음에 이직할 때 월급이 더 오른다. 조금 지친다.", mods: { bonus: 0.03 }, energy: -3, skill: 8 },
+  work: { label: "지금 일에 집중", hint: "프로젝트 점수가 조금 오르고, 지금 회사에 조금 더 오래 남게 된다. 지친다.", mods: { same_job: 1.15 }, energy: -4, skill: 4 },
+  grow: { label: "실력 키우기", hint: "실력과 영역 경험이 크게 쌓이고, 다음에 이직할 때 월급이 더 오른다. 조금 지친다.", mods: { bonus: 0.03 }, energy: -3, skill: 8 },
   move: { label: "이직 준비", hint: "다른 회사로 옮길 가능성이 두 배가 된다. 조금 지친다.", mods: { new_job_same_occupation: 2 }, energy: -3, skill: 3 },
   side: { label: "사이드·외주", hint: "프리랜서로 독립할 가능성이 커지지만, 디자인을 떠날 가능성도 조금 커진다. 많이 지친다.", mods: { to_self: 3, other_occupation: 1.2 }, energy: -8, skill: 5 },
   rest: { label: "쉬기·사생활", hint: "에너지가 많이 찬다. 확률은 그대로.", mods: {}, energy: 20, skill: 0 },
@@ -654,6 +726,193 @@ const FOCUS = {
 const isOut = (P) => P.status === "away" || P.status === "none";
 function focusKeys(P) { return Object.keys(FOCUS).filter((k) => !!FOCUS[k].away === isOut(P)); }
 function fixFocus() { const P = S.player; if (P && !P.pause && !focusKeys(P).includes(S.focus)) S.focus = isOut(P) ? "live" : "flow"; }
+
+/* ── 프로젝트: 일하는 해마다 대표 프로젝트 하나 ──
+   네 영역에 시간을 나눠 쓴다. 유형과 업계마다 숨은 '맞는 배분'이 있고, 리뷰어의 말이 힌트다.
+   알아낸 것은 인사이트로 이 브라우저에 남아 다음 판에도 쓴다.
+   점수는 평판·직급·실력과, 그해 확률표에 거는 작은 배수로 이어진다. 확률표 자체는 바꾸지 않는다.
+   유형별 배분, 점수 공식, 효과 크기는 모두 설계상 가정(D). */
+const AX = ["res", "ux", "vis", "com"];
+const AXN = { res: "리서치", ux: "구조·UX", vis: "비주얼", com: "설득·협업" };
+const AXJ = { res: ["는", "가"], ux: ["는", "가"], vis: ["은", "이"], com: ["은", "이"] };
+const AXC = { res: "#1f9d8a", ux: "#3d5bd9", vis: "#e0603f", com: "#d99a1e" };
+const AXV = { res: ["인터뷰 정리 중", "자료 조사 중"], ux: ["와이어프레임 그리는 중", "흐름도 정리 중"], vis: ["시안 다듬는 중", "색과 글꼴 고르는 중"], com: ["리뷰 자료 만드는 중", "회의 중"] };
+const PTYPES = {
+  renewal: { name: "앱 리뉴얼", w: [2, 4, 3, 1], where: "in", brief: "출시 5년 된 앱. 사용자는 늘었는데 리뷰 평점이 떨어지고 있다." },
+  feature: { name: "신규 기능 설계", w: [2, 4, 2, 2], where: "in", brief: "다음 분기 핵심 기능. 기획서는 세 줄뿐이다." },
+  onboard: { name: "온보딩 개선", w: [4, 3, 2, 1], where: "in", brief: "가입하고 사흘 안에 절반이 떠난다. 이유는 아무도 모른다." },
+  checkout: { name: "결제 흐름 개선", w: [4, 4, 1, 1], where: "in", brief: "장바구니까지 와서 결제를 안 한다. 어디서 막히는 걸까." },
+  dash: { name: "B2B 대시보드", w: [3, 5, 1, 1], where: "in", brief: "영업팀이 매일 엑셀로 뽑아 보는 숫자를 한 화면에." },
+  ds: { name: "디자인 시스템 구축", w: [1, 4, 3, 2], where: "in", rank: 1, brief: "화면마다 버튼이 열두 종류다. 하나로 정리해 달라는 요청." },
+  zero: { name: "신규 서비스 0→1", w: [3, 3, 2, 2], where: "any", rank: 2, brief: "아직 이름도 없는 서비스. 무엇을 만들지부터 정해야 한다." },
+  deck: { name: "IR 발표 자료", w: [1, 1, 4, 4], where: "any", brief: "투자 유치 발표가 2주 뒤다. 대표가 직접 발표한다." },
+  brand: { name: "브랜드 아이덴티티", w: [2, 0, 6, 2], where: "out", brief: "로고부터 명함까지, 회사의 얼굴을 새로." },
+  landing: { name: "랜딩페이지", w: [1, 2, 4, 3], where: "out", brief: "다음 주 광고가 나간다. 들어온 사람이 신청 버튼을 누르게." },
+  detail: { name: "상세페이지", w: [1, 1, 5, 3], where: "out", brief: "제품 상세페이지. 스크롤 끝까지 내리게 만들어야 한다." },
+  campaign: { name: "광고 캠페인", w: [2, 0, 5, 3], where: "out", brief: "한 달짜리 캠페인. 배너와 썸네일이 스무 종이다." },
+};
+const TOPICS = {
+  fin: { name: "핀테크", ax: "res" }, health: { name: "헬스케어", ax: "res" }, edu: { name: "교육", ax: "ux" },
+  mobility: { name: "모빌리티", ax: "ux" }, shop: { name: "커머스", ax: "vis" }, game: { name: "게임", ax: "vis" },
+  travel: { name: "여행", ax: "vis" }, gov: { name: "공공기관", ax: "com" }, food: { name: "식품", ax: "com" },
+};
+const CODENAMES = ["모아", "하루", "온길", "다솜", "루트", "보다", "씨앗", "결", "새벽", "파도", "너울", "바람", "솔", "이음", "마루", "별빛", "한결", "나래"];
+const CRUNCH = { off: { label: "칼퇴", B: 8, q: .93, energy: 4 }, norm: { label: "보통", B: 10, q: 1, energy: -2 }, crunch: { label: "야근", B: 13, q: 1.08, energy: -12 } };
+const RANKS = [
+  { name: "주니어 디자이너", yrs: 0, rep: 0 }, { name: "디자이너", yrs: 2, rep: 18 }, { name: "시니어 디자이너", yrs: 5, rep: 38 },
+  { name: "리드 디자이너", yrs: 9, rep: 58 }, { name: "디자인 디렉터", yrs: 14, rep: 78 },
+];
+const REV_IN = [{ who: "팀장", ax: "vis" }, { who: "PM", ax: "com" }, { who: "개발자", ax: "ux" }, { who: "사용자 테스트", ax: "res" }];
+const REV_OUT = [{ who: "클라이언트", ax: "com" }, { who: "대표", ax: null }, { who: "마케터", ax: "vis" }, { who: "고객 반응", ax: "res" }];
+const LACK = { res: "사용자 이야기를 더 들었으면 좋았겠어요.", ux: "흐름이 헷갈려요. 어디를 눌러야 하죠?", vis: "완성도가 아쉬워요. 더 다듬을 수 있었을 텐데.", com: "왜 이렇게 했는지 설명이 부족했어요." };
+const MUCH = { res: "조사는 훌륭한데, 결과물이 늦었네요.", ux: "꼼꼼한데 조금 복잡해요.", vis: "예쁜데, 이게 꼭 필요했나 싶어요.", com: "회의가 너무 많았어요." };
+const TIER = [[9, ["포트폴리오 첫 장감이에요.", "더 손댈 데가 없네요.", "이거 어디 상 내 봐요."]], [7, ["좋아요. 이대로 갑시다.", "깔끔하네요.", "기대 이상이에요."]], [5, ["나쁘지 않은데, 뭔가 아쉬워요.", "무난합니다.", "일단 내보내죠."]], [3, ["다시 얘기해 보죠.", "방향이 잘 안 맞는 것 같아요.", "음… 이게 최선인가요?"]], [0, ["처음부터 다시 가야겠어요.", "이건 좀 곤란하네요."]]];
+const VERDICT = [[9, "걸작"], [8, "호평"], [6.5, "좋음"], [5, "무난"], [3.5, "아쉬움"], [0, "혹평"]];
+const verdict = (a) => VERDICT.find(([m]) => a >= m)[1];
+const IMP = { hi: "핵심", mid: "보통", lo: "덜 중요" };
+const impOf = (w) => w >= 4 ? "hi" : w >= 2 ? "mid" : "lo";
+const INS_STORE = "lod-insight-v1", INS_TOTAL = Object.keys(PTYPES).length * 4 + Object.keys(TOPICS).length;
+function loadIns() { try { return JSON.parse(localStorage.getItem(INS_STORE) || "{}") || {}; } catch (e) { return {}; } }
+function saveIns(m) { try { localStorage.setItem(INS_STORE, JSON.stringify(m)); } catch (e) {} }
+const sum = (a) => a.reduce((x, y) => x + y, 0);
+function spread(wts, B) {
+  const s = sum(wts) || 1, raw = wts.map((x) => x / s * B), a = raw.map(Math.floor);
+  raw.map((x, i) => [x - a[i], i]).sort((p, q) => q[0] - p[0]).slice(0, B - sum(a)).forEach(([, i]) => a[i]++);
+  return a;
+}
+function rankOf(P) { let r = 0; RANKS.forEach((x, i) => { if (workYears(P) >= x.yrs && P.rep >= x.rep) r = i; }); return r; }
+const projName = (pr) => `${TOPICS[pr.topic].name} ‘${pr.code}’ ${PTYPES[pr.type].name}`;
+function projTarget(pr) { const w = PTYPES[pr.type].w.map((x, i) => x + (AX[i] === TOPICS[pr.topic].ax ? 2 : 0)), s = sum(w); return w.map((x) => x / s); }
+function newProject(P) {
+  const where = isClientWork(P) ? "out" : "in";
+  const done = new Set(P.projects.map((x) => x.type));
+  const types = Object.keys(PTYPES).filter((k) => (PTYPES[k].where === "any" || PTYPES[k].where === where) && (PTYPES[k].rank || 0) <= P.rank);
+  const type = pick(Object.fromEntries(types.map((k) => [k, done.has(k) ? 1 : 2])));
+  const crunch = P.lastAlloc ? P.lastAlloc.crunch : "norm";
+  return { type, topic: choose(Object.keys(TOPICS)), code: choose(CODENAMES), where, crunch, alloc: spread([1, 1, 1, 1], CRUNCH[crunch].B), stage: "plan", t: P.t };
+}
+/* 아는 인사이트로 배분을 짐작한다(자동 선택용) */
+function guessAlloc(pr, B) {
+  const m = loadIns();
+  return spread(AX.map((k) => { const v = m[`t:${pr.type}:${k}`]; return (v === "hi" ? 4.5 : v === "mid" ? 2.5 : v === "lo" ? .6 : 2.5) + (m[`p:${pr.topic}`] === k ? 2 : 0); }), B);
+}
+function projResolve(P, pr) {
+  const tgt = projTarget(pr), B = sum(pr.alloc) || 1, s = pr.alloc.map((x) => x / B);
+  const fit = 1 - sum(s.map((x, i) => Math.abs(x - tgt[i]))) / 2;
+  const abil = Math.min(1, .6 * Math.min(100, P.skill) / 100 + .4 * sum(AX.map((k, i) => s[i] * P.xp[k] / 100)));
+  const q = Math.pow(fit, 1.3) * (.6 + .4 * abil) * CRUNCH[pr.crunch].q * (pr.focus === "work" ? 1.05 : 1) * (P.energy < 25 ? .85 : 1) * Math.exp(.07 * normal());
+  const base = 1 + 9 * Math.pow(Math.max(0, Math.min(1, q)), .7);
+  pr.revs = (pr.where === "out" ? REV_OUT : REV_IN).map((r) => {
+    const i = AX.indexOf(r.ax), d = r.ax ? s[i] - tgt[i] : 0;
+    // 자기 영역이 모자라면 크게 깎고, 넘치면 조금 더 준다
+    const score = Math.round(Math.max(1, Math.min(10, base + (d < 0 ? d * 14 : d * 4) + .45 * normal())));
+    const quote = r.ax && d < -.07 ? LACK[r.ax] : r.ax && d > .12 ? MUCH[r.ax] : choose(TIER.find(([m]) => score >= m)[1]);
+    return { who: r.who, ax: r.ax, score, quote };
+  });
+  pr.fit = fit;
+  pr.avg = Math.round(sum(pr.revs.map((r) => r.score)) / pr.revs.length * 10) / 10;
+}
+function discover(P, pr) {
+  const m = loadIns(), out = [], tgt = projTarget(pr), B = sum(pr.alloc) || 1, w = PTYPES[pr.type].w;
+  const order = AX.map((k, i) => ({ k, i, off: Math.abs(pr.alloc[i] / B - tgt[i]) })).sort((a, b) => b.off - a.off);
+  for (const o of order) {
+    const key = `t:${pr.type}:${o.k}`;
+    if (m[key]) continue;
+    m[key] = impOf(w[o.i]); out.push(`${PTYPES[pr.type].name}에서 ${AXN[o.k]}${AXJ[o.k][0]} ${IMP[m[key]]}`);
+    if (out.length >= (pr.avg >= 8 ? 2 : 1)) break;
+  }
+  const tk = `p:${pr.topic}`, ax = TOPICS[pr.topic].ax;
+  if (!m[tk] && (pr.avg >= 7 || P.projects.filter((x) => x.topic === pr.topic).length >= 2)) { m[tk] = ax; out.push(`${TOPICS[pr.topic].name} 일은 ${AXN[ax]}${AXJ[ax][1]} 특히 중요하다`); }
+  saveIns(m);
+  return out;
+}
+function projApply(P, pr, ctx) {
+  const a = pr.avg, d = a - 6, rep0 = P.rep, sk0 = P.skill;
+  P.rep = Math.max(0, Math.min(100, P.rep + (a - 5) * 2.5 + 1.5));
+  if (P.status === "wage") P.p *= Math.exp(d * .004);
+  else P.selfNoise = Math.max(.4, Math.min(2.2, P.selfNoise * Math.exp(d * .03)));
+  ctx.sat += d * .06;
+  if (a >= 8) { mul(ctx, "other_occupation", .75); mul(ctx, "not_employed", .85); ctx.mods.bonus = (ctx.mods.bonus || 0) + .02; }
+  else if (a <= 4) { mul(ctx, "other_occupation", 1.3); mul(ctx, "not_employed", 1.2); }
+  mul(ctx, "new_job_same_occupation", .9 + P.rep / 250); // 평판이 높으면 제안이 늘어난다
+  pr.alloc.forEach((x, i) => { P.xp[AX[i]] = Math.min(100, P.xp[AX[i]] + x * (pr.focus === "grow" ? 1.7 : 1.1)); });
+  P.skill += a >= 7 ? 2 : 1;
+  P.energy = Math.max(0, Math.min(100, P.energy + CRUNCH[pr.crunch].energy));
+  if (pr.revs.some((r) => r.score === 10)) P.flags.ten = true;
+  if (pr.crunch === "crunch") P.flags.crunchN = (P.flags.crunchN || 0) + 1;
+  P.projects.push({ t: P.t, name: projName(pr), type: pr.type, topic: pr.topic, avg: a, crunch: pr.crunch });
+  P.best = Math.max(P.best || 0, a);
+  P.lastAlloc = { alloc: [...pr.alloc], crunch: pr.crunch };
+  const r1 = Math.max(P.rank, rankOf(P));
+  if (r1 > P.rank) { P.rank = r1; if (P.status === "wage") P.p *= 1.03; ctx.sat += .15; pr.promo = RANKS[r1].name; }
+  pr.insights = discover(P, pr);
+  pr.gain = { rep: P.rep - rep0, skill: Math.min(100, P.skill) - Math.min(100, sk0), energy: CRUNCH[pr.crunch].energy };
+  ctx.notes.push({ kind: "proj", big: true, text: `프로젝트 ${projName(pr)} — 리뷰 평균 ${a.toFixed(1)}점, ${verdict(a)}.${pr.promo ? ` ${josaRo(pr.promo)} 승진했다.` : ""}`, why: "", grade: "D" });
+}
+
+/* ── 업적 (이 브라우저에 저장) ── */
+const ACH = [
+  ["proj1", "첫 프로젝트", "첫 프로젝트를 끝냈다", (P) => P.projects.length >= 1],
+  ["score8", "칭찬 세례", "리뷰 평균 8점 이상", (P) => P.projects.some((x) => x.avg >= 8)],
+  ["score9", "포트폴리오 첫 장", "리뷰 평균 9점 이상", (P) => P.projects.some((x) => x.avg >= 9)],
+  ["ten", "만점", "리뷰어에게 10점을 받았다", (P) => !!P.flags.ten],
+  ["flop", "흑역사", "리뷰 평균 3점 이하", (P) => P.projects.some((x) => x.avg <= 3)],
+  ["streak", "믿고 맡기는 사람", "3년 연속 리뷰 평균 8점 이상", (P) => P.projects.some((x, i, a) => i >= 2 && a.slice(i - 2, i + 1).every((y) => y.avg >= 8) && a[i - 2].t === x.t - 2)],
+  ["crunch5", "야근의 아이콘", "한 판에 야근 프로젝트 5번", (P) => (P.flags.crunchN || 0) >= 5],
+  ["types6", "뭐든 해 본 사람", "한 판에 프로젝트 유형 6가지", (P) => new Set(P.projects.map((x) => x.type)).size >= 6],
+  ["rank2", "시니어", "시니어 디자이너가 됐다", (P) => P.rank >= 2],
+  ["rank3", "리드", "리드 디자이너가 됐다", (P) => P.rank >= 3],
+  ["rank4", "디렉터", "디자인 디렉터가 됐다", (P) => P.rank >= 4],
+  ["self", "독립", "프리랜서로 독립했다", (P) => P.statuses.includes("self")],
+  ["comeback", "돌아온 디자이너", "디자인을 떠났다가 돌아왔다", (P) => !!P.flags.comeback],
+  ["burnout", "다 타 버렸다", "번아웃을 겪었다", (P) => !!P.flags.card_burnout],
+  ["y10", "10년 차", "디자이너로 10년 일했다", (P) => workYears(P) >= 10],
+  ["retire", "정년", "디자이너로 60세까지 일했다", (P) => P.end && P.end.type === "retire" && P.role === P.origRole && !isOut(P)],
+  ["happy", "행복하게", "'행복하게 살기' 목표 달성", (P) => P.end && S.goal === "happy" && goalResult(P).ok],
+  ["ins20", "감이 온다", "인사이트 20개 발견 (모든 판 합계)", () => Object.keys(loadIns()).length >= 20],
+  ["insall", "디자인 백과사전", "인사이트를 모두 발견", () => Object.keys(loadIns()).length >= INS_TOTAL],
+  ["end6", "여러 인생", "엔딩 6개 모으기", () => ENDINGS.filter(([k]) => loadEndings()[k]).length >= 6],
+];
+const ACH_STORE = "lod-ach-v1";
+function loadAch() { try { return JSON.parse(localStorage.getItem(ACH_STORE) || "{}") || {}; } catch (e) { return {}; } }
+function achCheck(P) {
+  const m = loadAch(), got = [];
+  for (const [k, name, desc, f] of ACH) { if (m[k]) continue; let ok = false; try { ok = f(P); } catch (e) {} if (ok) { m[k] = Date.now(); got.push(name); (P.achNew ||= []).push(k); } }
+  if (got.length) { try { localStorage.setItem(ACH_STORE, JSON.stringify(m)); } catch (e) {} got.forEach((n, i) => setTimeout(() => { toast("업적 달성", n); SFX.ach(); }, 400 + i * 900)); }
+}
+function toast(head, body) {
+  try {
+    let box = document.getElementById("toasts");
+    if (!box) { box = document.createElement("div"); box.id = "toasts"; box.className = "toasts"; box.setAttribute("aria-live", "polite"); document.body.appendChild(box); }
+    const el = document.createElement("div"); el.className = "toast"; el.innerHTML = `<b>${esc(head)}</b>${esc(body)}`;
+    box.appendChild(el); setTimeout(() => el.remove(), 3400);
+  } catch (e) {}
+}
+
+/* ── 효과음 (WebAudio로 합성, 파일 없음) ── */
+const SFX = (() => {
+  let ac = null, on = true;
+  try { on = localStorage.getItem("lod-sound") !== "off"; } catch (e) {}
+  const ctx = () => { try { if (!ac) { const A = window.AudioContext || window.webkitAudioContext; if (!A) return null; ac = new A(); } if (ac.state === "suspended") ac.resume(); return ac; } catch (e) { return null; } };
+  function tone(f, d = .08, type = "sine", vol = .05, when = 0, slide = 0) {
+    if (!on) return; const c = ctx(); if (!c) return;
+    const t = c.currentTime + when, o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t); if (slide) o.frequency.exponentialRampToValueAtTime(f * slide, t + d);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .01); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t + d + .03);
+  }
+  return {
+    get on() { return on; },
+    toggle() { on = !on; try { localStorage.setItem("lod-sound", on ? "on" : "off"); } catch (e) {} if (on) tone(660, .1, "triangle", .05); },
+    pop(i = 0) { tone(480 + (i % 6) * 70, .07, "sine", .03, 0, 1.5); },
+    tap() { tone(700, .04, "triangle", .025); },
+    stamp(s) { tone(s >= 8 ? 784 : s >= 5 ? 523 : 262, .16, "triangle", .06); tone(90, .1, "sine", .07, 0, .5); },
+    up() { [523, 659, 784, 1047].forEach((f, i) => tone(f, .18, "triangle", .05, i * .09)); },
+    bad() { tone(240, .32, "sawtooth", .02, 0, .55); },
+    ach() { tone(988, .12, "sine", .05); tone(1319, .22, "sine", .045, .1); },
+    card() { tone(330, .14, "sine", .03, 0, 1.7); },
+  };
+})();
 
 /* ── 사건 카드 ──
    한 판에서 같은 사건은 한 번만 나온다(원작처럼). repeat: true 인 것(출산)만 예외.
@@ -1883,7 +2142,7 @@ const sceneHtml = (P) => `<div class="scene-wrap"><canvas id="scene" class="scen
 
 /* ── 상태 ── */
 let S = null;
-function freshState() { return { screen: "start", manual: false, pickRole: "designer", pickSex: "female", focus: "flow", goal: "endure", ff: false, autoPick: false, speed: 0, feed: [], card: null, check: null, player: null, peers: [] }; }
+function freshState() { return { screen: "start", manual: false, pickRole: "designer", pickSex: "female", focus: "flow", goal: "endure", ff: false, autoPick: false, speed: 0, feed: [], card: null, check: null, proj: null, player: null, peers: [] }; }
 
 function startGame(role, sex) {
   const P = newPerson(role, sex, { name: "나" });
@@ -1894,7 +2153,7 @@ function startGame(role, sex) {
     let name; do { name = choose(NAMES[sx]); } while (used.has(name)); used.add(name);
     return newPerson(r, sx, { name, age: Math.max(22, P.age + Math.round(normal())) });
   });
-  S.player = P; S.peers = peers; S.feed = []; S.card = null; S.check = null; S.focus = "flow";
+  S.player = P; S.peers = peers; S.feed = []; S.card = null; S.check = null; S.proj = null; S.focus = "flow";
   S.screen = "reveal";
   render();
 }
@@ -1913,12 +2172,20 @@ function satisfaction(P, ctx) {
 }
 
 function playYear() {
-  if (!S.player || S.player.end || S.card || S.check) return;
+  if (!S.player || S.player.end || S.card || S.check || S.proj) return;
   const P = S.player;
   fixFocus();
   if (!P.pause) (P.focusN ||= {})[S.focus] = ((P.focusN || {})[S.focus] || 0) + 1;
   const ctx = { mods: { ...FOCUS[S.focus].mods }, sat: 0, notes: [], pause: null };
   if (P.pause) { finishYear(ctx); return; } // 휴직·학업 중에는 사건이 없다
+  // 떠나 있는 동안: 포트폴리오(최고 리뷰 점수)가 복귀 가능성에 배수를 건다(설계상 가정)
+  if (isOut(P) && P.best) mul(ctx, "back", .75 + P.best / 20);
+  // 일하는 해에는 대표 프로젝트부터
+  if (isWork(P)) { S.proj = newProject(P); S.proj.focus = S.focus; S.proj.ctx = ctx; SFX.card(); render(); return; }
+  yearCards(ctx);
+}
+function yearCards(ctx) {
+  const P = S.player;
   // 1) 강제 카드 2) 데이터로 굴린 삶의 사건 3) 아직 안 나온 사건 하나 (디자이너 전용판은 판이 짧아 해마다 하나씩)
   let card = CARDS.find((c) => c.force && c.force(P));
   if (!card) {
@@ -1933,7 +2200,7 @@ function playYear() {
     const pool = CARDS.filter((c) => !c.force && !c.trigger && !c.roll && !P.flags["card_" + c.id] && awayOk(c) && c.when(P, S));
     if (pool.length) card = CARDS.find((c) => c.id === pick(Object.fromEntries(pool.map((c) => [c.id, (c.w ? c.w(P, S) : 1) * (WORK_CATS.includes(c.cat) && WORKING.includes(P.status) ? WORK_BOOST : 1)]))));
   }
-  if (card) { if (!card.repeat) P.flags["card_" + card.id] = true; S.card = { id: card.id, ctx }; render(); return; }
+  if (card) { if (!card.repeat) P.flags["card_" + card.id] = true; S.card = { id: card.id, ctx }; SFX.card(); render(); return; }
   finishYear(ctx);
 }
 
@@ -1983,6 +2250,7 @@ function finishYear(ctx) {
   if (P.study) dE -= 8;
   P.energy = Math.max(0, Math.min(100, P.energy + dE));
   P.skill = Math.max(0, Math.min(100, P.skill + f.skill));
+  if (isOut(P)) P.rep = Math.max(0, P.rep - 3);
   if (ctx.pause) startPause(P, ctx.pause);
   // 기록을 마치는 해에는 떠나기 전의 상태로 한 칸을 남긴다
   const pre = { wage: currentWage(P), status: P.status, role: P.role, sat: satisfaction(P, ctx) };
@@ -2015,6 +2283,8 @@ function finishYear(ctx) {
   } else { P.wages.push(pre.wage); P.statuses.push(pre.status); P.roles.push(pre.role); P.sats.push(pre.sat); }
   if (resume && !P.end) lines.push(endPause(P));
   S.feed.push({ t: yearT, year: START_YEAR + yearT, age: P.age - 1, lines: [...lines, ...peerLines.slice(0, 3)] });
+  achCheck(P);
+  if (lines.some((l) => l.kind === "comeback" || l.kind === "back")) SFX.up(); else if (lines.some((l) => l.kind === "end" || l.kind === "leave_role" || l.kind === "none")) SFX.bad();
   if (P.end) { S.speed = 0; S.ff = false; S.screen = "record"; render(); return; }
   if (CHECKS.includes(P.t)) { S.check = { t: P.t }; }
   if (S.ff && !isOut(P)) S.ff = false;
@@ -2056,6 +2326,14 @@ function cardText(card) { const P = S.player; return (tv(card.title, P, S) + tv(
 function schedule() {
   clearTimeout(timer);
   if (!S.speed || S.screen !== "play" || !S.player || S.player.end) return;
+  if (S.proj) {
+    clearTimeout(projTimer);
+    if (!S.autoPick) return;
+    const pr = S.proj;
+    if (pr.stage === "plan") projTimer = setTimeout(() => { if (S.proj !== pr) return; pr.crunch = autoCrunch(S.player); pr.alloc = guessAlloc(pr, CRUNCH[pr.crunch].B); projStart(); }, 1400);
+    if (pr.stage === "review") projTimer = setTimeout(() => { if (S.proj === pr) { projDone(); schedule(); } }, 3600);
+    return;
+  }
   if (S.check) { if (S.autoPick) { const a = autoArm(S.check, 45); if (!a.hold) timer = setTimeout(() => { S.check = null; render(); schedule(); }, autoLeft(a)); } return; }
   if (S.card) {
     if (S.autoPick) {
@@ -2080,6 +2358,24 @@ function ffTick() {
   if (S.card || S.check || P.pause) return;
   S.focus = "live"; playYear();
 }
+/* ── 프로젝트 진행: 배분 → 만드는 중 → 리뷰 ── */
+let makeTimer = null, projTimer = null;
+const makeDur = () => (S.autoPick || S.speed >= 2 ? 1500 : 2600);
+function projStart() {
+  const P = S.player, pr = S.proj;
+  if (!pr || pr.stage !== "plan" || sum(pr.alloc) !== CRUNCH[pr.crunch].B) return;
+  projResolve(P, pr); projApply(P, pr, pr.ctx);
+  pr.stage = "make"; pr.seen = false;
+  render();
+  clearTimeout(makeTimer);
+  makeTimer = setTimeout(() => { if (S.proj === pr) { pr.stage = "review"; render(); schedule(); } }, makeDur());
+}
+function projDone() {
+  const pr = S.proj; if (!pr) return;
+  clearTimeout(makeTimer); clearTimeout(projTimer);
+  S.proj = null; yearCards(pr.ctx);
+}
+function autoCrunch(P) { return P.energy < 40 ? "off" : P.energy > 75 ? pick({ norm: 2, crunch: 1 }) : "norm"; }
 function setAutoPick(v) { S.autoPick = v; if (v && !S.speed) S.speed = 1; for (const o of [S.card, S.check]) if (o) delete o.auto; render(); schedule(); }
 
 /* ── 그리기 ── */
@@ -2112,6 +2408,19 @@ function to60(g) {
   const r = R[g], share = (sx) => { const m = cohort(g, sx); return m.ends.filter((e) => e.type === "retire" && e.same).length / m.N; };
   return pct(share("female") * r.female_share + share("male") * (1 - r.female_share));
 }
+/* 기록실: 엔딩·업적·인사이트 (이 브라우저에 저장) */
+function vaultHtml(open = false) {
+  const a = loadAch(), ins = loadIns(), e = loadEndings();
+  const nA = ACH.filter(([k]) => a[k]).length, nI = Object.keys(ins).length, nE = ENDINGS.filter(([k]) => e[k]).length;
+  const cell = (v) => v ? `<td class="${v}">${IMP[v]}</td>` : `<td class="unk">?</td>`;
+  return `<details class="vault" ${open ? "open" : ""}><summary>기록실 · 엔딩 ${nE}/${ENDINGS.length} · 업적 ${nA}/${ACH.length} · 인사이트 ${nI}/${INS_TOTAL}</summary>
+    <div class="achs">${ACH.map(([k, n, d]) => `<div class="${a[k] ? "got" : ""}"><b>${a[k] ? esc(n) : "???"}</b>${esc(d)}</div>`).join("")}</div>
+    <div><div class="label" style="margin-bottom:4px">인사이트 노트 · 프로젝트 유형별로 중요한 영역</div>
+    <div class="tw"><table class="instab"><thead><tr><th>유형</th>${AX.map((k) => `<th>${AXN[k]}</th>`).join("")}</tr></thead><tbody>${Object.entries(PTYPES).map(([t, T]) => `<tr><td>${T.name}</td>${AX.map((k) => cell(ins[`t:${t}:${k}`])).join("")}</tr>`).join("")}</tbody></table></div>
+    <p class="fine" style="margin-top:6px">업계별로 특히 중요한 영역: ${Object.entries(TOPICS).map(([k, T]) => `${T.name} ${ins["p:" + k] ? AXN[ins["p:" + k]] : "?"}`).join(" · ")}</p></div>
+    <p class="fine">이 기기의 브라우저에만 저장됩니다. 프로젝트 유형과 업계의 '맞는 배분'은 게임 설계상 정한 값입니다.</p>
+  </details>`;
+}
 function renderStart() {
   const d = R.designer;
   $app.innerHTML = `
@@ -2119,6 +2428,11 @@ function renderStart() {
     <div class="label">2026년 11월</div>
     <h1>디자이너로 살아보기</h1>
     <p class="challenge">과연 정년까지 일할 수 있을까요?</p>
+    <ol class="howto">
+      <li><b>프로젝트</b> 일하는 해마다 대표 프로젝트를 맡아 시간을 나누고 리뷰를 받습니다.</li>
+      <li><b>성장</b> 잘하면 평판이 오르고 승진하며, 디자이너로 오래 남을 가능성이 커집니다.</li>
+      <li><b>현실</b> 그래도 이직·전향·공백은 실제 통계의 확률대로 찾아옵니다.</li>
+    </ol>
     <p class="lede">첫 출근부터 60세 정년까지 살아 봅니다. 성별과 첫 회사 규모는 실제 청년 신입 디자이너의 비율대로 정해지고, 해마다 무슨 일이 생길지는 노동패널에서 같은 사람을 15년 동안 따라간 기록으로 굴립니다. 회사 생활의 사건은 일반 직장인 통계로 만들었습니다.</p>
     <div class="facts">
       <div><b class="num">${people(ROLE_W.designer)}명</b><span>한 해 첫 직장을 디자이너로 시작하는 사람 (같은 해 태어난 약 ${people(ENT.births_per_year_weighted)}명 중)</span></div>
@@ -2128,7 +2442,8 @@ function renderStart() {
       <div class="wide"><b class="num">${to60("designer")}</b><span>60세 정년까지 디자이너로 남는 비율 (게임 추정. 15년이 넘는 기간은 나이대별 5년 유지율을 이어 붙인 값)</span></div>
     </div>
     <div class="form-row"><button class="btn" id="go-random">커리어 시작</button></div>
-    <p class="sublink"><button class="textlink" id="go-data">데이터와 출처 보기</button>${(() => { const n = ENDINGS.filter(([k]) => loadEndings()[k]).length; return n ? ` <span class="fine">· 모은 엔딩 ${n}/${ENDINGS.length}</span>` : ""; })()}</p>
+    <p class="sublink"><button class="textlink" id="go-data">데이터와 출처 보기</button></p>
+    ${vaultHtml()}
     <details class="manual" id="manual" ${S.manual ? "open" : ""}>
       <summary>성별 직접 고르기</summary>
       <div class="form-row">
@@ -2238,9 +2553,9 @@ function renderPlay() {
   const w = currentWage(P);
   const feed = S.feed.map((y) => `
     <div class="yr"><div class="y">${y.year}<br>${y.age}세</div><div class="lines">
-      ${y.lines.map((l) => `<div class="line ${l.big ? "big" : ""} ${l.kind === "peer" || l.kind === "fx" ? l.kind : ""}">${esc(l.text)}${whyHtml(l.why, l.grade)}</div>`).join("")}
+      ${y.lines.map((l) => `<div class="line ${l.big ? "big" : ""} ${l.kind === "peer" || l.kind === "fx" || l.kind === "proj" ? l.kind : ""}">${esc(l.text)}${whyHtml(l.why, l.grade)}</div>`).join("")}
     </div></div>`).join("");
-  const intro = !S.feed.length ? `<div class="yr"><div class="y">${START_YEAR}<br>${P.age}세</div><div class="lines"><div class="line">${esc(P.company)}에 첫 출근했다. '1년 보내기'를 누르면 첫해가 지나갑니다. 첫해는 흐름대로 보내고, 해가 지날 때마다 결과 아래에서 다음 해의 초점을 고를 수 있습니다.</div></div></div>` : "";
+  const intro = !S.feed.length ? `<div class="yr"><div class="y">${START_YEAR}<br>${P.age}세</div><div class="lines"><div class="line">${esc(P.company)}에 첫 출근했다. '1년 보내기'를 누르면 첫해가 시작됩니다. 일하는 해마다 대표 프로젝트를 하나 맡고, 해가 지날 때마다 결과 아래에서 다음 해의 초점을 고를 수 있습니다.</div></div></div>` : "";
   fixFocus();
   const out = isOut(P);
   const nf = S.ff && !S.card && !S.check && !P.end ? `<div class="nextfocus"><div class="q">돌아올 때까지 넘기는 중…</div><div class="fine">사건이 생기거나 디자이너로 돌아오면 멈춰요.</div><button class="btn ghost ff" id="ff-stop">멈추기</button></div>`
@@ -2252,11 +2567,13 @@ function renderPlay() {
     </div>` : "";
   $app.innerHTML = `
     <div class="idcard">
-      <div><div class="who">${P.status === "away" ? `디자이너를 떠난 지 ${P.awayYears + 1}년째` : P.status === "none" ? `공백기 ${P.noneYears}년째` : `${P.t + 1}년차 ${ROLE[P.role]}`}</div><div class="where">${[`${P.age}세 ${SEX[P.sex]}`, `${START_YEAR + P.t}년`, ...statusText(P).split(" · ")].map((x) => `<span>${x}</span>`).join(" · ")}</div>${limitHtml(P)}</div>
+      <div><div class="who">${P.status === "away" ? `디자이너를 떠난 지 ${P.awayYears + 1}년째` : P.status === "none" ? `공백기 ${P.noneYears}년째` : `${P.t + 1}년차 ${RANKS[P.rank].name}`}</div><div class="where">${[`${P.age}세 ${SEX[P.sex]}`, `${START_YEAR + P.t}년`, ...statusText(P).split(" · ")].map((x) => `<span>${x}</span>`).join(" · ")}</div>${limitHtml(P)}</div>
       <div class="pay"><div class="label">월 (만 원)</div><b>${P.status === "none" ? "—" : won(w)}</b></div>
       <div class="meters">
         <span class="meter ${P.energy < 25 ? "low" : ""}">에너지 <i style="--v:${P.energy}%"></i></span>
         <span class="meter">실력 <i style="--v:${P.skill}%"></i></span>
+        <span class="meter rep">평판 <i style="--v:${P.rep}%"></i></span>
+        ${(() => { const b = S.proj && S.proj.stage === "make" ? Math.max(0, ...P.projects.slice(0, -1).map((x) => x.avg)) : P.best; return b ? `<span class="best">최고 리뷰 <b class="num">${b.toFixed(1)}</b></span>` : ""; })()}
       </div>
     </div>
     ${sceneHtml(P)}
@@ -2266,10 +2583,11 @@ function renderPlay() {
       <div class="go">
         <button class="btn" id="go-year">1년 보내기</button>
         <div class="seg" role="group" aria-label="자동 진행">${[0, 1, 2, 4].map((v) => `<button id="speed-${v}" data-speed="${v}" aria-pressed="${S.speed === v}">${v ? v + "×" : "Ⅱ"}</button>`).join("")}</div>
+        <button class="btn ghost icon" id="snd" aria-label="효과음" aria-pressed="${SFX.on}">${sndIcon()}</button>
       </div>
       <label class="autopick"><input type="checkbox" id="auto-pick" ${S.autoPick ? "checked" : ""}> 자동 선택 <span class="fine">잠깐 보여 준 뒤 알아서 골라요</span></label>
     </div>
-    ${S.card ? cardHtml() : ""}${S.check ? checkHtml() : ""}`;
+    ${S.proj ? projHtml() : ""}${S.card ? cardHtml() : ""}${S.check ? checkHtml() : ""}`;
   const feedEl = $app.querySelector("#feed"); feedEl.scrollTop = feedEl.scrollHeight;
   $app.querySelectorAll("[data-focus]").forEach((b) => b.onclick = () => { S.focus = b.dataset.focus; playYear(); render(); schedule(); });
   $app.querySelectorAll("[data-speed]").forEach((b) => b.onclick = () => { ffStop(); setSpeed(+b.dataset.speed); });
@@ -2297,9 +2615,12 @@ function renderPlay() {
     $app.querySelector("#cfocus-hint").textContent = FOCUS[S.focus].hint;
   });
   if (m) m.onclick = () => { const v = ($app.querySelector("#mood")?.value || "").trim(); if (v) S.player.moods[S.check.t] = v; S.check = null; if (!S.speed && !S.player.pause) playYear(); render(); schedule(); };
+  bindProj();
+  const snd = $app.querySelector("#snd"); if (snd) snd.onclick = () => { SFX.toggle(); snd.setAttribute("aria-pressed", String(SFX.on)); snd.innerHTML = sndIcon(); };
   schedule();
   mountScene();
 }
+const sndIcon = () => `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/>${SFX.on ? '<path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>' : '<path d="m16 9 6 6M22 9l-6 6"/>'}</svg>`;
 
 function cardHtml() {
   const P = S.player, card = CARDS.find((c) => c.id === S.card.id);
@@ -2313,6 +2634,91 @@ function cardHtml() {
     ${a ? autoBar(a, `잠시 후 '${esc(card.choices[S.card.pick].label)}'(으)로 넘어가요`) : ""}
     ${whyHtml(tv(card.why, P, S), card.grade, "", true)}
   </div></div>`;
+}
+
+/* ── 프로젝트 화면 ── */
+function insBadge(m, pr, k) {
+  const v = m[`t:${pr.type}:${k}`], tp = m[`p:${pr.topic}`] === k;
+  return `${v ? `<span class="ins ${v}">${IMP[v]}</span>` : `<span class="ins unk">?</span>`}${tp ? `<span class="ins topic">+${TOPICS[pr.topic].name}</span>` : ""}`;
+}
+function projPlanBody() {
+  const P = S.player, pr = S.proj, m = loadIns(), B = CRUNCH[pr.crunch].B, left = B - sum(pr.alloc);
+  return `
+    <div class="crunch" role="group" aria-label="일하는 강도"><span>강도</span><div class="seg">${Object.entries(CRUNCH).map(([k, c]) => `<button data-crunch="${k}" aria-pressed="${pr.crunch === k}">${c.label} <span class="num">${c.B}</span></button>`).join("")}</div>
+      <span class="fine">${pr.crunch === "crunch" ? "시간이 늘지만 에너지 −12" : pr.crunch === "off" ? "시간이 줄지만 에너지 +4" : "에너지 −2"}</span></div>
+    <div class="axrows">${AX.map((k, i) => `<div class="axrow">
+      <span class="axn"><i class="ax-dot" style="background:${AXC[k]}"></i>${AXN[k]} <span class="xp num" title="이 영역 경험">경험 ${Math.round(P.xp[k])}</span></span>
+      <span class="hintb">${insBadge(m, pr, k)}</span>
+      <div class="stepper"><button data-ax="${i}" data-d="-1" ${pr.alloc[i] <= 0 ? "disabled" : ""} aria-label="${AXN[k]} 줄이기">−</button><b class="num">${pr.alloc[i]}</b><button data-ax="${i}" data-d="1" ${left <= 0 ? "disabled" : ""} aria-label="${AXN[k]} 늘리기">+</button></div>
+      <div class="axbar"><i style="width:${(pr.alloc[i] / B * 100).toFixed(0)}%;background:${AXC[k]}"></i></div></div>`).join("")}</div>
+    <div class="left">${left > 0 ? `남은 시간 <b class="num">${left}</b> · 모두 나눠야 시작할 수 있어요` : `시간 <b class="num">${B}</b>을 모두 나눴어요`}</div>
+    <div class="form-row">
+      <button class="btn" id="proj-go" ${left ? "disabled" : ""}>작업 시작</button>
+      ${P.lastAlloc ? `<button class="btn ghost" id="proj-last">지난번 배분</button>` : ""}
+      <button class="btn ghost" id="proj-guess">인사이트대로</button>
+    </div>`;
+}
+function projHtml() {
+  const P = S.player, pr = S.proj, T = PTYPES[pr.type];
+  const head = `<div class="label"><span class="cat">프로젝트</span> ${START_YEAR + P.t}년 · ${pr.where === "out" ? (P.status === "self" ? "프리랜서 의뢰" : "클라이언트 의뢰") : esc(P.company)} · ${esc(RANKS[P.rank].name)}</div>
+    <h2 id="proj-title">${esc(projName(pr))}</h2>`;
+  let body = "";
+  if (pr.stage === "plan") {
+    const first = !P.projects.length && !Object.keys(loadIns()).length;
+    body = `<p class="brief">${esc(T.brief)}</p>
+      ${first ? `<p class="coach">시간을 네 영역에 나눠 쓰세요. 프로젝트 유형과 업계마다 중요한 영역이 다르고, 리뷰어의 한마디가 힌트예요. 알아낸 것은 '인사이트'로 쌓여 다음 판에도 남습니다.</p>` : ""}
+      <div id="proj-body">${projPlanBody()}</div>`;
+  } else if (pr.stage === "make") {
+    const dur = makeDur(), pts = []; pr.alloc.forEach((n, i) => { for (let j = 0; j < n; j++) pts.push(i); });
+    const bubbles = pts.map((i, j) => `<span class="bub" style="left:${(8 + ((j * 37) % 76))}%;background:${AXC[AX[i]]};animation-delay:${Math.round(j / pts.length * (dur - 700))}ms">${AXN[AX[i]]} +1</span>`).join("");
+    body = `<div class="make" aria-live="polite"><div class="make-label" id="make-label">${AXV[AX[pts[0] ?? 0]][0]}…</div>${bubbles}
+      <div class="makebar"><i style="animation-duration:${dur}ms"></i></div></div>
+      <p class="fine">${CRUNCH[pr.crunch].label} 모드 · 시간 ${sum(pr.alloc)}</p>`;
+  } else {
+    const a = pr.avg, cls = (x) => x >= 8 ? "hi" : x <= 4 ? "lo" : "";
+    body = `<div class="${pr.seen ? "static" : ""}" id="rev-box">
+      <div class="revs">${pr.revs.map((r, i) => `<div class="rev" style="animation-delay:${i * 450}ms"><div class="rev-who">${esc(r.who)}${r.ax ? ` <span class="fine">· ${AXN[r.ax]}</span>` : ""}</div><div class="rev-score num ${cls(r.score)}">${r.score}</div><div class="rev-q">“${esc(r.quote)}”</div></div>`).join("")}</div>
+      <div class="avgbox" style="animation-delay:1900ms"><span class="fine">리뷰 평균</span><b class="num">${a.toFixed(1)}</b><span class="verdict ${cls(a)}">${verdict(a)}</span></div>
+      <div class="gains" style="animation-delay:2200ms">
+        <span>평판 ${pr.gain.rep >= 0 ? "+" : ""}${pr.gain.rep.toFixed(0)}</span>
+        <span>실력 +${pr.gain.skill}</span>
+        <span>에너지 ${pr.gain.energy >= 0 ? "+" : ""}${pr.gain.energy}</span>
+        ${a >= 8 ? "<span>올해 디자인을 떠날 가능성 ↓</span>" : a <= 4 ? "<span>올해 디자인을 떠날 가능성 ↑</span>" : ""}
+      </div>
+      ${pr.promo ? `<div class="promo" style="animation-delay:2500ms"><b>승진</b> ${esc(pr.promo)}${josaRo(pr.promo).slice(pr.promo.length)} 올라섰다. 월급 +3%</div>` : ""}
+      ${pr.insights.length ? `<div class="newins" style="animation-delay:2700ms"><b>새 인사이트</b>${pr.insights.map((t) => `<span>${esc(t)}</span>`).join("")}</div>` : ""}
+      </div>
+      <div class="form-row"><button class="btn" id="proj-done">계속</button></div>`;
+  }
+  return `<div class="sheet-wrap"><div class="sheet proj" id="proj-sheet" role="dialog" aria-modal="true" aria-labelledby="proj-title">${head}${body}</div></div>`;
+}
+function bindProj() {
+  const pr = S.proj; if (!pr) return;
+  if (pr.stage === "plan") {
+    const re = () => { const b = $app.querySelector("#proj-body"); if (b) { b.innerHTML = projPlanBody(); bindProj(); } };
+    $app.querySelectorAll("[data-ax]").forEach((b) => b.onclick = () => { const i = +b.dataset.ax, d = +b.dataset.d, B = CRUNCH[pr.crunch].B; if (d > 0 && sum(pr.alloc) >= B) return; pr.alloc[i] = Math.max(0, pr.alloc[i] + d); SFX.tap(); re(); });
+    $app.querySelectorAll("[data-crunch]").forEach((b) => b.onclick = () => { pr.crunch = b.dataset.crunch; pr.alloc = spread(sum(pr.alloc) ? pr.alloc : [1, 1, 1, 1], CRUNCH[pr.crunch].B); SFX.tap(); re(); });
+    const last = $app.querySelector("#proj-last"); if (last) last.onclick = () => { const L = S.player.lastAlloc; pr.alloc = spread(L.alloc, CRUNCH[pr.crunch].B); re(); };
+    const g = $app.querySelector("#proj-guess"); if (g) g.onclick = () => { pr.alloc = guessAlloc(pr, CRUNCH[pr.crunch].B); re(); };
+    const go = $app.querySelector("#proj-go"); if (go) go.onclick = () => { clearTimeout(projTimer); projStart(); };
+  } else if (pr.stage === "make") {
+    // 단계 문구와 효과음: 배분한 영역 순서대로
+    const pts = []; pr.alloc.forEach((n, i) => { for (let j = 0; j < n; j++) pts.push(i); });
+    const dur = makeDur();
+    pts.forEach((i, j) => setTimeout(() => {
+      if (S.proj !== pr || pr.stage !== "make") return;
+      SFX.pop(j);
+      const el = document.getElementById("make-label"); if (el) el.textContent = AXV[AX[i]][j % 2] + "…";
+    }, Math.round(j / pts.length * (dur - 700))));
+  } else {
+    if (!pr.seen) {
+      pr.seen = true;
+      pr.revs.forEach((r, i) => setTimeout(() => { if (S.proj === pr) SFX.stamp(r.score); }, i * 450 + 120));
+      setTimeout(() => { if (S.proj !== pr) return; pr.avg >= 8 ? SFX.up() : pr.avg <= 4 ? SFX.bad() : SFX.tap(); if (pr.promo) setTimeout(() => SFX.up(), 600); }, 1950);
+      achCheck(S.player);
+    }
+    const d = $app.querySelector("#proj-done"); if (d) d.onclick = () => { clearTimeout(projTimer); projDone(); render(); schedule(); };
+  }
 }
 
 function rowFor(x, isMe) {
@@ -2577,6 +2983,17 @@ async function shareImage(P, title, sp, earned) {
   return new Promise((res) => c.toBlob((b) => res(b), "image/png"));
 }
 
+function portfolioHtml(P) {
+  if (!P.projects.length) return "";
+  const top = [...P.projects].sort((a, b) => b.avg - a.avg).slice(0, 5);
+  const avg = sum(P.projects.map((x) => x.avg)) / P.projects.length;
+  return `<section><h2>포트폴리오 · 프로젝트 ${P.projects.length}개</h2>
+    <div class="facts" style="margin-bottom:10px">
+      <div><b>${esc(RANKS[P.rank].name)}</b><span>오른 직급</span></div>
+      <div><b class="num">${avg.toFixed(1)}</b><span>리뷰 평균 (최고 ${P.best.toFixed(1)})</span></div>
+    </div>
+    <ul class="jobs">${top.map((x) => `<li><span class="num">${START_YEAR + x.t}</span> · ${esc(x.name)} <b class="num">${x.avg.toFixed(1)}</b> <span class="fine">${verdict(x.avg)}</span></li>`).join("")}</ul></section>`;
+}
 function renderRecord() {
   const P = S.player;
   const years = P.t;
@@ -2593,7 +3010,7 @@ function renderRecord() {
   }).join("");
   const rr = rarity(P, mc);
   const title = titleFor(P);
-  if (!P.endSaved) { const key = endingKey(P); P.endSaved = { key, isNew: saveEnding(key) }; }
+  if (!P.endSaved) { const key = endingKey(P); P.endSaved = { key, isNew: saveEnding(key) }; achCheck(P); }
   const gr = goalResult(P);
   const scenes = lifeScenes(P);
   const epi = epilogue(P, mc, earned);
@@ -2624,6 +3041,7 @@ function renderRecord() {
       <div><b class="num">${P.married || P.life.some((e) => e.kind === "marry") ? P.life.find((e) => e.kind === "marry").age + "세" : "—"}</b><span>결혼</span></div>
       <div><b class="num">${P.kids.length}명</b><span>아이</span></div>
     </div>
+    ${portfolioHtml(P)}
     ${lastHtml}
     <section><h2>디자이너로 몇 년 일했나</h2>
       ${careerChart(P, sp)}
@@ -2633,6 +3051,7 @@ function renderRecord() {
       <p style="font-size:14px">해마다 고른 초점이 결과를 얼마나 바꾸는지, 같은 조건으로 다시 굴려 봅니다.</p>
       <div id="cmp"><button class="btn ghost" id="cmp-go">초점별로 다시 굴려 보기</button></div></section>
     ${endingsHtml(P.endSaved.key, P.endSaved.isNew)}
+    ${(P.achNew || []).length ? `<section><h2>이번 판에 새로 얻은 업적 · ${P.achNew.length}개</h2><div class="achs">${P.achNew.map((k) => { const x = ACH.find(([kk]) => kk === k); return `<div class="got me"><b>${esc(x[1])}</b>${esc(x[2])}</div>`; }).join("")}</div></section>` : ""}
     <details class="more"><summary>자세한 기록 보기</summary>
     <section><h2>한 해 한 칸 · 만족도</h2>
       <div class="map">${cells}</div>
@@ -2661,7 +3080,7 @@ function renderRecord() {
   mountScene();
   $app.querySelector("#data").onclick = () => { S.screen = "data"; S.back = "record"; render(); };
   const note = (t) => { $app.querySelector("#copy-note").textContent = t; };
-  const shortTxt = `[${title}] ${P.startAge}세 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작해 디자이너로 ${sp.me}년, ${STAMP[P.end.type]}. 같은 조건 ${sp.N.toLocaleString()}명 중 오래 일한 순서로 ${topPct(sp.below)}. 과연 정년까지 일할 수 있을까요?`;
+  const shortTxt = `[${title}] ${P.startAge}세 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작해 디자이너로 ${sp.me}년, ${RANKS[P.rank].name}까지, ${STAMP[P.end.type]}. 같은 조건 ${sp.N.toLocaleString()}명 중 오래 일한 순서로 ${topPct(sp.below)}. 과연 정년까지 일할 수 있을까요?`;
   const fullTxt = `[${title}]\n${P.startAge}세 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작 → ${endAge(P)}세. ${P.end.text}\n디자이너로 ${sp.me}년 · 같은 조건 ${sp.N.toLocaleString()}명 중 오래 일한 순서로 ${topPct(sp.below)} · 번 돈 약 ${eok(earned)} 원 · 최고 월 ${won(peak)}만 원\n` +
     scenes.slice(0, 6).map((x) => `${START_YEAR + x.t} ${x.text}`).join("\n") + "\n" + P.jobs.map((j) => `${START_YEAR + j.from} ${ROLE[j.role]} ${j.company}`).join("\n") + `\n\n디자이너로 살아보기 ${SHARE_URL}`;
   const copy = (t, msg) => navigator.clipboard.writeText(t).then(() => note(msg), () => note(t));
@@ -2746,6 +3165,7 @@ function renderData() {
       <p class="fine" style="margin-top:6px">출산은 결혼 다음 해부터 첫째 연 30%(3년까지), 12%(6년까지), 이후 3%, 둘째는 첫째 다음 해부터 4년간 연 13%로 두었습니다. 통계청 2024년 출생통계의 첫째 33.1세·둘째 34.4세에 맞춘 값이고, 게임 속 여성은 첫째 32.8세, 둘째 34.4세, 1인당 아이 0.94명입니다. 2024년 합계출산율 0.75명보다는 조금 많습니다(등급 C). 이혼·별거는 노동패널 기혼자의 연간 비율 ${pct(G.life.divorce.female["35~44"], 2)}~${pct(G.life.divorce.male["~34"], 2)}를 그대로 씁니다. 육아휴직을 쓸지는 플레이어가 고르고, 카드에 2023년 실제 사용률(엄마 84.5%, 아빠 16.1%)을 보여 줍니다.</p></section>
     <section><h2>설계상 가정 (D)</h2><ul class="sources" style="list-style:disc">
       <li>한 턴은 1년입니다. PRD의 반기 턴은 연간 자료를 그대로 쓰기 위해 1년으로 바꿨습니다.</li>
+      <li>프로젝트: 프로젝트 유형 ${Object.keys(PTYPES).length}종과 업계 ${Object.keys(TOPICS).length}종의 '맞는 배분', 리뷰 점수 공식, 직급 조건(일한 햇수·평판), 승진 때 월급 +3%. 리뷰 평균이 8점 이상이면 그해 다른 직업으로 옮길 확률 ×0.75·쉬게 될 확률 ×0.85, 4점 이하면 ×1.3·×1.2. 평판은 이직 확률에 ×0.9~1.3, 떠나 있는 동안 최고 리뷰 점수는 복귀 확률에 ×0.8~1.25를 겁니다. 점수에 따른 월급 변화는 해마다 ±2% 안쪽입니다. 확률표 자체는 노동패널 그대로입니다.</li>
       <li>올해의 초점이 거는 확률 배수(쉬거나 다른 직업으로 일하는 동안의 적극 지원 ×2, 포트폴리오 정비 ×1.4 포함), 일하는 동안 일·회사·성장 카드를 1.6배 자주 뽑는 비중, 이번 판 목표의 행복 기준(평균 만족도 ${HAPPY}), 사건 카드 ${CARD_N}종의 내용과 효과, 에너지·실력·만족도 계산. 사건은 한 판에서 한 번씩만 나옵니다. 근거 통계가 있는 카드는 '왜?'에 출처와 함께 등급 C로 표시했습니다.</li>
       <li>육아휴직 뒤 원래 직장 복귀, 석사 뒤 월급 +3~6%, 부수입·지출 카드의 금액.</li>
       <li>60세 종료, 공백 ${BREAK_MAX}년째 종료, 다른 직업 ${AWAY_MAX}년 종료, 쉬게 된 이유(노동패널에 없어 청년패널 퇴사 사유나 최근 출산으로 붙임), 회사 이름 예시.</li>
