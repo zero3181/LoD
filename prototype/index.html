@@ -2866,8 +2866,8 @@ function renderReveal() {
   const dist = firstWageDist(P.role, P.sex), myW = currentWage(P);
   const below = percentile(dist, myW), rank = Math.max(0, Math.min(99, Math.floor(below * 100)));
   const q = (f) => won(dist[Math.floor(f * (dist.length - 1))]);
-  // 사람 10명 그림: '상위 34%'면 3.4명을 칠한다(칠한 만큼이 나보다 많이 받는 사람). '하위'면 나보다 적게 받는 사람.
-  const share10 = (1 - below) * 10;
+  // 사람 10명 그림: 왼쪽부터 나보다 많이 받는 사람을 칠한다. 문장도 늘 '상위 N%'로 써서 그림 방향(← 많이 받음)과 맞춘다. 상위 73%면 7.3명.
+  const share10 = (1 - below) * 10, topN = Math.min(100, Math.max(1, Math.round((1 - below) * 100)));
   const people10 = personRow(share10);
   const sizes = Object.entries(r.first_size9 || {});
   const sizeBar = sizes.map(([k, v]) => `<span class="${k === P.size9 ? "on" : ""}" style="flex:${v}" title="직원 ${k}명 ${pct(v, 1)}">${v >= .12 ? k : ""}</span>`).join("");
@@ -2880,7 +2880,7 @@ function renderReveal() {
     ${sceneHtml(P)}
     <section style="display:flex;flex-direction:column;gap:10px">
       <h2 style="font-size:17px">${SEX[P.sex]} 신입 디자이너 10명 중 나는</h2>
-      <div class="bigstat" style="font-size:15px">내 첫 월급은 <b>${topPct(below)}</b>. 10명 중 ${share10.toFixed(1)}명이 나보다 많이 받습니다.</div>
+      <div class="bigstat" style="font-size:15px">내 첫 월급은 <b>상위 ${topN}%</b>. 10명 중 ${share10.toFixed(1)}명이 나보다 많이 받습니다.</div>
       <div class="people10" role="img" aria-label="10명 중 ${share10.toFixed(1)}명이 나보다 많이 받음">${people10}
         <div class="ends10"><span>← 많이 받음</span><span>적게 받음 →</span></div></div>
       <p class="fine">하위 10% ${q(.1)}만 원 · 중간 ${q(.5)}만 원 · 상위 10% ${q(.9)}만 원. 첫 월급은 청년패널 신입 디자이너 첫 월급(n=112, 중앙 225만 원, 등급 B)에 회사 규모 배수와 개인차를 더해 정합니다. 이 줄은 같은 방식으로 ${dist.length.toLocaleString()}명을 뽑아 세운 것입니다.</p>
