@@ -267,8 +267,8 @@ function mEff(P) { const h = R[P.origRole] && R[P.origRole].hetero; if (!h || !h
 function normal() { let u = 0, v = 0; while (!u) u = rand(); while (!v) v = rand(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
 const choose = (arr) => arr[Math.floor(rand() * arr.length)];
 const pct = (x, d = 0) => (x * 100).toFixed(d) + "%";
-/* 분위(아래에서 몇 %)를 '상위 N%'로 바꾼다. 1등이 상위 1%. */
-const topPct = (below) => `상위 ${Math.max(1, Math.round((1 - below) * 100))}%`;
+/* 분위(아래에서 몇 %)를 위쪽 절반은 '상위 N%', 아래쪽 절반은 '하위 N%'로 쓴다. */
+const topPct = (below) => below >= .5 ? `상위 ${Math.max(1, Math.round((1 - below) * 100))}%` : `하위 ${Math.max(1, Math.round(below * 100))}%`;
 const won = (x) => Math.round(x).toLocaleString("ko-KR");
 const band = (age) => BANDS[Math.max(0, Math.min(8, Math.floor((age - 20) / 5)))];
 const age3 = (age) => age <= 34 ? "~34" : age <= 44 ? "35~44" : "45+";
@@ -320,7 +320,8 @@ function newPerson(role, sex, opts = {}) {
   let size9, size;
   if (r.first_size9) { size9 = pick(r.first_size9); size = S9_TO_3[size9]; } else { size = pick({ S: .4, M: .38, L: .22 }); size9 = null; }
   const p0 = levelFor(role, sex, age);
-  const p = p0 * Math.exp(0.25 * normal());
+  // 같은 규모 안 개인차. 청년패널 신입 디자이너 첫 월급(n=112): 25% 200, 중앙 225, 75% 250, 95% 300만 원 → 로그 표준편차 약 0.18
+  const p = p0 * Math.exp(0.18 * normal());
   const company = choose(COMPANY[role][size]);
   return {
     role, origRole: role, sex, age, startAge: age, t: 0, status: "wage", size, size9, company,
@@ -512,11 +513,13 @@ const LEAVE_PAY = (w) => (Math.min(w, 250) * 3 + Math.min(w, 200) * 3 + Math.min
 
 const CARDS = [
   /* ───── 강제 ───── */
-  { id: "burnout", cat: "body", force: (P) => P.energy < 20 && isWork(P), title: "아침에 노트북을 열 수가 없다", body: "몇 달째 잠을 잘 못 잤다. 에너지가 바닥이다.",
+  { id: "burnout", cat: "body", force: (P) => P.energy < 20 && isWork(P) && P.t - (P.flags.burnoutT ?? -9) >= 3,
+    title: (P) => ["아침에 노트북을 열 수가 없다", "또 바닥이다", "몸이 먼저 멈췄다"][Math.min(2, P.flags.burnoutN || 0)],
+    body: (P) => ["몇 달째 잠을 잘 못 잤다. 에너지가 바닥이다.", "쉬고 돌아온 지 몇 해 만에 같은 자리에 다시 섰다. 이번엔 이유를 알 것 같다.", "출근길 지하철에서 숨이 가빠 중간에 내렸다. 세 번째다."][Math.min(2, P.flags.burnoutN || 0)],
     why: "에너지가 20 아래면 올해 일을 쉬게 될 확률이 1.5배가 된다. 번아웃을 직접 잰 국내 패널 통계가 없어 설계상 가정이다.", repeat: true,
     choices: [
-      { label: "휴가를 내고 쉰다", hint: "에너지 +30, 만족도 소폭 하락", apply: (P, c) => { P.energy += 30; c.sat -= .1; return "2주를 통째로 쉬었다. 복귀 첫날 메일이 300통이었다."; } },
-      { label: "일단 버틴다", hint: "올해 쉬게 될 확률이 더 커진다", apply: (P, c) => { mul(c, "not_employed", 1.5); return "커피를 한 잔 더 마셨다."; } },
+      { label: "휴가를 내고 쉰다", hint: "에너지 +30, 만족도 소폭 하락", apply: (P, c) => { P.flags.burnoutN = (P.flags.burnoutN || 0) + 1; P.flags.burnoutT = P.t; P.energy += 30; c.sat -= .1; return "2주를 통째로 쉬었다. 복귀 첫날 메일이 300통이었다."; } },
+      { label: "일단 버틴다", hint: "올해 쉬게 될 확률이 더 커진다", apply: (P, c) => { P.flags.burnoutN = (P.flags.burnoutN || 0) + 1; P.flags.burnoutT = P.t; mul(c, "not_employed", 1.5); return "커피를 한 잔 더 마셨다."; } },
     ] },
 
   /* ───── 데이터로 일어나는 삶의 사건 ───── */
@@ -837,7 +840,7 @@ const CARDS = [
       { label: "토요일 아침은 잔다", hint: "에너지 +3", apply: (P) => { P.energy += 3; return "알람을 끄고 다시 잤다."; } },
     ] },
   { id: "sleep", cat: "body", when: (P) => P.energy < 40 && isWork(P), w: () => 2, title: "새벽 네 시에 눈이 떠진다", body: "누우면 내일 할 일이 줄지어 떠오른다.",
-    why: "에너지가 40 아래일 때 자주 나온다.",
+    why: "건강보험심사평가원 자료(언론 보도): 2024년 불면증 진료 환자 76만 8,814명, 2020년보다 16.7% 늘었다.", grade: "C",
     choices: [
       { label: "상담을 받아 본다", hint: "에너지 +15", apply: (P) => { P.energy += 15; return "\"지금 많이 지쳐 있어요.\" 처음 듣는 말 같았다."; } },
       { label: "주말에 몰아서 잔다", hint: "에너지 +5", apply: (P) => { P.energy += 5; return "일요일 오후 네 시에 일어났다."; } },
@@ -1081,6 +1084,93 @@ const CARDS = [
       { label: "점심 모임을 만든다", hint: "에너지 −2, 만족도 +", apply: (P, c) => { P.energy -= 2; c.sat += .12; return "'수요일 국밥 모임' 멤버가 다섯 명이 됐다."; } },
       { label: "혼자가 편하다", hint: "에너지 +4", apply: (P) => { P.energy += 4; return "점심시간에 산책을 시작했다."; } },
     ] },
+  /* ───── 통계 확률로 일어나는 사건 (2026-11-02) ─────
+     roll: 해마다 그 확률로 일어난다. 전국 연간 인원 ÷ 인구(2024년 약 5,120만 명)로 잡은 대략의 확률이고, 직업·나이 차이는 넣지 않았다. */
+  { id: "car_accident", cat: "body", roll: () => .0054, title: "퇴근길 교통사고", body: "신호 대기 중에 뒤차가 들이받았다. 목이 뻐근하고 허리가 저리다.",
+    why: "경찰청: 2024년 교통사고 19만 6,349건, 부상자 27만 8,482명(전년보다 1.9% 감소), 사망자 2,521명. 인구 약 5,120만 명으로 나누면 한 해 약 0.54%가 다친다.", grade: "B",
+    choices: [
+      { label: "입원해서 제대로 치료한다", hint: "에너지 +5, 2주 결근, 보험금 +150만", apply: (P, c) => { P.energy += 5; P.bonus += 150; mul(c, "same_job", .97); return "병실 창밖으로 회사 건물이 보였다. 2주 동안 메신저를 끄고 있었다."; } },
+      { label: "통원하며 출근한다", hint: "에너지 −10", apply: (P) => { P.energy -= 10; return "물리치료를 점심시간에 받았다. 석 달이 걸렸다."; } },
+    ] },
+  { id: "depression", cat: "body", roll: (P) => (P.sex === "female" ? .029 : .014) * (P.energy < 35 ? 1.5 : 1), title: "정신건강의학과에 처음 갔다", body: "몇 달째 아무것도 재미가 없다. 친구가 병원 이름을 적어 줬다.",
+    why: "건강보험심사평가원 자료(언론 보도): 2024년 우울증 진료 110만 6,603명. 여성 74만 3,590명, 남성 36만 3,013명. 20대 19만 4,261명, 30대 19만 1,106명이 가장 많고, 2020년보다 30대는 69.7% 늘었다.", grade: "C",
+    choices: [
+      { label: "치료를 꾸준히 받는다", hint: "에너지 +15, −120만", apply: (P, c) => { P.energy += 15; P.bonus -= 120; c.sat += .1; return "약을 먹은 지 석 달, 아침에 커튼을 걷는 날이 늘었다."; } },
+      { label: "회사엔 말하지 않고 버틴다", hint: "에너지 +5", apply: (P) => { P.energy += 5; return "진료 날마다 반차를 '개인 사유'로 냈다."; } },
+      { label: "잠시 일을 쉰다", hint: "올해 쉬게 될 확률 ×3, 에너지 +25", apply: (P, c) => { mul(c, "not_employed", 3); P.energy += 25; return "처음으로 아무 계획 없는 평일을 보냈다."; } },
+    ] },
+  { id: "hair_loss", cat: "body", roll: () => .0047, title: "정수리가 비어 보인다", body: "엘리베이터 거울 조명 아래에서 처음 알았다. 미용사도 조심스럽게 말을 꺼냈다.",
+    why: "건강보험심사평가원 자료(언론 보도): 2024년 탈모 진료 24만 1,217명. 40대 5만 4,724명, 30대 5만 1,619명, 20대 3만 9,079명. 여성이 약 43%. 원형탈모가 70% 이상이다.", grade: "C",
+    choices: [
+      { label: "피부과에 간다", hint: "−80만, 만족도 +", apply: (P, c) => { P.bonus -= 80; c.sat += .05; return "\"스트레스성이에요.\" 의사가 처방전을 건넸다."; } },
+      { label: "모자를 산다", hint: "변화 없음", apply: () => "회의에도 모자를 쓰고 들어갔다. 아무도 뭐라 하지 않았다." },
+    ] },
+  { id: "panic", cat: "body", roll: () => .0039, when: isWork, title: "회의 중에 숨이 막혔다", body: "발표 차례가 다가오자 심장이 귀에서 뛰었다. 화장실로 나가 한참을 앉아 있었다.",
+    why: "국민건강보험공단 자료(언론 보도): 2021년 공황장애 진료 20만 540명. 2017년 13만 8,736명에서 44.5% 늘었고, 40대 23.4%, 50대 19.2%, 30대 18.3% 순.", grade: "C",
+    choices: [
+      { label: "진료를 받는다", hint: "에너지 +10, −60만", apply: (P) => { P.energy += 10; P.bonus -= 60; return "공황이라는 이름이 붙으니 오히려 덜 무서웠다."; } },
+      { label: "발표 업무를 줄인다", hint: "에너지 +6, 실력 −2", apply: (P) => { P.energy += 6; P.skill -= 2; return "팀장에게 사정을 말했다. 생각보다 쉽게 이해해 줬다."; } },
+    ] },
+
+  /* ───── 생활 통계 카드 (2026-11-02) ───── */
+  { id: "move_lease", cat: "money", when: (P) => P.age <= 45 && !P.flags.house, title: "전세 계약이 끝난다", body: "집주인이 보증금을 3천만 원 올리겠다고 했다. 두 달 안에 정해야 한다.",
+    why: "통계청 2024년 국내인구이동통계: 한 해 628만 3천 명이 이사했다(인구이동률 12.3%). 이사 이유는 주택 34.5%, 가족 24.7%, 직업 21.7%.", grade: "A",
+    choices: [
+      { label: "올려 주고 산다", hint: "−600만(대출 이자 포함)", apply: (P) => { P.bonus -= 600; return "대출 한도를 다시 알아봤다."; } },
+      { label: "회사에서 더 먼 곳으로 옮긴다", hint: "에너지 −6, +200만", apply: (P) => { P.energy -= 6; P.bonus += 200; return "출근길이 20분 늘었다. 거실은 넓어졌다."; } },
+      { label: "월세로 바꾼다", hint: "−300만", apply: (P) => { P.bonus -= 300; return "매달 나가는 돈이 눈에 보이기 시작했다."; } },
+    ] },
+  { id: "jeonse_fraud", cat: "money", when: (P) => P.age >= 25 && P.age <= 39 && !P.flags.house, w: () => .35, title: "집주인과 연락이 끊겼다", body: "만기 한 달 전, 집이 경매에 넘어갔다는 등기우편이 왔다.",
+    why: "국토교통부 국회 보고(2025년 5월 말): 전세사기 피해자로 결정된 사람 3만 400명. 30대 1만 4,983명(49.3%), 20대 7,854명(25.8%)으로 20~30대가 75.1%.", grade: "A",
+    choices: [
+      { label: "피해자 지원을 신청한다", hint: "에너지 −15, −1,500만", apply: (P, c) => { P.energy -= 15; P.bonus -= 1500; c.sat -= .3; return "서류만 서른 장. 보증금의 절반은 아직 못 받았다."; } },
+      { label: "보증보험을 들어 두었다", hint: "에너지 −5", apply: (P) => { P.energy -= 5; return "보증보험 덕분에 석 달 뒤 보증금을 돌려받았다."; } },
+    ] },
+  { id: "phishing", cat: "money", when: () => true, title: "\"엄마, 나 폰 액정 깨졌어\"", body: "부모님이 이 문자를 받고 송금하기 직전에 전화를 하셨다.",
+    why: "금융감독원: 2023년 보이스피싱 피해액 1,965억 원(전년보다 35.4% 증가), 피해자 1만 1,503명, 1인당 1,710만 원.", grade: "A",
+    choices: [
+      { label: "가족 단톡방에 주의를 올린다", hint: "에너지 −1", apply: (P) => { P.energy -= 1; return "\"우리 가족 암호를 정하자.\" 아버지가 제일 진지했다."; } },
+      { label: "부모님 폰에 차단 앱을 깐다", hint: "에너지 −3, 만족도 +", apply: (P, c) => { P.energy -= 3; c.sat += .05; return "주말 내내 부모님 폰 설정을 만졌다."; } },
+    ] },
+  { id: "parent_cancer", cat: "family", when: (P) => P.age >= 38, w: () => .8, title: "어머니가 암 진단을 받으셨다", body: "건강검진 결과지를 들고 오신 날, 아무도 저녁을 먹지 못했다.",
+    why: "보건복지부·국립암센터 2022년 국가암등록통계: 기대수명까지 살면 암에 걸릴 확률 남성 37.7%(79.9세까지), 여성 34.8%(85.6세까지). 여성은 유방암, 갑상선암 순으로 많다.", grade: "A",
+    choices: [
+      { label: "항암 기간 동안 휴직한다", hint: "올해 휴직", ok: isWage, apply: (P, c) => { c.pause = { kind: "leave", left: 1 }; return "병원 대기실에서 시안 대신 보호자 서류를 채웠다."; } },
+      { label: "형제들과 번갈아 돌본다", hint: "에너지 −12", apply: (P) => { P.energy -= 12; return "주말마다 KTX를 탔다."; } },
+      { label: "간병인을 쓴다", hint: "−1,200만, 에너지 −4", apply: (P) => { P.bonus -= 1200; P.energy -= 4; return "매일 저녁 영상통화로 어머니 얼굴을 봤다."; } },
+    ] },
+  { id: "parent_dementia", cat: "family", when: (P) => P.age >= 45, w: () => .8, title: "아버지가 같은 이야기를 세 번 하셨다", body: "검사 결과는 경도인지장애였다. 의사는 '진행을 늦추는 게 목표'라고 했다.",
+    why: "중앙치매센터 집계(언론 보도): 2024년 65세 이상 치매 환자 약 105만 명, 65세 이상 10명 중 1명꼴. 2020년 추정 유병률은 10.3%였다.", grade: "C",
+    choices: [
+      { label: "근처로 이사해 돌본다", hint: "에너지 −10, −500만", apply: (P) => { P.energy -= 10; P.bonus -= 500; return "아버지 집까지 걸어서 10분. 저녁은 거의 같이 먹었다."; } },
+      { label: "주간보호센터를 알아본다", hint: "−300만, 에너지 −4", apply: (P) => { P.bonus -= 300; P.energy -= 4; return "아버지는 센터에서 그림을 그린다고 했다. 생각보다 잘 그렸다."; } },
+    ] },
+  { id: "solo_holiday", cat: "friend", when: (P) => !P.married && P.age >= 33, title: "명절 연휴, 혼자인 집", body: "본가에서는 \"언제 결혼하냐\"는 말이 또 나올 것이다. 이번엔 안 내려가기로 했다.",
+    why: "국가데이터처 2025 통계로 보는 1인 가구: 2024년 1인 가구 804만 5천 가구로 전체의 36.1%. 30대가 1인 가구의 17.4%.", grade: "A",
+    choices: [
+      { label: "혼자 여행을 떠난다", hint: "에너지 +8, −80만", apply: (P) => { P.energy += 8; P.bonus -= 80; return "제주 게스트하우스에서 혼자 온 사람만 여섯 명이었다."; } },
+      { label: "같은 처지 친구들과 모인다", hint: "만족도 +", apply: (P, c) => { c.sat += .1; return "넷이서 전을 부쳤다. 제일 맛있는 명절이었다."; } },
+      { label: "그래도 내려간다", hint: "에너지 −5", apply: (P) => { P.energy -= 5; return "잔소리는 예상보다 짧았다. 대신 사촌 결혼 소식이 길었다."; } },
+    ] },
+  { id: "reading", cat: "growth", when: (P) => P.t >= 1, title: "올해 끝까지 읽은 책이 없다", body: "책상에 쌓인 디자인 책의 비닐을 아직 안 뜯었다.",
+    why: "문화체육관광부 2025 국민 독서실태조사: 성인 종합독서율 38.5%(1년에 책을 한 권이라도 읽거나 들은 비율), 연간 독서량 2.4권. 2023년보다 4.5%p 낮아졌다.", grade: "A",
+    choices: [
+      { label: "독서 모임에 들어간다", hint: "실력 +4, 에너지 −2", apply: (P) => { P.skill += 4; P.energy -= 2; return "한 달에 한 권. 모임이 아니었으면 한 권도 못 읽었을 것이다."; } },
+      { label: "오디오북으로 듣는다", hint: "실력 +2", apply: (P) => { P.skill += 2; return "출근길에 세 권을 '들었다'. 읽은 걸로 치기로 했다."; } },
+    ] },
+  { id: "abroad_trip", cat: "friend", when: (P) => isWork(P) && P.t >= 1, title: "여름휴가, 비행기표를 끊을까", body: "팀 단톡방에 다들 휴가지 사진을 올리기 시작했다.",
+    why: "한국관광공사·법무부 출입국 통계: 2024년 내국인 출국 2,869만 명. 역대 최대였던 2019년(2,871만 명)의 99.9%.", grade: "A",
+    choices: [
+      { label: "해외로 간다", hint: "에너지 +12, −250만", apply: (P) => { P.energy += 12; P.bonus -= 250; return "공항에 도착하자마자 회사 앱 알림을 껐다."; } },
+      { label: "집에서 쉰다", hint: "에너지 +6", apply: (P) => { P.energy += 6; return "에어컨 아래에서 밀린 드라마를 다 봤다."; } },
+    ] },
+  { id: "back_pain", cat: "body", when: (P) => isWork(P) && P.age >= 30, title: "허리가 끊어질 것 같다", body: "하루 10시간 의자에 앉아 있었다. 아침에 양말을 신다가 멈췄다.",
+    why: "건강보험심사평가원 국민관심질병 통계(언론 보도): 척추질환 진료 2020년 891만 2,158명 → 2024년 972만 3,544명.", grade: "C",
+    choices: [
+      { label: "모션데스크와 의자를 산다", hint: "에너지 +6, −150만", apply: (P) => { P.energy += 6; P.bonus -= 150; return "서서 일하니 회의가 짧아졌다."; } },
+      { label: "도수치료를 다닌다", hint: "에너지 +4, −100만", apply: (P) => { P.energy += 4; P.bonus -= 100; return "\"자세가 문제예요.\" 다들 같은 말을 했다."; } },
+      { label: "파스로 버틴다", hint: "에너지 −5", apply: (P) => { P.energy -= 5; return "사무실에 파스 냄새가 났다. 내 자리였다."; } },
+    ] },
   { id: "health_self", cat: "body", when: (P) => P.age >= 38, title: "계단을 오르다 숨이 찼다", body: "3층인데 쉬었다 가야 했다. 마지막으로 운동한 게 언제였는지 기억나지 않는다.",
     why: () => `노동패널 2022~2024: 스스로 건강하다고 답한 임금근로자 ${pct(WK.all.healthy.p)}(디자이너 ${pct(WK.designer.healthy.p)}). 규칙적으로 운동한다 ${pct(WK.all.exercise_regular.p)}. 효과는 설계상 가정.`, grade: "C",
     choices: [
@@ -1089,7 +1179,7 @@ const CARDS = [
       { label: "나중에", hint: "에너지 −4", apply: (P) => { P.energy -= 4; return "엘리베이터를 기다렸다."; } },
     ] },
 ];
-const CARD_N = CARDS.filter((c) => !c.trigger && !c.force).length;
+const CARD_N = CARDS.filter((c) => !c.trigger && !c.force && !c.roll).length;
 const tv = (v, ...a) => typeof v === "function" ? v(...a) : v;
 
 /* ── 결혼·출산·이혼 (데이터) ──
@@ -1179,8 +1269,10 @@ function playYear() {
     const life = lifeRoll(P);
     if (life) { applyLife(P, life); card = CARDS.find((c) => c.trigger === life); }
   }
+  // 통계의 연간 발생률로 굴리는 사건 (교통사고, 우울증 진료 등)
+  if (!card) card = CARDS.find((c) => c.roll && !P.flags["card_" + c.id] && (!c.when || c.when(P, S)) && rand() < c.roll(P));
   if (!card) {
-    const pool = CARDS.filter((c) => !c.force && !c.trigger && !P.flags["card_" + c.id] && c.when(P, S));
+    const pool = CARDS.filter((c) => !c.force && !c.trigger && !c.roll && !P.flags["card_" + c.id] && c.when(P, S));
     if (pool.length) card = CARDS.find((c) => c.id === pick(Object.fromEntries(pool.map((c) => [c.id, c.w ? c.w(P, S) : 1]))));
   }
   if (card) { if (!card.repeat) P.flags["card_" + card.id] = true; S.card = { id: card.id, ctx }; render(); return; }
@@ -1193,7 +1285,7 @@ function chooseCard(i) {
   if (ch.ok && !ch.ok(P)) return;
   const title = tv(card.title, P, S);
   const result = ch.apply(P, ctx);
-  ctx.notes.push({ kind: "card", big: !!card.trigger, text: `${title} → ${ch.label}. ${result}`, why: tv(card.why, P, S), grade: card.grade || "D" });
+  ctx.notes.push({ kind: "card", big: !!(card.trigger || card.roll), text: `${title} → ${ch.label}. ${result}`, why: tv(card.why, P, S), grade: card.grade || "D" });
   P.picks.push({ t: P.t, age: P.age, cat: card.cat, title, label: ch.label, result, life: !!card.trigger });
   if (card.id === "peer_wedding") S.peerWedding = null;
   S.card = null;
@@ -1431,9 +1523,9 @@ function focusHtml() {
 
 function cardHtml() {
   const P = S.player, card = CARDS.find((c) => c.id === S.card.id);
-  const used = Object.keys(P.flags).filter((k) => k.startsWith("card_") && !CARDS.find((c) => "card_" + c.id === k && (c.trigger || c.force))).length;
+  const used = Object.keys(P.flags).filter((k) => k.startsWith("card_") && !CARDS.find((c) => "card_" + c.id === k && (c.trigger || c.force || c.roll))).length;
   return `<div class="sheet-wrap"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="card-title">
-    <div class="label"><span class="cat">${CAT[card.cat] || "사건"}</span> ${START_YEAR + P.t}년 · ${P.age}세${card.trigger ? " · 데이터로 일어난 일" : ` · 사건 ${used}/${CARD_N}`}</div>
+    <div class="label"><span class="cat">${CAT[card.cat] || "사건"}</span> ${START_YEAR + P.t}년 · ${P.age}세${card.trigger ? " · 데이터로 일어난 일" : card.roll ? " · 통계 확률로 일어난 일" : ` · 사건 ${used}/${CARD_N}`}</div>
     <h2 id="card-title">${esc(tv(card.title, P, S))}</h2><p>${esc(tv(card.body, P, S))}</p>
     <div class="choices">${card.choices.map((c, i) => { const off = c.ok && !c.ok(P); return `<button class="choice" id="choice-${i}" data-choice="${i}" ${off ? "disabled" : ""}><span>${esc(c.label)}</span><small>${esc(tv(c.hint, P, S))}</small></button>`; }).join("")}</div>
     ${whyHtml(tv(card.why, P, S), card.grade, "근거 데이터")}
@@ -1682,6 +1774,8 @@ function renderData() {
       <li>올해의 초점이 거는 확률 배수, 사건 카드 ${CARD_N}종의 내용과 효과, 에너지·실력·만족도 계산. 사건은 한 판에서 한 번씩만 나옵니다. 근거 통계가 있는 카드는 '왜?'에 출처와 함께 등급 C로 표시했습니다.</li>
       <li>육아휴직 뒤 원래 직장 복귀, 석사 뒤 월급 +3~6%, 부수입·지출 카드의 금액.</li>
       <li>60세 종료, 3년 연속 쉼 종료, 회사 이름 예시.</li>
+      <li>'통계 확률로 일어난 일'(교통사고, 우울증·공황장애·탈모 진료)은 전국 한 해 인원을 인구 약 5,120만 명으로 나눈 확률을 모든 나이에 똑같이 씁니다. 우울증은 한 해 진료받은 사람 수라 새로 걸리는 확률보다 높게 잡혔을 수 있고, 에너지가 35 아래면 ×1.5로 두었습니다.</li>
+      <li>첫 월급의 개인차(같은 회사 규모 안 로그 표준편차 0.18)는 청년패널 신입 디자이너 첫 월급의 분포(25% 200만, 중앙 225만, 95% 300만 원)에 맞춘 값입니다.</li>
       <li>다른 직업으로 옮긴 뒤 돌아오는 경우는 넣지 않았습니다. 노동패널에서 돌아오는 비율은 연 1~7%입니다.</li>
     </ul></section>
     <section><h2>출처</h2><ol class="sources">
@@ -1691,6 +1785,8 @@ function renderData() {
       <li>통계청 2024년 혼인·이혼 통계 — 평균 첫 결혼 나이 / 2024년 출생통계 — 첫째아 평균 출산 나이 / 2023년 육아휴직통계 — 출생 후 12개월 안 사용률 / 2020 인구주택총조사 — 30대 미혼율</li>
       <li>고용노동부 육아휴직급여 상한(2025) · 통계청 임금근로일자리 소득(2023, 중위 250만 원) · 국토교통부 주거실태조사(생애 첫 집 43.3세, 2018 기준)</li>
       <li>통계청 경제활동인구조사 청년층 부가조사(2025.5) · 고령층 부가조사(2025.5) · 2024년 통근 시간 분석 · 육아휴직통계(2024) · 고용노동부 2024 직장 내 괴롭힘 실태조사(국회 제출 자료)</li>
+      <li>경찰청 2024 교통사고 통계 · 건강보험심사평가원 우울증·탈모·불면증·척추질환 진료 인원(2024, 언론 보도) · 국민건강보험공단 공황장애 진료 인원(2021, 언론 보도) · 국가암등록통계(2022) · 중앙치매센터 치매 환자 추계(2024, 언론 보도)</li>
+      <li>통계청 2024 국내인구이동통계 · 국가데이터처 2025 통계로 보는 1인 가구 · 국토교통부 전세사기 피해 실태(2025.5 국회 보고) · 금융감독원 2023 보이스피싱 피해 · 문화체육관광부 2025 국민 독서실태조사 · 한국관광공사 2024 출국 통계</li>
       <li>NH농협은행 축의금 이체 분석(2023~2025) · 농림축산식품부 2025 반려동물 양육현황조사(29.2%) · 직장갑질119 직장인 1,000명 설문(2025년 10월, 괴롭힘 경험 33%)</li>
       <li><a href="https://1in8b.life/ko/" target="_blank" rel="noopener">80억 분의 1 (1in8b.life)</a> — 영감을 받은 작품</li>
     </ol></section>
