@@ -73,6 +73,9 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px 
 }
 .btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
 .btn:disabled { opacity: .4; cursor: default; }
+.sublink { margin: 12px 0 0; }
+.textlink { background: none; border: 0; padding: 4px 0; font: inherit; font-size: 14px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.textlink:hover { color: var(--ink); }
 .scroll { flex: 1; overflow-y: auto; min-height: 0; padding-block: 20px; }
 
 /* ── 시작 화면 ── */
@@ -2066,7 +2069,8 @@ function renderStart() {
       <div><b class="num">${pct(d.keep_observed["10y"])}</b><span>10년 뒤에도 디자이너 (노동패널)</span></div>
       <div class="wide"><b class="num">${to60("designer")}</b><span>60세 정년까지 디자이너로 남는 비율 (게임 추정. 15년이 넘는 기간은 나이대별 5년 유지율을 이어 붙인 값)</span></div>
     </div>
-    <div class="form-row"><button class="btn" id="go-random">커리어 시작</button><button class="btn ghost" id="go-data">데이터와 출처</button></div>
+    <div class="form-row"><button class="btn" id="go-random">커리어 시작</button></div>
+    <p class="sublink"><button class="textlink" id="go-data">데이터와 출처 보기</button></p>
     <details class="manual" id="manual" ${S.manual ? "open" : ""}>
       <summary>성별 직접 고르기</summary>
       <div class="form-row">
@@ -2310,7 +2314,7 @@ function titleFor(P) {
   if (P.end.type === "retire" && self >= P.sats.length / 2) return "혼자 일한 사람";
   if (P.end.type === "retire" && jobs >= 6) return `${jobs}개의 회사를 거친 ${ROLE[P.role]}`;
   if (P.end.type === "retire") return `끝까지 남은 ${ROLE[P.role]}`;
-  if (P.end.type === "planner") return "화면을 정하는 사람이 된 " + ROLE[P.origRole];
+  if (P.end.type === "planner") return "기획자가 된 " + ROLE[P.origRole];
   if (P.flags.comeback) return `한 번 돌아왔다가 ${workYears(P)}년 만에 떠난 ${ROLE[P.origRole]}`;
   if (P.end.type === "break") return "잠시 멈춰 선 사람";
   return `${workYears(P)}년 동안 일한 ${ROLE[P.origRole]}`;
@@ -2490,7 +2494,8 @@ function renderRecord() {
     <section><h2>동기들의 지금</h2><div class="tw"><table><thead><tr><th>이름</th><th>직군</th><th>지금</th><th class="r">월급</th></tr></thead><tbody>${S.peers.map((x) => rowFor(x, false)).join("")}</tbody></table></div>
       <p class="fine" style="margin-top:6px">동기는 내가 기록을 마친 해까지만 진행했습니다. ${S.peers.filter((x) => x.married).length}명이 결혼했고, 아이는 모두 ${S.peers.reduce((s, x) => s + x.kids.length, 0)}명입니다.</p></section>
     <div class="form-row"><button class="btn" id="share">기록 공유</button><button class="btn ghost" id="save-img">이미지 저장</button><button class="btn ghost" id="copy">글로 복사</button></div>
-    <div class="form-row"><button class="btn" id="again">다시 시작</button><button class="btn ghost" id="data">데이터와 출처</button></div>
+    <div class="form-row"><button class="btn" id="again">다시 시작</button></div>
+    <p class="sublink"><button class="textlink" id="data">데이터와 출처 보기</button></p>
     <p class="fine">다시 시작하면 새 조건으로 처음부터 시작합니다.</p>
     <p class="fine" id="copy-note" aria-live="polite"></p>
   </div></div>`;
