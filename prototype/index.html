@@ -302,14 +302,16 @@ svg text.me { fill: var(--accent); font-weight: 700; font-size: 11px; }
 .ins.topic { background: color-mix(in oklab, var(--accent) 14%, transparent); border-color: transparent; color: var(--accent); font-weight: 600; }
 .left { font-size: 13px; color: var(--muted); } .left b { color: var(--ink); font-size: 15px; }
 .btn.icon { padding: 0; width: 44px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
-.make { position: relative; height: 190px; border: 1px solid var(--line); border-radius: 8px; background: var(--sunk); overflow: hidden; }
+.workc { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+.revroom { position: relative; aspect-ratio: 160 / 64; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); margin-bottom: 10px; }
+.make-label { background: color-mix(in oklab, var(--surface) 85%, transparent); padding: 2px 8px; border-radius: 4px; z-index: 1; }
+.make { position: relative; aspect-ratio: 160 / 64; height: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--sunk); overflow: hidden; }
 .make-label { position: absolute; left: 12px; top: 10px; font-size: 14px; font-weight: 700; }
-.bub { position: absolute; bottom: 14px; font-size: 11.5px; font-weight: 700; color: #fff; padding: 2px 9px; border-radius: 999px; opacity: 0; animation: bub 1.2s ease-out forwards; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,.18); }
+.bub { z-index: 1; position: absolute; bottom: 14px; font-size: 11.5px; font-weight: 700; color: #fff; padding: 2px 9px; border-radius: 999px; opacity: 0; animation: bub 1.2s ease-out forwards; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,.18); }
 @keyframes bub { 0% { opacity: 0; transform: translateY(0) scale(.5); } 15% { opacity: 1; transform: translateY(-14px) scale(1.08); } 100% { opacity: 0; transform: translateY(-130px) scale(.95); } }
-.makebar { position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: var(--line); }
+.makebar { z-index: 1; position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: var(--line); }
 .makebar i { display: block; height: 100%; background: var(--accent); transform-origin: left; animation: mkfill linear forwards; }
 @keyframes mkfill { from { transform: scaleX(var(--a, 0)); } to { transform: scaleX(var(--b, 1)); } }
-.make.paused { height: 70px; }
 .evcard { border: 2px solid var(--accent); border-radius: 8px; padding: 12px 14px; background: var(--surface); animation: stampin .3s ease-out; }
 .evcard .ev-k { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--accent); }
 .evcard h3 { margin: 2px 0 4px; font-size: 17px; }
@@ -809,13 +811,13 @@ function newProject(P) {
   const crunch = P.lastAlloc ? P.lastAlloc.crunch : "norm";
   const fresh = syncTeam(P), team = teamSize(P) ? [...P.team.members] : [];
   return { type, topic: choose(Object.keys(TOPICS)), code: choose(CODENAMES), where, crunch, alloc: spread([1, 1, 1, 1], CRUNCH[crunch].B), stage: "plan", t: P.t,
-    team, assign: team.map((m) => AX.indexOf(m.ax)), fresh, evQ: 1, revAdj: {}, extra: [0, 0, 0, 0] };
+    team, assign: team.map((m) => AX.indexOf(m.ax)), fresh, evQ: 1, revAdj: {}, extra: AX.map((k) => P.rank >= 4 && P.flags.principle === k ? 1 : 0) };
 }
 /* 아는 인사이트로 배분을 짐작한다(자동 선택용) */
 function guessAlloc(pr, B) {
   const m = loadIns();
   const w = AX.map((k) => { const v = m[`t:${pr.type}:${k}`]; return (v === "hi" ? 4.5 : v === "mid" ? 2.5 : v === "lo" ? .6 : 2.5) + (m[`p:${pr.topic}`] === k ? 2 : 0); });
-  const t = teamHours(pr), s = sum(w);
+  const t = helpHours(pr), s = sum(w);
   if (!sum(t)) return spread(w, B);
   // 팀이 채우는 만큼 빼고 나머지를 내가 맡는다
   return spread(w.map((x, i) => Math.max(0, x / s * (B + sum(t)) - t[i]) + .001), B);
@@ -940,7 +942,19 @@ function autoEv(P, ev) { const i = ev.opts.findIndex((o) => o.chk && chance(P, o
    팀원을 영역에 두면 그 영역에 시간이 더해진다. 강점 영역이면 더 많이. 팀원은 자라서 떠나기도, 지쳐서 떠나기도 한다. 모두 설계상 가정(D). */
 const TEAM_NAMES = ["지윤", "민서", "하준", "서연", "도윤", "예린", "시우", "다은", "준호", "수아", "태오", "유나", "은채", "현우", "나연", "우진"];
 const moodText = (m) => m >= 65 ? "의욕 높음" : m >= 35 ? "보통" : "지침";
-const teamSize = (P) => P.status === "wage" && P.rank >= 3 ? P.rank - 1 : 0; // 리드 2명, 디렉터 3명
+const teamSize = (P) => P.status === "wage" && P.rank >= 3 ? Math.max(1, Math.min(4, P.rank - 1 + (P.teamPlus || 0))) : 0; // 리드 2명, 디렉터 3명 (채용·감원으로 1~4)
+const leadOk = (P) => P.status === "wage" && P.rank >= 3 && !!P.team && P.team.company === P.company;
+const dirOk = (P) => leadOk(P) && P.rank >= 4;
+const teamOf = (P) => leadOk(P) ? P.team.members : [];
+const bestMem = (P) => [...teamOf(P)].sort((a, b) => b.lvl - a.lvl)[0];
+const tiredMem = (P) => [...teamOf(P)].sort((a, b) => a.mood - b.mood)[0];
+function addMem(P, lvl, mood) {
+  P.teamPlus = (P.teamPlus || 0) + 1;
+  const used = new Set(P.team.members.map((m) => m.name));
+  const m = { name: choose(TEAM_NAMES.filter((x) => !used.has(x))), ax: choose(AX), lvl, mood, yrs: 0 };
+  P.team.members.push(m); return m;
+}
+function removeMem(P, m, shrink) { P.team.members = P.team.members.filter((x) => x !== m); if (shrink) P.teamPlus = (P.teamPlus || 0) - 1; }
 function syncTeam(P) {
   const n = teamSize(P), fresh = [];
   if (!n) return fresh;
@@ -955,6 +969,7 @@ function syncTeam(P) {
 }
 const memberH = (m, i) => Math.ceil(m.lvl / 2) + (AX[i] === m.ax ? 1 : 0);
 function teamHours(pr) { const h = [0, 0, 0, 0]; (pr.team || []).forEach((m, j) => { h[pr.assign[j]] += memberH(m, pr.assign[j]); }); return h; }
+function helpHours(pr) { const t = teamHours(pr), x = pr.extra || [0, 0, 0, 0]; return t.map((a, i) => a + x[i]); }
 function effAlloc(pr) { const t = teamHours(pr), x = pr.extra || [0, 0, 0, 0]; return pr.alloc.map((a, i) => a + t[i] + x[i]); }
 function teamAfter(P, pr) {
   const out = [];
@@ -989,6 +1004,8 @@ const ACH = [
   ["clutch", "임기응변", "한 판에 돌발 상황 판정 3번 성공", (P) => (P.flags.chkWin || 0) >= 3],
   ["team", "우리 팀", "리드가 되어 팀원이 생겼다", (P) => !!P.flags.teamEver],
   ["mentor", "사람을 키우는 사람", "팀원이 시니어로 자랐다", (P) => (P.flags.grads || 0) >= 1],
+  ["lead5", "리더의 무게", "한 판에 리더 카드 5장", (P) => (P.flags.leadN || 0) >= 5],
+  ["cdo", "최고 디자인 책임자", "CDO 제안을 받아 옮겼다", (P) => !!P.flags.cdo],
   ["self", "독립", "프리랜서로 독립했다", (P) => P.statuses.includes("self")],
   ["comeback", "돌아온 디자이너", "디자인을 떠났다가 돌아왔다", (P) => !!P.flags.comeback],
   ["burnout", "다 타 버렸다", "번아웃을 겪었다", (P) => !!P.flags.card_burnout],
@@ -1052,7 +1069,7 @@ const isAgency = (P) => P.status === "self" || (P.status === "wage" && /에이�
 const isClientWork = (P) => isAgency(P) || (isWage(P) && P.size === "S");
 const roleTxt = (P, des, dev) => P.role === "developer" ? dev : des;
 const WORK_CATS = ["work", "people", "company", "growth", "free"], WORK_BOOST = 1.6; // 디자이너 일 카드 비중(설계상 가정)
-const CAT = { work: "일", people: "사람", company: "회사", free: "프리랜서", body: "몸", love: "연애·결혼", family: "가족", friend: "친구", growth: "성장", money: "돈" };
+const CAT = { lead: "리더", work: "일", people: "사람", company: "회사", free: "프리랜서", body: "몸", love: "연애·결혼", family: "가족", friend: "친구", growth: "성장", money: "돈" };
 const LEAVE_PAY = (w) => (Math.min(w, 250) * 3 + Math.min(w, 200) * 3 + Math.min(w * .8, 160) * 6) / 12;
 
 const CARDS = [
@@ -1877,8 +1894,78 @@ const CARDS = [
       { label: "점심 산책부터", hint: "에너지 +5", apply: (P) => { P.energy += 5; return "하루 7천 보. 시작은 했다."; } },
       { label: "나중에", hint: "에너지 −4", apply: (P) => { P.energy -= 4; return "엘리베이터를 기다렸다."; } },
     ] },
+
+  /* ── 리더 카드: 리드(팀원이 생긴 뒤)부터. dr_ 는 디렉터부터. 리드 이상이면 해마다 절반 확률로 이 묶음에서 먼저 뽑는다. 모두 설계상 가정(D) ── */
+  { id: "ld_hire", cat: "lead", lead: true, when: (P) => leadOk(P) && teamSize(P) < 4, title: "채용 면접", body: "팀에 한 자리가 났다. 최종 후보는 두 명이다.",
+    choices: [
+      { label: "포트폴리오가 화려한 경력자", hint: "숙련 3 팀원 합류 · 의욕 보통", apply: (P) => { const m = addMem(P, 3, 48); return `${m.name} 씨가 첫 주부터 바로 일을 맡았다.`; } },
+      { label: "눈빛이 좋은 신입", hint: "숙련 1 팀원 합류 · 의욕 높음", apply: (P) => { const m = addMem(P, 1, 88); return `${m.name} 씨는 질문이 많았다. 좋은 질문이었다.`; } },
+      { label: "이번엔 뽑지 않는다", hint: "부수입 +200만", apply: (P) => { P.bonus += 200; return "남은 예산 일부가 성과급으로 돌아왔다."; } },
+    ] },
+  { id: "ld_poach", cat: "lead", lead: true, when: (P) => leadOk(P) && teamOf(P).some((m) => m.lvl >= 3), title: (P) => `${bestMem(P).name} 씨가 스카우트 제안을 받았다`, body: "팀에서 가장 잘하는 사람이다. 연봉 30%를 더 주겠다는 곳이 있다고 한다.",
+    choices: [
+      { label: "인사팀과 싸워 연봉을 올려 준다", hint: "팀원이 남음 · 의욕 크게 ↑ · 평판 −2", apply: (P) => { const m = bestMem(P); m.mood = Math.min(100, m.mood + 25); P.rep = Math.max(0, P.rep - 2); return "인사팀과 세 번 회의했다. 남아 줬다."; } },
+      { label: "축하하며 보내 준다", hint: "팀원이 떠나고 신입이 옴 · 평판 +4", apply: (P) => { const m = bestMem(P); removeMem(P, m); P.rep = Math.min(100, P.rep + 4); return `${m.name} 씨가 송별회에서 울었다. "좋은 팀장이었다"는 말이 업계에 돌았다.`; } },
+    ] },
+  { id: "ld_burn", cat: "lead", lead: true, when: (P) => leadOk(P) && teamOf(P).some((m) => m.mood < 45), title: (P) => `${tiredMem(P).name} 씨가 무너지기 직전이다`, body: "요즘 메신저 답이 늦고, 회의에서 말이 없다.",
+    choices: [
+      { label: "한 달 쉬게 하고 그 일을 내가 맡는다", hint: "그 팀원 의욕 +30 · 에너지 −8", apply: (P) => { const m = tiredMem(P); m.mood = Math.min(100, m.mood + 30); P.energy -= 8; return "한 달 뒤 돌아온 얼굴이 달랐다."; } },
+      { label: "이번 프로젝트만 버텨 달라고 한다", hint: "의욕 −10", apply: (P) => { tiredMem(P).mood = Math.max(0, tiredMem(P).mood - 10); return "\"네, 알겠습니다.\" 대답이 너무 빨랐다."; } },
+    ] },
+  { id: "ld_budget", cat: "lead", lead: true, when: (P) => leadOk(P) && teamOf(P).length >= 2, title: "예산 삭감", body: "회사가 비용을 줄인다. 디자인팀에서 한 명을 다른 팀으로 보내라는 지시가 왔다.",
+    choices: [
+      { label: "가장 지친 사람을 보낸다", hint: "팀원 한 명 줄어듦", apply: (P) => { const m = tiredMem(P); removeMem(P, m, true); return `${m.name} 씨는 마케팅팀으로 갔다. 오히려 표정이 밝아졌다.`; } },
+      { label: "내 월급을 깎아서 막는다", hint: "월급 −4%", apply: (P) => { P.p *= .96; P.rep = Math.min(100, P.rep + 2); return "팀원들은 한참 뒤에야 알았다."; } },
+      { label: "임원과 정면으로 맞선다", hint: "50% 확률로 막음 · 실패하면 평판 −5, 지금 직장에 남을 확률 ↓", apply: (P, c) => { if (rand() < .5) { P.rep = Math.min(100, P.rep + 4); return "숫자를 들고 갔다. 삭감은 없던 일이 됐다."; } P.rep = Math.max(0, P.rep - 5); mul(c, "same_job", .85); return "회의가 끝나고 임원이 내 이름을 다시 불렀다. 좋은 뜻은 아니었다."; } },
+    ] },
+  { id: "ld_talk", cat: "lead", lead: true, when: (P) => leadOk(P) && P.rep >= 50, title: "컨퍼런스 발표 요청", body: "디자인 컨퍼런스에서 30분 발표를 맡아 달라는 메일이 왔다.",
+    choices: [
+      { label: "한다", hint: "에너지 −8 · 평판 +6 · 이직 제안 ↑", apply: (P, c) => { P.energy -= 8; P.rep = Math.min(100, P.rep + 6); mul(c, "new_job_same_occupation", 1.3); return "질문이 열두 개 나왔다. 그날 밤 링크드인 메시지가 다섯 통 왔다."; } },
+      { label: "팀원에게 기회를 준다", hint: "팀원 의욕 ↑", apply: (P) => { const m = bestMem(P); if (m) { m.mood = Math.min(100, m.mood + 20); m.lvl = Math.min(5, m.lvl + .5); } return m ? `${m.name} 씨가 무대에서 떨지 않았다. 거의.` : "정중히 거절했다."; } },
+    ] },
+  { id: "ld_award", cat: "lead", lead: true, when: (P) => leadOk(P) && (P.best || 0) >= 8, title: "디자인 어워드 출품", body: "올해 가장 잘된 프로젝트를 어워드에 내 보자는 말이 나왔다. 출품비와 정리할 시간이 든다.",
+    choices: [
+      { label: "출품한다", hint: "에너지 −6 · 리뷰 최고점이 높을수록 수상 확률 ↑", apply: (P) => { P.energy -= 6; if (rand() < (P.best - 6) / 4) { P.flags.award = true; P.rep = Math.min(100, P.rep + 8); teamOf(P).forEach((m) => { m.mood = Math.min(100, m.mood + 10); }); return "수상했다. 트로피는 팀 책상 한가운데 놓였다."; } return "본선까지 갔다. 거기까지였다."; } },
+      { label: "상보다 다음 프로젝트", hint: "에너지 +3", apply: (P) => { P.energy += 3; return "그 시간에 다음 기획서를 읽었다."; } },
+    ] },
+  { id: "ld_eval", cat: "lead", lead: true, when: (P) => leadOk(P) && teamOf(P).length >= 1, title: "평가 시즌", body: "팀원 평가를 써야 한다. 상대평가라 누군가는 낮은 점수를 받아야 한다.",
+    choices: [
+      { label: "솔직하게 쓰고 성장 계획을 같이 짠다", hint: "팀원 숙련 ↑ · 의욕 조금 ↓", apply: (P) => { teamOf(P).forEach((m) => { m.lvl = Math.min(5, m.lvl + .5); m.mood = Math.max(0, m.mood - 6); }); return "불편한 면담이 세 번 있었다. 다음 분기 결과물이 달라졌다."; } },
+      { label: "팀원들을 위해 내 평가를 양보한다", hint: "팀원 의욕 ↑ · 월급 −2%", apply: (P) => { teamOf(P).forEach((m) => { m.mood = Math.min(100, m.mood + 10); }); P.p *= .98; return "내 평가는 B가 됐다. 팀은 몰랐으면 했다."; } },
+    ] },
+  { id: "dr_org", cat: "lead", lead: true, when: (P) => dirOk(P), title: "조직 개편", body: "회사가 디자인 조직을 다시 짠다. 디렉터로서 의견을 내야 한다.",
+    choices: [
+      { label: "디자이너를 제품팀마다 흩어 놓는다", hint: "설득·협업 경험 +8 · 팀원 의욕 ↓ · 평판 +3", apply: (P) => { P.xp.com = Math.min(100, P.xp.com + 8); teamOf(P).forEach((m) => { m.mood = Math.max(0, m.mood - 8); }); P.rep = Math.min(100, P.rep + 3); return "디자이너들이 제품 회의에 처음부터 들어가게 됐다. 다만 서로 얼굴 볼 일은 줄었다."; } },
+      { label: "중앙 디자인팀으로 모은다", hint: "팀원 의욕 ↑ · 비주얼 경험 +5", apply: (P) => { teamOf(P).forEach((m) => { m.mood = Math.min(100, m.mood + 10); }); P.xp.vis = Math.min(100, P.xp.vis + 5); return "디자인 품질이 고르게 올라갔다. 제품팀은 '디자인팀 줄 서기'를 불평했다."; } },
+    ] },
+  { id: "dr_exec", cat: "lead", lead: true, when: (P) => dirOk(P), title: "“디자인이 매출에 얼마나 기여하죠?”", body: "임원 회의에서 CFO가 물었다. 다음 달까지 숫자로 보여 달라고 한다.",
+    choices: [
+      { label: "지표 대시보드를 만든다", hint: "에너지 −8 · 평판 +5 · 리서치 경험 +6", apply: (P) => { P.energy -= 8; P.rep = Math.min(100, P.rep + 5); P.xp.res = Math.min(100, P.xp.res + 6); return "전환율이 오른 화면 세 개를 골라 보여 줬다. 다음 해 예산이 늘었다."; } },
+      { label: "디자인은 숫자로만 볼 수 없다고 말한다", hint: "평판 −4 · 만족도 +", apply: (P, c) => { P.rep = Math.max(0, P.rep - 4); c.sat += .15; return "말은 맞았다. 회의실 분위기는 맞지 않았다."; } },
+    ] },
+  { id: "dr_principle", cat: "lead", lead: true, when: (P) => dirOk(P) && !P.flags.principle, title: "디자인 원칙을 정한다", body: "팀이 커졌다. 모두가 같은 기준으로 판단하도록 원칙 하나를 맨 위에 올리기로 했다.",
+    choices: [
+      { label: "“사용자에게 먼저 묻는다”", hint: "앞으로 모든 프로젝트에 리서치 +1", apply: (P) => { P.flags.principle = "res"; return "회의실 벽에 붙었다. 다들 인터뷰 일정부터 잡기 시작했다."; } },
+      { label: "“단순하게”", hint: "앞으로 모든 프로젝트에 구조·UX +1", apply: (P) => { P.flags.principle = "ux"; return "화면에서 버튼이 하나씩 사라지기 시작했다."; } },
+      { label: "“한 번 더 다듬는다”", hint: "앞으로 모든 프로젝트에 비주얼 +1", apply: (P) => { P.flags.principle = "vis"; return "출시 전날 밤, 누군가 늘 여백 2px을 고치고 있었다."; } },
+    ] },
+  { id: "dr_ai", cat: "lead", lead: true, when: (P) => dirOk(P) && P.t >= 3, title: "AI 디자인 도구 도입", body: "새 도구를 쓰면 시안을 열 배 빨리 뽑는다고 한다. 팀원 몇은 불안해한다.",
+    choices: [
+      { label: "팀 전체에 도입한다", hint: "팀원 숙련 +1 · 의욕 ↓", apply: (P) => { teamOf(P).forEach((m) => { m.lvl = Math.min(5, m.lvl + 1); m.mood = Math.max(0, m.mood - 10); }); return "시안은 빨라졌다. '그럼 우리는 뭘 하죠?'라는 질문이 남았다."; } },
+      { label: "원하는 사람만 천천히 쓴다", hint: "팀원 의욕 ↑", apply: (P) => { teamOf(P).forEach((m) => { m.mood = Math.min(100, m.mood + 6); }); return "반년 뒤 결국 다 쓰고 있었다. 각자 자기 방식으로."; } },
+    ] },
+  { id: "dr_succ", cat: "lead", lead: true, when: (P) => dirOk(P) && P.age >= 47 && teamOf(P).length >= 1, title: "후계자", body: "인사팀이 물었다. \"디렉터님 다음은 누구인가요?\"",
+    choices: [
+      { label: (P) => `${bestMem(P).name} 씨를 키운다`, hint: "그 팀원이 곧장 시니어로 독립 · 평판 +5", apply: (P) => { const m = bestMem(P); removeMem(P, m); P.flags.grads = (P.flags.grads || 0) + 1; P.rep = Math.min(100, P.rep + 5); return `${m.name} 씨가 리드가 됐다. 첫 회의에서 내 말투를 따라 했다.`; } },
+      { label: "아직은 내가 더 한다", hint: "지금 직장에 남을 확률 ↑", apply: (P, c) => { mul(c, "same_job", 1.15); return "\"아직 할 일이 많아서요.\""; } },
+    ] },
+  { id: "dr_cdo", cat: "lead", lead: true, when: (P) => dirOk(P) && P.rep >= 70, title: "CDO 제안", body: "큰 회사에서 최고 디자인 책임자(CDO) 자리를 제안했다. 지금 팀은 두고 가야 한다.",
+    choices: [
+      { label: "옮긴다", hint: "큰 회사로 이직 · 월급 +15% · 팀은 새로", apply: (P, c) => { P.jobs.at(-1).to = P.t; P.size = "L"; P.size9 = null; P.company = choose(COMPANY[P.role].L); P.p *= 1.15; P.jobs.push({ company: P.company, size: "L", role: P.role, from: P.t, to: null, kind: "wage", reason: "CDO 영입" }); P.flags.cdo = true; mul(c, "same_job", 1.4); return `${josaRo(P.company)} 옮겼다. 명함에 '최고 디자인 책임자'가 적혔다.`; } },
+      { label: "지금 팀과 남는다", hint: "팀원 의욕 ↑ · 만족도 +", apply: (P, c) => { teamOf(P).forEach((m) => { m.mood = Math.min(100, m.mood + 12); }); c.sat += .2; return "팀원들은 그 제안이 있었다는 걸 1년 뒤에 알았다."; } },
+    ] },
 ];
-const CARD_N = CARDS.filter((c) => !c.trigger && !c.force && !c.roll).length;
+const CARD_N = CARDS.filter((c) => !c.trigger && !c.force && !c.roll && !c.lead).length;
 const tv = (v, ...a) => typeof v === "function" ? v(...a) : v;
 
 /* ── 결혼·출산·이혼 (데이터) ──
@@ -2037,6 +2124,9 @@ function desk(g, x, floorY, o) {
   if (o.lamp) { PX(g, x + 1, top - 7, 1, 7, "#444"); PX(g, x, top - 8, 3, 2, "#f4d35e"); }
   let head = null;
   if (o.who) { personBack(g, x + 9, top - 6, o.who); head = { x: x + 12, y: top - 6 }; }
+  if (o.dual) { PX(g, x + 19, top - 9, 7, 8, "#2b2f36"); screen(g, x + 20, top - 8, 5, 5, "sheet", o.frame, 3); }
+  if (o.plate) PX(g, x + 1, top - 2, 5, 2, "#d4af37");
+  if (o.trophy) { PX(g, x + 20, top - 4, 3, 3, "#d4af37"); PX(g, x + 21, top - 1, 1, 1, "#d4af37"); }
   PX(g, x + 7, top + 3, 10, 5, o.chair || "#3d4451"); PX(g, x + 11, top + 8, 2, 3, "#2a2e37");
   return head;
 }
@@ -2048,6 +2138,7 @@ function roomBase(g, env, wall, floor) {
   PX(g, 0, 45, SW, 1, "#00000022");
   for (let i = 0; i < SW; i += 16) PX(g, i, 46, 1, 14, "#00000018");
 }
+const rankDesk = (P) => ({ dual: P.rank >= 2, plate: P.rank >= 3, boss: P.rank >= 4, chair: P.rank >= 4 ? "#7a2e2e" : undefined, trophy: !!P.flags.award });
 function shade(hex, f) { const n = parseInt(hex.slice(1, 7), 16); const r = (n >> 16) * f, gg = ((n >> 8) & 255) * f, b = (n & 255) * f; return `rgb(${r | 0},${gg | 0},${b | 0})`; }
 
 function sceneSmallOffice(g, P, env, frame) {
@@ -2065,7 +2156,8 @@ function sceneSmallOffice(g, P, env, frame) {
   for (let i = 0; i < n; i++) {
     const span = 146, gap = Math.min(32, span / n), x = 40 + (span - gap * n) / 2 + i * gap + (gap - 24) / 2;
     const isMe = i === meI, here = isMe || rr() < .8;
-    const h = desk(g, x, 58, { screen: isMe ? env.screen : here ? (rr() < .5 ? "design" : "sheet") : "off", frame, seed: hstr(P.company) + i, who: isMe ? env.look : here ? looksFor(hstr(P.company) + i * 7) : null, mug: rr() < .5, photo: isMe && P.married, lamp: env.tod === "night" && (isMe || rr() < .3) });
+    const tm = teamOf(P)[(i - meI + n) % n - 1];
+    const h = desk(g, x, 58, { screen: isMe ? env.screen : here || tm ? (rr() < .5 ? "design" : "sheet") : "off", frame, seed: hstr(P.company) + i, who: isMe ? env.look : tm ? teamLook(tm) : here ? looksFor(hstr(P.company) + i * 7) : null, mug: rr() < .5, photo: isMe && P.married, lamp: env.tod === "night" && (isMe || rr() < .3), ...(isMe ? rankDesk(P) : {}) });
     if (isMe) me = h;
   }
   return { me };
@@ -2080,7 +2172,7 @@ function sceneMidOffice(g, P, env, frame) {
   plant(g, 182, 35);
   const rr = srng(hstr(P.company) + P.t);
   let me = null;
-  for (let i = 0; i < 4; i++) { const x = 62 + i * 30, isMe = i === 1; const h = desk(g, x, 58, { screen: isMe ? env.screen : "design", frame, seed: 90 + i, who: isMe ? env.look : looksFor(50 + i), photo: isMe && P.married, mug: rr() < .6, wood: "#d8c3a5", chair: "#2f3e5c" }); if (isMe) me = h; }
+  for (let i = 0; i < 4; i++) { const x = 62 + i * 30, isMe = i === 1; const tm = teamOf(P)[i > 1 ? i - 2 : i === 0 ? 2 : -1]; const h = desk(g, x, 58, { screen: isMe ? env.screen : "design", frame, seed: 90 + i, who: isMe ? env.look : tm ? teamLook(tm) : looksFor(50 + i), photo: isMe && P.married, mug: rr() < .6, wood: "#d8c3a5", chair: "#2f3e5c", ...(isMe ? rankDesk(P) : {}) }); if (isMe) me = h; }
   return { me };
 }
 function sceneTower(g, P, env, frame) {
@@ -2090,7 +2182,7 @@ function sceneTower(g, P, env, frame) {
   const bx = 50, by = 4, cols = 8, rows = 7, wv = 10, wh = 5;
   PX(g, bx - 3, by - 2, cols * 12 + 4, 48, "#5d6b85"); PX(g, bx + 30, by - 4, 38, 2, "#2541b2");
   const rr = srng(hstr(P.company));
-  const myC = 3, myR = 4;
+  const myC = 3, myR = P.rank >= 4 ? 0 : P.rank >= 2 ? 2 : 4; // 직급이 오르면 높은 층으로
   let me = null;
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
     const x = bx + c * 12, y = by + 2 + r * 6, isMe = r === myR && c === myC;
@@ -2230,7 +2322,7 @@ const SCENE_CAP = {
 function sceneCaption(P) {
   const e = sceneEnv(P), place = scenePlace(P);
   const when = { spring: "봄", summer: "여름", autumn: "가을", winter: "겨울" }[e.season] + (e.tod === "night" ? " 밤" : e.tod === "dusk" ? " 저녁" : "");
-  const extra = [P.married ? "가족과 함께" : "", e.tired ? "많이 지침" : ""].filter(Boolean);
+  const extra = [teamOf(P).length ? `팀원 ${teamOf(P).length}명` : "", P.married ? "가족과 함께" : "", e.tired ? "많이 지침" : ""].filter(Boolean);
   return [SCENE_CAP[place](P), when, ...extra].join(" · ");
 }
 function drawScene(c, frame) {
@@ -2245,11 +2337,130 @@ function drawScene(c, frame) {
   if (env.card) {
     const bx = Math.max(1, Math.min(SW - 12, me.x - 5)), by = Math.max(0, me.y - 12 - (frame % 4 < 2 ? 0 : 1));
     PX(g, bx, by, 11, 8, "#ffffff"); PX(g, bx + 4, by + 8, 2, 2, "#ffffff"); PX(g, bx - 1, by + 1, 1, 6, "#00000033"); PX(g, bx + 11, by + 1, 1, 6, "#00000033");
-    const ic = { work: ["#e63946", [[5, 1, 1, 4], [5, 6, 1, 1]]], money: ["#2a9d8f", [[3, 2, 5, 1], [3, 4, 5, 1], [5, 1, 1, 6]]], love: ["#ef476f", [[3, 2, 2, 2], [6, 2, 2, 2], [3, 3, 5, 2], [4, 5, 3, 1], [5, 6, 1, 1]]], family: ["#e9c46a", [[5, 1, 1, 1], [4, 2, 3, 1], [3, 3, 5, 1], [3, 4, 5, 3]]], body: ["#e63946", [[5, 1, 1, 6], [3, 3, 5, 2]]], friend: ["#f4a261", [[3, 2, 1, 1], [7, 2, 1, 1], [3, 5, 5, 1], [2, 4, 1, 1], [8, 4, 1, 1]]], growth: ["#f4d35e", [[5, 1, 1, 1], [4, 2, 3, 1], [2, 3, 7, 1], [3, 4, 5, 1], [3, 5, 2, 2], [6, 5, 2, 2]]] };
+    const ic = { work: ["#e63946", [[5, 1, 1, 4], [5, 6, 1, 1]]], money: ["#2a9d8f", [[3, 2, 5, 1], [3, 4, 5, 1], [5, 1, 1, 6]]], love: ["#ef476f", [[3, 2, 2, 2], [6, 2, 2, 2], [3, 3, 5, 2], [4, 5, 3, 1], [5, 6, 1, 1]]], family: ["#e9c46a", [[5, 1, 1, 1], [4, 2, 3, 1], [3, 3, 5, 1], [3, 4, 5, 3]]], body: ["#e63946", [[5, 1, 1, 6], [3, 3, 5, 2]]], friend: ["#f4a261", [[3, 2, 1, 1], [7, 2, 1, 1], [3, 5, 5, 1], [2, 4, 1, 1], [8, 4, 1, 1]]], growth: ["#f4d35e", [[5, 1, 1, 1], [4, 2, 3, 1], [2, 3, 7, 1], [3, 4, 5, 1], [3, 5, 2, 2], [6, 5, 2, 2]]], lead: ["#2541b2", [[3, 1, 1, 6], [4, 1, 4, 1], [4, 2, 5, 1], [4, 3, 4, 1]]] };
     const [col, parts] = ic[env.card.cat] || ["#555", [[2, 4, 1, 1], [5, 4, 1, 1], [8, 4, 1, 1]]];
     for (const [x, y, w, h] of parts) PX(g, bx + x, by + y, w, h, col);
   }
 }
+
+/* ── 프로젝트 장면 (160×64 픽셀): 만드는 중 · 돌발 상황 · 리뷰 ──
+   모니터 속 결과물이 진행만큼 채워지고, 팀원은 맡은 영역의 화면을 본다. */
+const WW = 160, WH = 64;
+const FONT3 = { 0: "111101101101111", 1: "010110010010111", 2: "111001111100111", 3: "111001111001111", 4: "101101111001001", 5: "111100111001111", 6: "111100111101111", 7: "111001010010010", 8: "111101111101111", 9: "111101111001111" };
+function digits(g, x, y, str, col) { [...String(str)].forEach((d, k) => { const f = FONT3[d]; if (!f) return; for (let i = 0; i < 15; i++) if (f[i] === "1") PX(g, x + k * 4 + (i % 3), y + Math.floor(i / 3), 1, 1, col); }); }
+const ARTC = ["#ff6b6b", "#ffd93d", "#6bcb77", "#4d96ff", "#c77dff", "#f4a261"];
+const teamLook = (m) => ({ ...looksFor(hstr(m.name) * 7 + 3), long: hstr(m.name) % 2 === 0 });
+/* 결과물 조각들: [x, y, w, h, color] 상대 좌표 (화면 30×18 기준) */
+function artParts(type, seed) {
+  const r = srng(seed), c = () => ARTC[Math.floor(r() * ARTC.length)], P = [];
+  const fam = { renewal: "app", feature: "app", onboard: "app", checkout: "app", dash: "dash", ds: "ds", zero: "zero", deck: "deck", brand: "brand", landing: "page", detail: "page", campaign: "banner" }[type] || "app";
+  if (fam === "app") for (let k = 0; k < 3; k++) { const x = 2 + k * 10; P.push([x, 1, 8, 16, "#2b2f36"], [x + 1, 2, 6, 14, "#ffffff"], [x + 1, 2, 6, 3, c()], [x + 2, 7, 4, 1, "#c8ccd4"], [x + 2, 9, 3, 1, "#c8ccd4"], [x + 2, 13, 4, 2, k === 2 && type === "checkout" ? "#2a9d8f" : c()]); }
+  if (fam === "dash") { P.push([0, 0, 5, 18, "#2b2f36"], [7, 1, 21, 3, "#eef1f5"]); for (let k = 0; k < 6; k++) { const h = 3 + Math.floor(r() * 9); P.push([8 + k * 3, 16 - h, 2, h, k % 2 ? "#4d96ff" : "#6bcb77"]); } P.push([7, 16, 21, 1, "#999"]); }
+  if (fam === "ds") for (let k = 0; k < 12; k++) P.push([2 + (k % 4) * 7, 2 + Math.floor(k / 4) * 5, 6, 3, k < 4 ? ARTC[k] : k < 8 ? "#c8ccd4" : ARTC[(k + 2) % 6]]);
+  if (fam === "zero") { for (let k = 0; k < 6; k++) P.push([1 + (k % 3) * 10, 1 + Math.floor(k / 3) * 9, 6, 5, ["#ffd93d", "#ff9fb2", "#9be7a6"][k % 3]]); P.push([7, 3, 4, 1, "#555"], [17, 3, 4, 1, "#555"], [4, 6, 1, 4, "#555"], [7, 12, 4, 1, "#555"]); }
+  if (fam === "deck") P.push([2, 1, 26, 16, "#2b2f36"], [3, 2, 24, 14, "#ffffff"], [5, 3, 14, 2, "#2541b2"], [5, 7, 8, 1, "#999"], [5, 9, 6, 1, "#999"], [17, 12, 2, 3, "#e76f51"], [20, 10, 2, 5, "#e76f51"], [23, 7, 2, 8, "#e76f51"]);
+  if (fam === "brand") { const a = c(), b = c(); P.push([10, 2, 10, 2, a], [8, 4, 14, 6, a], [10, 10, 10, 2, a], [12, 5, 6, 4, "#ffffff"], [13, 6, 4, 2, b]); for (let k = 0; k < 5; k++) P.push([3 + k * 5, 14, 4, 3, k === 0 ? a : k === 1 ? b : c()]); }
+  if (fam === "page") { P.push([1, 0, 28, 7, c()], [4, 2, 12, 2, "#ffffff"], [4, 5, 6, 1, "#ffffff"]); for (let k = 0; k < 3; k++) P.push([2 + k * 9, 9, 7, 4, c()], [2 + k * 9, 14, 6, 1, "#c8ccd4"]); P.push([10, 16, 10, 2, type === "landing" ? "#e63946" : "#2541b2"]); }
+  if (fam === "banner") for (let k = 0; k < 6; k++) { const x = 1 + (k % 3) * 10, y = 1 + Math.floor(k / 3) * 9; P.push([x, y, 8, 7, c()], [x + 1, y + 1, 4, 1, "#ffffff"], [x + 1, y + 5, 3, 1, "#2b2f36"]); }
+  return P;
+}
+function projArt(g, x, y, w, h, pr, prog, frame) {
+  PX(g, x, y, w, h, "#ffffff");
+  const parts = artParts(pr.type, hstr(pr.code + pr.type)), n = Math.ceil(Math.max(0, Math.min(1, prog)) * parts.length);
+  parts.slice(0, n).forEach(([a, b, c, d, col]) => PX(g, x + a * w / 30, y + b * h / 18, Math.max(1, c * w / 30), Math.max(1, d * h / 18), col));
+  if (prog < 1 && n) { const [a, b, c] = parts[n - 1]; if (frame % 4 < 2) PX(g, x + (a + c) * w / 30, y + b * h / 18, 1, 2, "#111"); }
+}
+function workEnv(P, pr) { return { season: SEASONS[(P.t + (hstr(P.name) % 4)) % 4], tod: pr.crunch === "crunch" ? "night" : pr.crunch === "off" ? "day" : "dusk", rain: false }; }
+function drawWork(g, P, pr, frame, prog) {
+  const env = workEnv(P, pr), night = env.tod === "night", self = P.status === "self";
+  const wall = self ? "#f1e6d6" : isAgency(P) ? "#efe6da" : "#e6eaee", floor = self ? "#c19a6b" : "#b5a48f";
+  PX(g, 0, 0, WW, 48, night ? shade(wall, .55) : wall); PX(g, 0, 48, WW, 16, night ? shade(floor, .6) : floor); PX(g, 0, 47, WW, 1, "#00000022");
+  win(g, 4, 5, 26, 18, env, frame);
+  // 화이트보드: 진행만큼 포스트잇
+  PX(g, 118, 5, 38, 22, "#fafafa"); PX(g, 117, 4, 40, 1, "#999"); PX(g, 117, 27, 40, 1, "#999");
+  const pts = makePts(pr), nn = Math.floor(prog * 15);
+  for (let k = 0; k < nn; k++) PX(g, 120 + (k % 5) * 7, 7 + Math.floor(k / 5) * 6, 5, 4, AXC[AX[pts[k % Math.max(1, pts.length)] ?? 0]]);
+  // 가운데 내 자리: 큰 모니터
+  const top = 46;
+  PX(g, 58, top, 48, 2, "#8a6a4a"); PX(g, 60, top + 2, 2, 12, "#6b5038"); PX(g, 102, top + 2, 2, 12, "#6b5038");
+  PX(g, 66, 20, 32, 22, "#2b2f36"); PX(g, 80, 42, 4, 4, "#2b2f36"); PX(g, 76, 45, 12, 1, "#2b2f36");
+  const ev = pr.stage === "event" ? pr.ev : null;
+  if (ev === "file") { PX(g, 67, 21, 30, 20, "#16202a"); for (let k = 0; k < 14; k++) PX(g, 67 + ((k * 13 + frame * 5) % 28), 21 + ((k * 7 + frame * 3) % 19), 3, 1, k % 3 ? "#e63946" : "#ffffff"); }
+  else projArt(g, 67, 21, 30, 20, pr, prog, frame);
+  if (P.rank >= 2) { PX(g, 100, 30, 12, 12, "#2b2f36"); screen(g, 101, 31, 10, 8, "sheet", frame, 7); PX(g, 105, 42, 2, 4, "#2b2f36"); }
+  const cups = pr.crunch === "crunch" ? 1 + Math.floor(prog * 3) : 1;
+  for (let k = 0; k < cups; k++) PX(g, 60 + k * 3, top - 3, 2, 3, "#ffffff");
+  if (night) { PX(g, 104 - (P.rank >= 2 ? 44 : 0) + (P.rank >= 2 ? 0 : 0), top - 8, 1, 8, "#444"); PX(g, 103 - (P.rank >= 2 ? 44 : 0), top - 9, 3, 2, "#f4d35e"); }
+  if (P.flags.award) { PX(g, 92, top - 4, 4, 3, "#d4af37"); PX(g, 93, top - 1, 2, 1, "#d4af37"); }
+  personBack(g, 79, 41, myLook(P));
+  PX(g, 76, 50, 12, 6, P.rank >= 4 ? "#7a2e2e" : "#3d4451"); PX(g, 81, 56, 2, 4, "#2a2e37");
+  // 팀원 책상 (맡은 영역에 맞는 화면)
+  const KIND = { res: "call", ux: "sheet", vis: "design", com: "feedback" };
+  (pr.team || []).slice(0, 4).forEach((m, j) => {
+    const x = [110, 32, 134, 6][j];
+    const h = desk(g, x, 63, { screen: KIND[AX[pr.assign[j]]], frame: frame + j, seed: hstr(m.name), who: teamLook(m), mug: j % 2 === 0, lamp: night });
+    if (h && m.mood < 35) { const k = frame % 6; PX(g, h.x + 3, h.y - 3 - k, 2, 1, "#ffffff"); }
+  });
+  // 돌발 상황: 찾아온 사람 + 느낌표, 또는 전구
+  if (ev) {
+    if (ev === "idea") { const bx = 80, by = 6 + (frame % 4 < 2 ? 0 : 1); PX(g, bx, by, 6, 6, "#ffe066"); PX(g, bx + 1, by + 6, 4, 2, "#999"); PX(g, bx - 2, by + 2, 1, 1, "#ffe066"); PX(g, bx + 7, by + 2, 1, 1, "#ffe066"); }
+    else if (ev !== "file") {
+      const who = { scope: 11, logo: 41, sick: 12, rival: 13, interview: 61, ceo: 77, pull: 11, dev: 90, reset: 42, junior: 33, fight: 34 }[ev] || 5;
+      personFront(g, 108, 24, { ...looksFor(who), gray: ev === "ceo" }, frame, { wave: true });
+      if (ev === "fight") personFront(g, 46, 24, looksFor(35), frame, { wave: true });
+      const bx = 112, by = 10 + (frame % 4 < 2 ? 0 : 1);
+      PX(g, bx, by, 9, 9, "#ffffff"); PX(g, bx + 3, by + 9, 2, 2, "#ffffff"); PX(g, bx + 4, by + 2, 1, 4, "#e63946"); PX(g, bx + 4, by + 7, 1, 1, "#e63946");
+    }
+  }
+}
+function drawReview(g, P, pr, frame, el) {
+  PX(g, 0, 0, WW, 40, "#dfe4ea"); PX(g, 0, 40, WW, 24, "#a8b0b9"); PX(g, 0, 39, WW, 1, "#00000022");
+  // 가운데 스크린에 결과물, 리뷰어는 양옆에 둘씩
+  PX(g, 55, 3, 50, 30, "#2b2f36"); projArt(g, 57, 5, 46, 26, pr, 1, 0); PX(g, 79, 33, 2, 5, "#2b2f36");
+  plant(g, 150, 27);
+  const seats = [10, 36, 116, 142];
+  // 탁자 뒤 의자 등받이
+  seats.forEach((x) => PX(g, x - 1, 34, 9, 8, "#3d4451"));
+  pr.revs.forEach((r, i) => {
+    const x = seats[i], L = { ...looksFor(hstr(r.who) + 5), gray: r.who === "대표" };
+    personFront(g, x, 31, L, frame, { sit: true });
+    const t = el - (i * 450 + 120);
+    if (t > 0) {
+      const sc = r.score, col = sc >= 8 ? "#2a9d8f" : sc <= 4 ? "#e63946" : "#2b2f36", up = Math.min(3, Math.floor(t / 60));
+      PX(g, x + 5, 25 - up, 2, 6, "#8a6a4a");
+      PX(g, x - 2, 15 - up, 13, 10, "#ffffff"); PX(g, x - 2, 25 - up, 13, 1, "#00000033");
+      digits(g, x + (sc >= 10 ? 0 : 3), 17 - up, sc, col);
+    } else if (frame % 6 < 3) for (let k = 0; k < 3; k++) PX(g, x + k * 3, 26, 1, 1, "#555");
+  });
+  PX(g, 0, 44, WW, 4, "#8a6a4a"); PX(g, 0, 48, WW, 1, "#6b5038");
+  seats.forEach((x) => { PX(g, x, 42, 5, 2, "#ffffff"); PX(g, x + 7, 41, 2, 3, "#ffffff"); });
+  PX(g, 76, 41, 8, 3, "#2b2f36");
+}
+let workRAF = null, workFrame = 0, workLast = 0;
+function workProg(pr) {
+  if (pr.stage === "event") return .5;
+  if (pr.stage !== "make") return 1;
+  const [a, b] = segOf(pr), d = segDur(pr);
+  return a + (b - a) * Math.max(0, Math.min(1, (Date.now() - (pr.mkT0 || Date.now())) / Math.max(1, d - 300)));
+}
+function drawWorkCanvas() {
+  const c = document.getElementById("workc"), pr = S && S.proj;
+  if (!c || !c.getContext || !pr) return false;
+  const g = c.getContext("2d"); g.imageSmoothingEnabled = false; g.clearRect(0, 0, WW, WH);
+  if (pr.stage === "review") drawReview(g, S.player, pr, workFrame, pr.seen && !pr.rvT0 ? 99999 : Date.now() - (pr.rvT0 || 0));
+  else drawWork(g, S.player, pr, workFrame, workProg(pr));
+  return true;
+}
+function workTick(ts) {
+  if (ts - workLast > 110) { workLast = ts; workFrame++; if (!drawWorkCanvas()) { workRAF = null; return; } }
+  workRAF = requestAnimationFrame(workTick);
+}
+function mountWork() {
+  if (!drawWorkCanvas()) return;
+  const still = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!still && !workRAF && typeof requestAnimationFrame === "function") workRAF = requestAnimationFrame(workTick);
+}
+
 let sceneRAF = null, sceneFrame = 0, sceneLast = 0;
 function sceneTick(ts) {
   const c = document.getElementById("scene");
@@ -2320,10 +2531,15 @@ function yearCards(ctx) {
   }
   // 통계의 연간 발생률로 굴리는 사건 (교통사고, 우울증 진료 등)
   if (!card) card = CARDS.find((c) => c.roll && !P.flags["card_" + c.id] && (!c.when || c.when(P, S)) && rand() < c.roll(P));
+  // 리드 이상: 절반 확률로 리더 카드부터
+  if (!card && leadOk(P) && rand() < .5) {
+    const lp = CARDS.filter((c) => c.lead && !P.flags["card_" + c.id] && c.when(P, S));
+    if (lp.length) { card = choose(lp); P.flags.leadN = (P.flags.leadN || 0) + 1; }
+  }
   if (!card) {
     // 다른 직업으로 일하는 동안에는 디자이너 일·회사 카드 대신 삶 카드와 복귀 카드만
     const awayOk = (c) => P.status !== "away" || (c.away || (["body", "love", "family", "friend", "money"].includes(c.cat) && c.id !== "meetup"));
-    const pool = CARDS.filter((c) => !c.force && !c.trigger && !c.roll && !P.flags["card_" + c.id] && awayOk(c) && c.when(P, S));
+    const pool = CARDS.filter((c) => !c.force && !c.trigger && !c.roll && !c.lead && !P.flags["card_" + c.id] && awayOk(c) && c.when(P, S));
     if (pool.length) card = CARDS.find((c) => c.id === pick(Object.fromEntries(pool.map((c) => [c.id, (c.w ? c.w(P, S) : 1) * (WORK_CATS.includes(c.cat) && WORKING.includes(P.status) ? WORK_BOOST : 1)]))));
   }
   if (card) { if (!card.repeat) P.flags["card_" + card.id] = true; S.card = { id: card.id, ctx }; SFX.card(); render(); return; }
@@ -2335,9 +2551,9 @@ function chooseCard(i) {
   const ctx = S.card.ctx, ch = card.choices[i];
   if (ch.ok && !ch.ok(P)) return;
   const title = tv(card.title, P, S);
-  const result = ch.apply(P, ctx);
-  ctx.notes.push({ kind: "card", big: !!(card.trigger || card.roll), text: `${title} → ${ch.label}. ${result}`, why: tv(card.why, P, S), grade: card.grade || "D" });
-  P.picks.push({ t: P.t, age: P.age, cat: card.cat, title, label: ch.label, result, life: !!card.trigger });
+  const label = tv(ch.label, P, S), result = ch.apply(P, ctx);
+  ctx.notes.push({ kind: "card", big: !!(card.trigger || card.roll), text: `${title} → ${label}. ${result}`, why: tv(card.why, P, S), grade: card.grade || "D" });
+  P.picks.push({ t: P.t, age: P.age, cat: card.cat, title, label, result, life: !!card.trigger });
   if (card.id === "peer_wedding") S.peerWedding = null;
   S.card = null;
   finishYear(ctx);
@@ -2448,7 +2664,7 @@ function autoBar(a, msg) {
   return `<div class="autobar" aria-hidden="true"><i style="animation-duration:${a.dur}ms;animation-delay:-${el}ms"></i></div>
     <div class="autonote"><span>${msg} · 카드를 누르면 멈춰요</span><button type="button" id="auto-hold">직접 고르기</button></div>`;
 }
-function cardText(card) { const P = S.player; return (tv(card.title, P, S) + tv(card.body, P, S) + card.choices.map((c) => c.label + tv(c.hint, P, S)).join("")).replace(/\s+/g, "").length; }
+function cardText(card) { const P = S.player; return (tv(card.title, P, S) + tv(card.body, P, S) + card.choices.map((c) => tv(c.label, P, S) + tv(c.hint, P, S)).join("")).replace(/\s+/g, "").length; }
 function schedule() {
   clearTimeout(timer);
   if (!S.speed || S.screen !== "play" || !S.player || S.player.end) return;
@@ -2500,7 +2716,7 @@ function projStart() {
   render(); runMake(pr);
 }
 function runMake(pr) {
-  clearTimeout(makeTimer);
+  clearTimeout(makeTimer); pr.mkT0 = Date.now();
   makeTimer = setTimeout(() => {
     if (S.proj !== pr || pr.stage !== "make") return;
     if (pr.ev && !pr.seg) { pr.stage = "event"; SFX.card(); render(); schedule(); }
@@ -2774,7 +2990,7 @@ function renderPlay() {
     $app.querySelector("#cfocus-hint").textContent = FOCUS[S.focus].hint;
   });
   if (m) m.onclick = () => { const v = ($app.querySelector("#mood")?.value || "").trim(); if (v) S.player.moods[S.check.t] = v; S.check = null; if (!S.speed && !S.player.pause) playYear(); render(); schedule(); };
-  bindProj();
+  bindProj(); mountWork();
   const snd = $app.querySelector("#snd"); if (snd) snd.onclick = () => { SFX.toggle(); snd.setAttribute("aria-pressed", String(SFX.on)); snd.innerHTML = sndIcon(); };
   schedule();
   mountScene();
@@ -2789,8 +3005,8 @@ function cardHtml() {
   return `<div class="sheet-wrap"><div class="sheet" id="card-sheet" role="dialog" aria-modal="true" aria-labelledby="card-title">
     <div class="label"><span class="cat">${CAT[card.cat] || "사건"}</span> ${START_YEAR + P.t}년 · ${P.age}세${card.trigger ? " · 데이터로 일어난 일" : card.roll ? " · 통계 확률로 일어난 일" : ""}</div>
     <h2 id="card-title">${esc(tv(card.title, P, S))}</h2><p>${esc(tv(card.body, P, S))}</p>
-    <div class="choices">${card.choices.map((c, i) => { const off = c.ok && !c.ok(P); return `<button class="choice${a && S.card.pick === i ? " auto" : ""}" id="choice-${i}" data-choice="${i}" ${off ? "disabled" : ""}><span>${esc(c.label)}</span><small>${esc(tv(c.hint, P, S))}</small></button>`; }).join("")}</div>
-    ${a ? autoBar(a, `잠시 후 '${esc(card.choices[S.card.pick].label)}'(으)로 넘어가요`) : ""}
+    <div class="choices">${card.choices.map((c, i) => { const off = c.ok && !c.ok(P); return `<button class="choice${a && S.card.pick === i ? " auto" : ""}" id="choice-${i}" data-choice="${i}" ${off ? "disabled" : ""}><span>${esc(tv(c.label, P, S))}</span><small>${esc(tv(c.hint, P, S))}</small></button>`; }).join("")}</div>
+    ${a ? autoBar(a, `잠시 후 '${esc(tv(card.choices[S.card.pick].label, P, S))}'(으)로 넘어가요`) : ""}
     ${whyHtml(tv(card.why, P, S), card.grade, "", true)}
   </div></div>`;
 }
@@ -2802,12 +3018,12 @@ function insBadge(m, pr, k) {
 }
 function projPlanBody() {
   const P = S.player, pr = S.proj, m = loadIns(), B = CRUNCH[pr.crunch].B, left = B - sum(pr.alloc);
-  const th = teamHours(pr), TB = B + sum(th);
+  const th = helpHours(pr), TB = B + sum(th);
   return `
     <div class="crunch" role="group" aria-label="일하는 강도"><span>강도</span><div class="seg">${Object.entries(CRUNCH).map(([k, c]) => `<button data-crunch="${k}" aria-pressed="${pr.crunch === k}">${c.label} <span class="num">${c.B}</span></button>`).join("")}</div>
       <span class="fine">${pr.crunch === "crunch" ? "시간이 늘지만 에너지 −12" : pr.crunch === "off" ? "시간이 줄지만 에너지 +4" : "에너지 −2"}</span></div>
     <div class="axrows">${AX.map((k, i) => `<div class="axrow">
-      <span class="axn"><i class="ax-dot" style="background:${AXC[k]}"></i>${AXN[k]} <span class="xp num" title="이 영역 경험">경험 ${Math.round(P.xp[k])}</span>${th[i] ? `<span class="teamh num">팀 +${th[i]}</span>` : ""}</span>
+      <span class="axn"><i class="ax-dot" style="background:${AXC[k]}"></i>${AXN[k]} <span class="xp num" title="이 영역 경험">경험 ${Math.round(P.xp[k])}</span>${th[i] ? `<span class="teamh num">${teamHours(pr)[i] ? "팀" : "원칙"} +${th[i]}</span>` : ""}</span>
       <span class="hintb">${insBadge(m, pr, k)}</span>
       <div class="stepper"><button data-ax="${i}" data-d="-1" ${pr.alloc[i] <= 0 ? "disabled" : ""} aria-label="${AXN[k]} 줄이기">−</button><b class="num">${pr.alloc[i]}</b><button data-ax="${i}" data-d="1" ${left <= 0 ? "disabled" : ""} aria-label="${AXN[k]} 늘리기">+</button></div>
       <div class="axbar"><i style="width:${(pr.alloc[i] / TB * 100).toFixed(0)}%;background:${AXC[k]}"></i>${th[i] ? `<i class="tm" style="width:${(th[i] / TB * 100).toFixed(0)}%;background:${AXC[k]}"></i>` : ""}</div></div>`).join("")}</div>
@@ -2835,7 +3051,7 @@ function projHtml() {
   } else if (pr.stage === "make" || pr.stage === "event") {
     const [a0, b0] = pr.stage === "event" ? [.5, .5] : segOf(pr), dur = segDur(pr), all = makePts(pr), pts = all.slice(Math.floor(a0 * all.length), Math.floor(b0 * all.length));
     const bubbles = pr.stage === "event" ? "" : pts.map((i, j) => `<span class="bub" style="left:${(8 + (((j + Math.floor(a0 * all.length)) * 37) % 76))}%;background:${AXC[AX[i]]};animation-delay:${Math.round(j / Math.max(1, pts.length) * (dur - 700))}ms">${AXN[AX[i]]} +1</span>`).join("");
-    body = `<div class="make${pr.stage === "event" ? " paused" : ""}" aria-live="polite"><div class="make-label" id="make-label">${pr.stage === "event" ? "작업이 멈췄다" : AXV[AX[pts[0] ?? 0]][0] + "…"}</div>${bubbles}
+    body = `<div class="make" aria-live="polite"><canvas id="workc" class="workc" width="${WW}" height="${WH}" aria-hidden="true"></canvas><div class="make-label" id="make-label">${pr.stage === "event" ? "작업이 멈췄다" : AXV[AX[pts[0] ?? 0]][0] + "…"}</div>${bubbles}
       <div class="makebar"><i style="--a:${a0};--b:${b0};animation-duration:${pr.stage === "event" ? 1 : dur}ms"></i></div></div>`;
     if (pr.stage === "event") {
       const ev = PEV.find((e) => e.id === pr.ev);
@@ -2848,6 +3064,7 @@ function projHtml() {
   } else {
     const a = pr.avg, cls = (x) => x >= 8 ? "hi" : x <= 4 ? "lo" : "";
     body = `<div class="${pr.seen ? "static" : ""}" id="rev-box">
+      <div class="revroom"><canvas id="workc" class="workc" width="${WW}" height="${WH}" role="img" aria-label="회의실에서 리뷰어 ${pr.revs.length}명이 점수판을 들었다"></canvas></div>
       <div class="revs">${pr.revs.map((r, i) => `<div class="rev" style="animation-delay:${i * 450}ms"><div class="rev-who">${esc(r.who)}${r.ax ? ` <span class="fine">· ${AXN[r.ax]}</span>` : ""}</div><div class="rev-score num ${cls(r.score)}">${r.score}</div><div class="rev-q">“${esc(r.quote)}”</div></div>`).join("")}</div>
       <div class="avgbox" style="animation-delay:1900ms"><span class="fine">리뷰 평균</span><b class="num">${a.toFixed(1)}</b><span class="verdict ${cls(a)}">${verdict(a)}</span></div>
       <div class="gains" style="animation-delay:2200ms">
@@ -2888,7 +3105,7 @@ function bindProj() {
     }, Math.round(j / Math.max(1, pts.length) * (dur - 700))));
   } else {
     if (!pr.seen) {
-      pr.seen = true;
+      pr.seen = true; pr.rvT0 = Date.now();
       pr.revs.forEach((r, i) => setTimeout(() => { if (S.proj === pr) SFX.stamp(r.score); }, i * 450 + 120));
       setTimeout(() => { if (S.proj !== pr) return; pr.avg >= 8 ? SFX.up() : pr.avg <= 4 ? SFX.bad() : SFX.tap(); if (pr.promo) setTimeout(() => SFX.up(), 600); }, 1950);
       achCheck(S.player);
