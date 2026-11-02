@@ -97,6 +97,7 @@ details.manual[open] summary { margin-bottom: 10px; }
 .waffle { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; width: 104px; flex: none; }
 .wage-rank { display: flex; gap: 14px; align-items: center; }
 .people10 { max-width: 320px; }
+.ends10 { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 2px; }
 .wage-rank .ends { display: flex; flex-direction: column; justify-content: space-between; align-self: stretch; font-size: 11px; color: var(--muted); }
 .nextfocus { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
 .nextfocus .q { font-size: 14px; font-weight: 700; }
@@ -2084,12 +2085,15 @@ function firstWageDist(role, sex) {
   if (!FW[k]) FW[k] = Array.from({ length: 3000 }, () => currentWage(newPerson(role, sex))).sort((a, b) => a - b);
   return FW[k];
 }
-/* 사람 모양 10개를 그리고 앞에서부터 n(소수 가능)명만큼 칠한다 */
-function personRow(n) {
+/* 사람 모양 10개를 첫 월급 순으로 세운다(왼쪽이 가장 많이, 오른쪽 끝이 가장 적게 받는 사람).
+   n(소수 가능)명만큼 칠한다: fromRight면 오른쪽 끝부터, 아니면 왼쪽부터 */
+let personRowN = 0;
+function personRow(n, fromRight = false) {
+  const uid = "pr" + (++personRowN);
   const body = "M12 1.5a5.5 5.5 0 1 1 0 11a5.5 5.5 0 1 1 0-11ZM3 44V24.5C3 18.7 7 15 12 15s9 3.7 9 9.5V44Z";
   return `<svg viewBox="0 0 ${10 * 26} 46" width="100%" aria-hidden="true">${Array.from({ length: 10 }, (_, i) => {
-    const f = Math.max(0, Math.min(1, n - i)), x = i * 26 + 1;
-    return `<g transform="translate(${x} 0)"><path d="${body}" fill="var(--line)"/>${f > 0 ? `<clipPath id="pc${i}"><rect x="0" y="0" width="${(24 * f).toFixed(1)}" height="46"/></clipPath><path d="${body}" fill="var(--accent)" clip-path="url(#pc${i})"/>` : ""}</g>`;
+    const f = Math.max(0, Math.min(1, n - (fromRight ? 9 - i : i))), x = i * 26 + 1;
+    return `<g transform="translate(${x} 0)"><path d="${body}" fill="var(--line)"/>${f > 0 ? `<clipPath id="${uid}c${i}"><rect x="${fromRight ? (24 * (1 - f)).toFixed(1) : 0}" y="0" width="${(24 * f).toFixed(1)}" height="46"/></clipPath><path d="${body}" fill="var(--accent)" clip-path="url(#${uid}c${i})"/>` : ""}</g>`;
   }).join("")}</svg>`;
 }
 function renderReveal() {
@@ -2103,7 +2107,7 @@ function renderReveal() {
   const q = (f) => won(dist[Math.floor(f * (dist.length - 1))]);
   // 사람 10명 그림: '상위 34%'면 3.4명을 칠한다(칠한 만큼이 나보다 많이 받는 사람). '하위'면 나보다 적게 받는 사람.
   const top = below >= .5, share10 = (top ? 1 - below : below) * 10;
-  const people10 = personRow(share10);
+  const people10 = personRow(share10, !top);
   const sizes = Object.entries(r.first_size9 || {});
   const sizeBar = sizes.map(([k, v]) => `<span class="${k === P.size9 ? "on" : ""}" style="flex:${v}" title="직원 ${k}명 ${pct(v, 1)}">${v >= .12 ? k : ""}</span>`).join("");
   const step = (cls, lab, n, w) => `<div class="step ${cls}"><span>${lab}</span><b class="num">${people(n)}명</b><div class="bar"><i style="width:${(w * 100).toFixed(1)}%"></i></div></div>`;
@@ -2116,7 +2120,8 @@ function renderReveal() {
     <section style="display:flex;flex-direction:column;gap:10px">
       <h2 style="font-size:17px">${SEX[P.sex]} 신입 디자이너 10명 중 나는</h2>
       <div class="bigstat" style="font-size:15px">내 첫 월급은 <b>${topPct(below)}</b>. 10명 중 ${share10.toFixed(1)}명이 나보다 ${top ? "많이" : "적게"} 받습니다.</div>
-      <div class="people10" role="img" aria-label="10명 중 ${share10.toFixed(1)}명이 나보다 ${top ? "많이" : "적게"} 받음">${people10}</div>
+      <div class="people10" role="img" aria-label="10명 중 ${share10.toFixed(1)}명이 나보다 ${top ? "많이" : "적게"} 받음">${people10}
+        <div class="ends10"><span>← 많이 받음</span><span>적게 받음 →</span></div></div>
       <p class="fine">하위 10% ${q(.1)}만 원 · 중간 ${q(.5)}만 원 · 상위 10% ${q(.9)}만 원. 첫 월급은 청년패널 신입 디자이너 첫 월급(n=112, 중앙 225만 원, 등급 B)에 회사 규모 배수와 개인차를 더해 정합니다. 이 줄은 같은 방식으로 ${dist.length.toLocaleString()}명을 뽑아 세운 것입니다.</p>
     </section>
     <section class="steps">
