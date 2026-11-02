@@ -176,7 +176,7 @@ th { font-weight: 500; color: var(--muted); font-size: 11px; letter-spacing: .04
 td.r, th.r { text-align: right; }
 .tw { overflow-x: auto; }
 .tag { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 3px; border: 1px solid; }
-.tag.designer { color: var(--des); } .tag.developer { color: var(--dev); } .tag.planner { color: var(--plan); }
+.tag.designer { color: var(--des); } .tag.developer { color: var(--dev); } .tag.planner { color: var(--plan); } .tag.other { color: var(--muted); }
 td:first-child, th:last-child, td.r { white-space: nowrap; }
 tr.me td { font-weight: 600; background: color-mix(in oklab, var(--accent) 8%, var(--surface)); }
 .mood { display: flex; gap: 8px; }
@@ -239,7 +239,12 @@ const ENT_TOTAL = ROLE_W.designer;
 const WK = G.worker; /* 일반 직장인(임금근로자 20~59세) 비교 통계, 노동패널 2022~2024 */
 const people = (n) => (n >= 1000 ? Math.round(n / 100) * 100 : Math.max(10, Math.round(n / 10) * 10)).toLocaleString("ko-KR");
 const PLAY = ["designer"];
-const ROLE = { designer: "디자이너", developer: "개발자", planner: "기획자" };
+const ROLE = { designer: "디자이너", developer: "개발자", planner: "기획자", other: "다른 직업" };
+/* 다른 직업으로 옮긴 뒤: 해마다 디자이너로 돌아올 기회가 있다(노동패널). AWAY_MAX년 안에 돌아오지 않으면 기록을 마친다(설계상 가정). */
+const RET = G.ret.designer, AWAY_MAX = 5;
+const AWAY_NAME = { developer: "개발자", planner: "기획자", other: "다른 직업" };
+const WORKING = ["wage", "self", "leave"];
+const workYears = (P) => P.statuses.filter((x) => WORKING.includes(x)).length;
 const SEX = { male: "남성", female: "여성" };
 const BANDS = ["20~24", "25~29", "30~34", "35~39", "40~44", "45~49", "50~54", "55~59", "60+"];
 const BAND_MID = [22, 27, 32, 37, 42, 47, 52, 57, 62];
@@ -368,6 +373,20 @@ function currentWage(P) {
   return marketWage(P.role, P.sex, P.age, P.size) * P.p;
 }
 
+function goAway(P, dest, reason) {
+  P.status = "away"; P.awayYears = 0; P.awayKind = dest; P.noneYears = 0;
+  P.flags.leftN = (P.flags.leftN || 0) + 1;
+  if (P.jobs.at(-1).to == null) P.jobs.at(-1).to = P.t + 1;
+  P.jobs.push({ company: josaRo(AWAY_NAME[dest]) + " 일함", size: null, role: dest, from: P.t + 1, to: null, kind: "away", reason });
+}
+function comeback(P, out, text, why) {
+  P.status = "wage"; P.awayYears = 0; P.flags.comeback = (P.flags.comeback || 0) + 1;
+  P.size = pick({ S: .65, M: .21, L: .14 }); P.company = choose(COMPANY[P.role][P.size]);
+  P.jobs.at(-1).to = P.t + 1;
+  P.jobs.push({ company: P.company, size: P.size, role: P.role, from: P.t + 1, to: null, kind: "wage", reason: "디자이너 복귀" });
+  out.push({ kind: "comeback", big: true, text: `${text} ${P.company}(${SIZE3[P.size]}).`, why, grade: "B" });
+}
+
 /* ── 1년 진행 ──
    mods: 이번 해 확률 배수 (반기 초점·카드 선택). 설계상 가정(D). 흐름대로 = 배수 없음 = 원자료 그대로. */
 function step(P, mods = {}) {
@@ -378,18 +397,35 @@ function step(P, mods = {}) {
   const who = P.role === "planner" ? `${age3Label[age3(P.age)]} ${roleName}` : `${SEX[P.sex]} ${age3Label[age3(P.age)]} ${roleName}`;
   const cellNote = fallback && P.role !== "planner" ? " (성별 칸 표본이 30건 미만이라 남녀 합계 사용)" : "";
 
+  if (P.status === "away") {
+    P.awayYears++;
+    const c = P.awayYears === 1 ? RET.other_first : RET.other_later;
+    const pb = c.back * (mods.back || 1);
+    const why = `${SRC.klips}: 디자이너를 떠나 다른 직업으로 일하던 사람이 다음 해 디자이너로 돌아온 비율 — 떠난 첫해 ${pct(c === RET.other_first ? c.back : RET.other_first.back, 1)}(${RET.other_first.n}건), 그 뒤 해마다 ${pct(RET.other_later.back, 1)}(${RET.other_later.n}건).${mods.back ? " 이번 해 선택이 이 비율에 배수를 걸었다(설계상 가정 D)." : ""}`;
+    if (rand() < pb) {
+      comeback(P, out, `${AWAY_NAME[P.awayKind]} 일을 정리하고 디자이너로 돌아왔다.`, why);
+    } else if (P.awayYears >= AWAY_MAX) {
+      P.end = P.awayKind === "planner" ? { type: "planner", text: `기획자로 옮긴 지 ${AWAY_MAX}년, 디자이너로 돌아오지 않았다.` } : { type: "other", text: `${josaRo(AWAY_NAME[P.awayKind])} 옮긴 지 ${AWAY_MAX}년, 디자이너로 돌아오지 않았다.` };
+      P.jobs.at(-1).to = P.t + 1;
+      out.push({ kind: "end", big: true, text: P.end.text + " 디자이너 커리어는 여기서 마친다.", why: why + ` ${AWAY_MAX}년이 지나면 기록을 마친다(설계상 가정).`, grade: "B" });
+    } else {
+      out.push({ kind: "away", text: `${josaRo(AWAY_NAME[P.awayKind])} 한 해를 더 일했다. (디자이너를 떠난 지 ${P.awayYears}년)`, why, grade: "B" });
+    }
+    return out;
+  }
   if (P.status === "none") {
-    const re = P.role === "planner" ? { back: .3, other: .3, still: .4, n: 17 } : r.reentry;
+    const re = P.role === "planner" ? { back: .3, other: .3, still: .4, n: 17 } : P.noneYears <= 1 ? r.reentry : { back: RET.not_employed_later.back, other: RET.not_employed_later.other, still: RET.not_employed_later.not_employed, n: RET.not_employed_later.n };
     const w = { back: re.back * (mods.back || 1), other: re.other, still: re.still * (mods.still || 1) };
     const k = pick(w);
-    const why = `${SRC.klips}: 일을 쉬던 ${roleName}의 다음 해 상태 ${re.n}건 중 같은 일 복귀 ${pct(re.back)}, 다른 일 ${pct(re.other)}, 계속 쉼 ${pct(re.still)}.`;
+    const why = `${SRC.klips}: 일을 쉬던 ${roleName}의 다음 해 상태 ${re.n}건(${P.noneYears <= 1 ? "쉰 첫해" : "쉰 지 2년 이상"}) 중 같은 일 복귀 ${pct(re.back)}, 다른 일 ${pct(re.other)}, 계속 쉼 ${pct(re.still)}.`;
     if (k === "back") {
       P.size = pick(G.size_move[P.size]); P.company = choose(COMPANY[P.role][P.size]); P.status = "wage"; P.noneYears = 0;
       P.jobs.push({ company: P.company, size: P.size, role: P.role, from: P.t + 1, to: null, kind: "wage" });
       out.push({ kind: "back", big: true, text: `${roleName}로 다시 일을 시작했다. ${P.company}, ${SIZE3[P.size]}.`, why, grade: "B" });
     } else if (k === "other") {
-      P.end = { type: "other", text: `디자이너가 아닌 다른 직업으로 옮기며 커리어를 마쳤다.` };
-      out.push({ kind: "end", big: true, text: P.end.text, why, grade: "B" });
+      const dest = r.dest ? pick(r.dest) : "other";
+      goAway(P, dest, null);
+      out.push({ kind: "leave_role", big: true, text: `쉬던 끝에 ${josaRo(AWAY_NAME[dest])} 일을 시작했다. 디자이너로 돌아올지는 아직 모른다.`, why, grade: "B" });
     } else {
       P.noneYears++;
       out.push({ kind: "still", text: `올해도 일을 쉬었다. (${P.noneYears}년째)`, why, grade: "B" });
@@ -455,26 +491,8 @@ function step(P, mods = {}) {
     const { q, note } = quitWhy();
     const dest = r.dest ? pick(r.dest) : "other";
     const destWhy = r.dest ? ` 다른 직업으로 옮긴 ${roleName} ${r.dest_n}명의 도착지: 개발자 ${pct(r.dest.developer || 0)}, 디자이너 ${pct(r.dest.designer || 0)}, 기획자 ${pct(r.dest.planner || 0)}, 그 밖 ${pct(r.dest.other)}.` : "";
-    if (PLAY.includes(dest) && dest !== P.role) {
-      P.jobs.at(-1).to = P.t + 1;
-      const prev = P.role; P.role = dest; P.status = "wage"; P.switchedAt = P.t + 1;
-      const newP0 = levelFor(dest, P.sex, P.startAge); P.p = P.p / P.p0 * newP0; P.p0 = newP0;
-      // 직군을 바꾸면 그 직군 신입 수준에서 다시 시작한다고 보고, 나이 곡선의 경력 몫은 반만 인정 (설계상 가정 D)
-      P.p *= Math.sqrt(interp(R[dest].wage_by_age, P.startAge + 1) / interp(R[dest].wage_by_age, P.age));
-      P.size = pick(G.size_move[P.size]); P.company = choose(COMPANY[dest][P.size]);
-      P.jobs.push({ company: P.company, size: P.size, role: dest, from: P.t + 1, to: null, kind: "wage", reason: q });
-      out.push({ kind: "switch", big: true, text: `${ROLE[prev]} 일을 내려놓고 ${ROLE[dest]}로 전향했다. ${P.company}(${SIZE3[P.size]}).`, why: base + destWhy + modNote, grade: "B" });
-    } else if (dest === "developer") {
-      P.end = { type: "other", text: `${roleName} 일을 그만두고 개발자로 옮기며 디자이너 커리어를 마쳤다.` };
-      out.push({ kind: "end", big: true, text: `${QUIT_TEXT[q] || q} ${P.end.text}`, why: base + destWhy + " 이 판은 디자이너만 플레이한다." + modNote, grade: "B" });
-    } else if (dest === "planner") {
-      P.end = { type: "planner", text: `${roleName} 일을 그만두고 기획자로 옮겼다.` };
-      out.push({ kind: "end", big: true, text: `${QUIT_TEXT[q] || q} ${P.end.text}`, why: base + destWhy + " 이 게임은 디자이너만 플레이한다." + modNote, grade: "B" });
-    } else {
-      P.end = { type: "other", text: `${roleName} 일을 그만두고 다른 직업으로 옮기며 커리어를 마쳤다.` };
-      out.push({ kind: "end", big: true, text: `${QUIT_TEXT[q] || q} ${P.end.text}`, why: base + note + destWhy + modNote, grade: "B" });
-    }
-    if (P.end) P.jobs.at(-1).to = P.t + 1;
+    goAway(P, dest, q);
+    out.push({ kind: "leave_role", big: true, text: `${QUIT_TEXT[q] || q} ${roleName} 일을 내려놓고 ${josaRo(AWAY_NAME[dest])} 옮겼다. 디자이너로 돌아올지는 아직 모른다.`, why: base + note + destWhy + modNote, grade: "B" });
   } else {
     P.status = "none"; P.noneYears = 1; P.jobs.at(-1).to = P.t + 1;
     let why = base + modNote + " 노동패널에는 일을 쉬게 된 이유가 없다.";
@@ -499,10 +517,11 @@ function cohort(role, sex) {
   for (let i = 0; i < N; i++) {
     const P = newPerson(role, sex);
     const hist = {};
-    let tot = 0;
+    let tot = 0, dy = 0;
     for (let t = 0; t < T; t++) {
       if (t > 0) { const w0 = currentWage(P); step(P); advanceAge(P); tot += (!P.end || P.end.type === "retire" ? currentWage(P) : w0) * 12; }
-      const inRole = !P.end && P.status !== "none" && P.role === role;
+      const inRole = !P.end && WORKING.includes(P.status) && P.role === role;
+      if (t > 0 && WORKING.includes(P.status) && (!P.end || P.end.type === "retire")) dy++;
       hist[P.age] = inRole;
       if (inRole) { keep[t]++; wages[t].push(currentWage(P)); if (P.age < 60) ageBins[P.age < 30 ? 0 : P.age < 40 ? 1 : P.age < 50 ? 2 : 3]++; }
       if (P.end) break;
@@ -510,7 +529,7 @@ function cohort(role, sex) {
     // 나이대별 5년 유지: 그 나이대에 처음 그 직군이던 해부터 5년 뒤 (노동패널과 같은 정의)
     BANDS5.forEach((b, j) => { let a0 = null; for (let a = b; a < b + 5; a++) if (hist[a]) { a0 = a; break; } if (a0 !== null && a0 + 5 <= 59) { bandN[j][0]++; if (hist[a0 + 5]) bandN[j][1]++; } });
     earn.push(tot);
-    ends.push({ type: P.end ? P.end.type : "retire", years: P.t, same: P.role === role });
+    ends.push({ type: P.end ? P.end.type : "retire", years: dy, same: P.role === role, back: P.flags.comeback || 0 });
   }
   MC[key] = { keep: keep.map((k) => k / N), wages: wages.map((w) => w.sort((a, b) => a - b)), earn: earn.sort((a, b) => a - b), ends, N, band: bandN.map(([n, k]) => (n ? k / n : 0)), age: ageBins.map((x) => x / ageBins.reduce((a, b) => a + b, 0)) };
   return MC[key];
@@ -522,7 +541,7 @@ const FOCUS = {
   flow: { label: "흐름대로", hint: "아무 배수도 걸지 않는다. 통계 그대로 한 해가 간다. 에너지 +6.", mods: {}, energy: 6, skill: 2 },
   work: { label: "지금 일에 집중", hint: "지금 직장에 남을 확률 ×1.15. 실력 +4, 에너지 −4.", mods: { same_job: 1.15 }, energy: -4, skill: 4 },
   grow: { label: "실력 키우기", hint: "실력 +8. 다음 이직 때 월급이 3%p 더 오른다. 에너지 −3.", mods: { bonus: 0.03 }, energy: -3, skill: 8 },
-  move: { label: "이직 준비", hint: "같은 직군 이직 ×2, 쉬던 중이면 복귀 ×1.5. 에너지 −3.", mods: { new_job_same_occupation: 2, back: 1.5 }, energy: -3, skill: 3 },
+  move: { label: "이직 준비", hint: "같은 직군 이직 ×2, 쉬거나 다른 일을 하던 중이면 디자이너 복귀 ×1.5. 에너지 −3.", mods: { new_job_same_occupation: 2, back: 1.5 }, energy: -3, skill: 3 },
   side: { label: "사이드·외주", hint: "프리랜서 독립 ×3, 다른 직업 전환 ×1.2. 실력 +5, 에너지 −8.", mods: { to_self: 3, other_occupation: 1.2 }, energy: -8, skill: 5 },
   rest: { label: "쉬기·사생활", hint: "에너지 +20. 확률은 그대로.", mods: {}, energy: 20, skill: 0 },
 };
@@ -1234,6 +1253,19 @@ const CARDS = [
     ] },
 
   /* ───── 강아지 ───── */
+  { id: "comeback_post", cat: "growth", away: true, when: (P) => P.status === "away", w: () => 6, title: "디자이너 채용 공고를 봤다",
+    body: (P) => `${josaRo(AWAY_NAME[P.awayKind])} 옮긴 지 ${P.awayYears + 1}년째. 예전 동료가 공유한 채용 공고에 '경력 무관, 포트폴리오 필수'라고 적혀 있다.`,
+    why: () => `${SRC.klips}: 디자이너를 떠나 다른 직업으로 일하던 사람 중 다음 해 디자이너로 돌아온 비율은 떠난 첫해 ${pct(RET.other_first.back, 1)}(${RET.other_first.n}건), 그 뒤 해마다 ${pct(RET.other_later.back, 1)}(${RET.other_later.n}건). 지원하면 올해 그 확률에 ×4를 건다.`, grade: "B",
+    choices: [
+      { label: "포트폴리오를 다시 만들어 지원한다", hint: "올해 디자이너 복귀 확률 ×4, 에너지 −10", apply: (P, c) => { P.energy -= 10; mul(c, "back", 4); return "3년 전 파일을 열었다. 폰트가 깨져 있었다."; } },
+      { label: "지금 일에 마음을 붙인다", hint: "만족도 +, 복귀 확률 그대로", apply: (P, c) => { c.sat += .1; return "공고 창을 닫았다. 이 일도 나쁘지 않다."; } },
+    ] },
+  { id: "old_tools", cat: "growth", away: true, when: (P) => P.status === "away" && P.awayYears >= 1, w: () => 3, title: "주말에 디자인 툴을 다시 켰다",
+    body: "친구 결혼식 청첩장을 만들어 주기로 했다. 단축키가 손에 남아 있다.",
+    choices: [
+      { label: "이참에 외주를 조금씩 받는다", hint: "올해 디자이너 복귀 확률 ×2, 에너지 −6, +80만", apply: (P, c) => { P.energy -= 6; P.bonus += 80; mul(c, "back", 2); return "두 번째 의뢰부터는 견적서를 보냈다."; } },
+      { label: "청첩장만 만든다", hint: "만족도 +", apply: (P, c) => { c.sat += .1; return "친구가 액자에 넣어 걸었다."; } },
+    ] },
   { id: "dog", cat: "family", when: (P) => P.flags.pet == null && P.age >= 27, title: "강아지를 데려올까", body: "임시보호 중인 세 살 믹스견. 사진 속 표정이 계속 생각난다. 산책은 하루 두 번이 필요하다고 한다.",
     why: "농림축산식품부 2025 반려동물 양육현황조사: 반려동물을 기르는 가구 29.2%.", grade: "C",
     choices: [
@@ -1444,7 +1476,9 @@ function playYear() {
   // 통계의 연간 발생률로 굴리는 사건 (교통사고, 우울증 진료 등)
   if (!card) card = CARDS.find((c) => c.roll && !P.flags["card_" + c.id] && (!c.when || c.when(P, S)) && rand() < c.roll(P));
   if (!card) {
-    const pool = CARDS.filter((c) => !c.force && !c.trigger && !c.roll && !P.flags["card_" + c.id] && c.when(P, S));
+    // 다른 직업으로 일하는 동안에는 디자이너 일·회사 카드 대신 삶 카드와 복귀 카드만
+    const awayOk = (c) => P.status !== "away" || (c.away || (["body", "love", "family", "friend", "money"].includes(c.cat) && c.id !== "meetup"));
+    const pool = CARDS.filter((c) => !c.force && !c.trigger && !c.roll && !P.flags["card_" + c.id] && awayOk(c) && c.when(P, S));
     if (pool.length) card = CARDS.find((c) => c.id === pick(Object.fromEntries(pool.map((c) => [c.id, c.w ? c.w(P, S) : 1]))));
   }
   if (card) { if (!card.repeat) P.flags["card_" + card.id] = true; S.card = { id: card.id, ctx }; render(); return; }
@@ -1516,7 +1550,7 @@ function finishYear(ctx) {
     if (life) applyLife(x, life);
     advanceAge(x);
     x.wages.push(currentWage(x));
-    const PEER = { move: () => `${josaRo(x.company)} 옮겼다.`, switch: () => `${ROLE[x.role]}로 전향했다.`, self: () => "프리랜서로 독립했다.", back: () => "다시 회사에 들어갔다.", none: () => "일을 쉬게 됐다.", end: () => x.end.text };
+    const PEER = { move: () => `${josaRo(x.company)} 옮겼다.`, switch: () => `${ROLE[x.role]}로 전향했다.`, self: () => "프리랜서로 독립했다.", back: () => "다시 회사에 들어갔다.", none: () => "일을 쉬게 됐다.", leave_role: () => `디자이너 일을 그만두고 ${josaRo(AWAY_NAME[x.awayKind])} 옮겼다.`, comeback: () => "디자이너로 돌아왔다.", end: () => x.end.text };
     if (life === "marry") { peerLines.push({ kind: "peer", text: `${x.name} (${ROLE[x.origRole]}) — 결혼한다는 소식을 전했다.`, why: lifeWhy(x, "marry"), grade: "B" }); if (!P.flags.card_peer_wedding) S.peerWedding = x.name; }
     if (life === "birth") peerLines.push({ kind: "peer", text: `${x.name} (${ROLE[x.origRole]}) — ${x.kids.length > 1 ? "둘째" : "첫아이"}가 태어났다.`, why: lifeWhy(x, "birth"), grade: "C" });
     for (const e of ev) peerLines.push({ kind: "peer", text: `${x.name} (${ROLE[x.origRole]}) — ${(PEER[e.kind] || (() => e.text))()}`, why: e.why, grade: e.grade });
@@ -1692,6 +1726,7 @@ function renderReveal() {
 function statusText(P) {
   if (P.end) return P.end.text;
   if (P.status === "none") return "쉬는 중";
+  if (P.status === "away") return `${josaRo(AWAY_NAME[P.awayKind])} 일하는 중`;
   if (P.status === "self") return `프리랜서 ${ROLE[P.role]}`;
   if (P.status === "leave") return `육아휴직 중 · ${esc(P.company)}`;
   if (P.status === "school") return "대학원 재학 중";
@@ -1708,7 +1743,7 @@ function renderPlay() {
   const intro = !S.feed.length ? `<div class="yr"><div class="y">${START_YEAR}<br>${P.age}세</div><div class="lines"><div class="line">${esc(P.company)}에 첫 출근했다. '1년 보내기'를 누르면 올해 어디에 힘을 쓸지 묻습니다.</div></div></div>` : "";
   $app.innerHTML = `
     <div class="idcard">
-      <div><div class="who">${P.t + 1}년차 ${ROLE[P.role]}</div><div class="where">${P.age}세 ${SEX[P.sex]} · ${START_YEAR + P.t}년 · ${statusText(P)}</div></div>
+      <div><div class="who">${P.status === "away" ? `디자이너를 떠난 지 ${P.awayYears + 1}년째` : `${P.t + 1}년차 ${ROLE[P.role]}`}</div><div class="where">${P.age}세 ${SEX[P.sex]} · ${START_YEAR + P.t}년 · ${statusText(P)}</div></div>
       <div class="pay"><div class="label">월 (만 원)</div><b>${P.status === "none" ? "—" : won(w)}</b></div>
       <div class="meters">
         <span class="meter ${P.energy < 25 ? "low" : ""}">에너지 <i style="--v:${P.energy}%"></i></span>
@@ -1772,14 +1807,14 @@ function cardHtml() {
 
 function rowFor(x, isMe) {
   const w = currentWage(x);
-  return `<tr class="${isMe ? "me" : ""}"><td>${isMe ? "나" : x.name}</td><td><span class="tag ${x.role}">${ROLE[x.role]}</span>${x.role !== x.origRole ? `<br><span class="fine">${ROLE[x.origRole]}에서 전향</span>` : ""}</td><td>${statusText(x)}</td><td class="r num">${x.end || x.status === "none" ? "—" : won(w)}</td></tr>`;
+  return `<tr class="${isMe ? "me" : ""}"><td>${isMe ? "나" : x.name}</td><td><span class="tag ${x.status === "away" ? "other" : x.role}">${x.status === "away" ? AWAY_NAME[x.awayKind] : ROLE[x.role]}</span>${x.role !== x.origRole ? `<br><span class="fine">${ROLE[x.origRole]}에서 전향</span>` : ""}</td><td>${statusText(x)}</td><td class="r num">${x.end || x.status === "none" ? "—" : won(w)}</td></tr>`;
 }
 
 function checkHtml() {
   const P = S.player, t = S.check.t;
   const mc = cohort(P.origRole, P.sex);
   const keep = mc.keep[t];
-  const inRole = P.status !== "none" && P.role === P.origRole;
+  const inRole = WORKING.includes(P.status) && P.role === P.origRole;
   const pr = inRole ? percentile(mc.wages[t], currentWage(P)) : null;
   return `<div class="sheet-wrap"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="chk-title">
     <div class="label">${t}년차 체크포인트 · ${START_YEAR + t}년</div>
@@ -1824,20 +1859,23 @@ function lifetime(P) { return P.wages.reduce((s, w) => s + w * 12, 0) + P.bonus;
 function titleFor(P) {
   const self = P.statuses.filter((x) => x === "self").length;
   const jobs = P.jobs.filter((j) => j.kind === "wage").length;
+  if (P.end.type === "retire" && P.flags.comeback) return `돌아와서 끝까지 남은 ${ROLE[P.role]}`;
   if (P.end.type === "retire" && P.role === P.origRole && jobs <= 2) return `한 우물을 판 ${ROLE[P.role]}`;
   if (P.end.type === "retire" && P.role !== P.origRole) return `두 번 시작한 ${ROLE[P.role]}`;
   if (P.end.type === "retire" && self >= P.sats.length / 2) return "혼자 일한 사람";
   if (P.end.type === "retire" && jobs >= 6) return `${jobs}개의 회사를 거친 ${ROLE[P.role]}`;
   if (P.end.type === "retire") return `끝까지 남은 ${ROLE[P.role]}`;
   if (P.end.type === "planner") return "화면을 정하는 사람이 된 " + ROLE[P.origRole];
+  if (P.flags.comeback) return `한 번 돌아왔다가 ${workYears(P)}년 만에 떠난 ${ROLE[P.origRole]}`;
   if (P.end.type === "break") return "잠시 멈춰 선 사람";
-  return `${P.t}년 만에 커리어를 마친 ${ROLE[P.role]}`;
+  return `${workYears(P)}년 동안 일한 ${ROLE[P.origRole]}`;
 }
 function rarity(P, mc) {
   const me = P.end.type;
-  const hit = mc.ends.filter((e) => e.type === me && (me === "retire" ? e.same === (P.role === P.origRole) : Math.abs(e.years - P.t) <= 2)).length;
+  const my = workYears(P);
+  const hit = mc.ends.filter((e) => e.type === me && (me === "retire" ? e.same === (P.role === P.origRole) : Math.abs(e.years - my) <= 2)).length;
   const what = me === "retire" ? (P.role === P.origRole ? `60세까지 ${ROLE[P.origRole]}로 남은 사람` : "중간에 직군을 바꿔 60세까지 일한 사람")
-    : me === "planner" ? `${P.t}년 차 앞뒤로 기획 쪽으로 옮긴 사람` : me === "break" ? `${P.t}년 차 앞뒤로 긴 쉼에 들어간 사람` : `${P.t}년 차 앞뒤로 다른 직업으로 옮기며 커리어를 마친 사람`;
+    : me === "planner" ? `디자이너로 ${my}년 앞뒤 일하고 기획 쪽으로 옮긴 사람` : me === "break" ? `디자이너로 ${my}년 앞뒤 일하고 긴 쉼에 들어간 사람` : `디자이너로 ${my}년 앞뒤 일하고 다른 직업으로 옮긴 사람`;
   return { hit, what };
 }
 function neverMarriedP(P) { // 시작 나이부터 지금까지 결혼하지 않았을 확률 (데이터 확률만으로)
@@ -1865,16 +1903,17 @@ function epilogue(P, mc, earned) {
   const jobs = P.jobs.filter((j) => j.kind === "wage").length;
   const s = [];
   if (P.end.type === "retire") s.push(P.role !== P.origRole ? `${P.age}세, 마지막 출근 날. ${ROLE[P.origRole]}로 시작해 ${ROLE[P.role]}로 일을 마쳤다.` : `${P.age}세, 마지막 출근 날. ${jobs}곳의 회사를 거쳐 끝까지 ${ROLE[P.role]}로 일했다.`);
-  else if (P.end.type === "planner") s.push(`${P.age}세에 기획 쪽으로 자리를 옮겼다. 화면을 만들던 사람이 이제 무엇을 만들지 정한다.`);
+  else if (P.end.type === "planner") s.push(`디자이너로 ${workYears(P)}년을 일하고 기획 쪽으로 자리를 옮겼다. 화면을 만들던 사람이 이제 무엇을 만들지 정한다.`);
   else if (P.end.type === "break") s.push(`${P.age}세, 쉬는 시간이 길어졌다. 다시 돌아올지는 이 기록부도 모른다.`);
-  else s.push(`${P.age}세에 ${ROLE[P.role]} 일을 내려놓고 다른 직업으로 옮겼다. ${ROLE[P.role]}로서의 커리어는 여기서 마친다.`);
+  else { const lj = P.jobs.filter((j) => j.kind === "away").at(-1); s.push(`${lj ? P.startAge + lj.from : P.age}세에 ${ROLE[P.origRole]} 일을 내려놓고 ${josaRo(AWAY_NAME[P.awayKind] || "다른 직업")} 옮겼다. ${AWAY_MAX}년 동안 돌아오지 않았고, ${ROLE[P.origRole]}로서의 커리어는 여기서 마친다.`); }
+  if (P.flags.comeback) s.push(`그 사이 디자이너를 떠났다가 ${P.flags.comeback}번 돌아왔다. 다른 직업으로 옮긴 디자이너가 다음 해 돌아오는 비율은 ${pct(RET.other_first.back, 1)}이다.`);
   const ma = P.life.find((e) => e.kind === "marry");
   if (ma) s.push(`${ma.age}세에 결혼했고${P.kids.length ? `, 아이 ${P.kids.length}명을 키웠다.` : ", 아이는 없었다."}`);
   else s.push("결혼은 하지 않았다.");
   if (P.flags.pet != null) s.push(P.flags.dog ? "강아지 커닝이 오래 곁에 있었다." : "고양이 픽셀이 오래 곁에 있었다.");
   const pr = percentile(mc.earn, earned);
   s.push(`일해서 번 돈은 모두 약 ${eok(earned)} 원. 같은 조건 ${mc.N.toLocaleString()}명의 중간값은 ${eok(mc.earn[Math.floor(mc.earn.length / 2)])} 원이었다${pr != null ? `(나는 ${topPct(pr)})` : ""}.`);
-  const peerKeep = S.peers.filter((x) => !x.end && x.status !== "none" && x.role === x.origRole).length;
+  const peerKeep = S.peers.filter((x) => !x.end && WORKING.includes(x.status) && x.role === x.origRole).length;
   s.push(`같이 입사한 동기 4명 중 ${peerKeep}명이 아직 처음 그 일을 하고 있다.`);
   s.push(`해마다 고른 초점과 ${P.picks.length}번의 선택은 확률을 조금 움직였을 뿐이다. 나머지는 같은 해 시작한 수많은 사람들의 평균, 그리고 운이었다.`);
   return s;
@@ -1886,28 +1925,29 @@ const SHARE_URL = "https://zero3181.github.io/LoD/";
 const STAMP = { retire: "정년", other: "커리어 마침", planner: "기획 전향", break: "긴 쉼" };
 function careerSpot(P, mc) {
   const ys = mc.ends.map((e) => e.years), N = ys.length;
-  const lt = ys.filter((y) => y < P.t).length, eq = ys.filter((y) => y === P.t).length;
+  const me = workYears(P);
+  const lt = ys.filter((y) => y < me).length, eq = ys.filter((y) => y === me).length;
   const sorted = [...ys].sort((a, b) => a - b);
-  const maxY = Math.max(...ys, P.t);
+  const maxY = Math.max(...ys, me);
   const bins = Array(maxY + 1).fill(0); ys.forEach((y) => bins[y]++);
-  return { N, lt, eq, longer: N - lt - eq, below: (lt + eq / 2) / N, median: sorted[Math.floor(N / 2)], bins, maxY, retire: mc.ends.filter((e) => e.type === "retire").length };
+  return { me, back: mc.ends.filter((e) => e.back).length, N, lt, eq, longer: N - lt - eq, below: (lt + eq / 2) / N, median: sorted[Math.floor(N / 2)], bins, maxY, retire: mc.ends.filter((e) => e.type === "retire").length };
 }
 function careerChart(P, sp) {
   const W = 320, H = 150, L = 8, Rr = 8, T = 22, B = 22;
   const n = sp.bins.length, bw = (W - L - Rr) / n, top = Math.max(...sp.bins);
   const y = (v) => T + (1 - v / top) * (H - T - B);
-  const bars = sp.bins.map((v, i) => { if (!v && i !== P.t) return ""; const me = i === P.t; return `<rect x="${(L + i * bw + .5).toFixed(1)}" y="${y(v).toFixed(1)}" width="${Math.max(1, bw - 1).toFixed(1)}" height="${(H - B - y(v)).toFixed(1)}" rx="1" fill="${me ? "var(--accent)" : "color-mix(in oklab, var(--muted) 35%, var(--surface))"}"/>`; }).join("");
-  const mx = L + (P.t + .5) * bw, medx = L + (sp.median + .5) * bw;
+  const bars = sp.bins.map((v, i) => { if (!v && i !== sp.me) return ""; const me = i === sp.me; return `<rect x="${(L + i * bw + .5).toFixed(1)}" y="${y(v).toFixed(1)}" width="${Math.max(1, bw - 1).toFixed(1)}" height="${(H - B - y(v)).toFixed(1)}" rx="1" fill="${me ? "var(--accent)" : "color-mix(in oklab, var(--muted) 35%, var(--surface))"}"/>`; }).join("");
+  const mx = L + (sp.me + .5) * bw, medx = L + (sp.median + .5) * bw;
   let ticks = ""; for (let t = 0; t < n; t += 5) ticks += `<text x="${(L + (t + .5) * bw).toFixed(1)}" y="${H - 6}" text-anchor="middle">${t}년</text>`;
-  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="커리어 길이 분포와 내 위치">
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="디자이너로 일한 햇수 분포와 내 위치">
     <line x1="${medx.toFixed(1)}" x2="${medx.toFixed(1)}" y1="${T - 4}" y2="${H - B}" stroke="var(--muted)" stroke-dasharray="3 3"/>
     <text x="${(medx + 4).toFixed(1)}" y="${T + 6}">중간 ${sp.median}년</text>
     ${bars}${ticks}
-    <line x1="${mx.toFixed(1)}" x2="${mx.toFixed(1)}" y1="${T - 12}" y2="${y(sp.bins[P.t]) - 2}" stroke="var(--accent)" stroke-width="1.5"/>
-    <text class="me" x="${mx.toFixed(1)}" y="${T - 14}" text-anchor="${mx > W - 40 ? "end" : mx < 40 ? "start" : "middle"}">나 ${P.t}년</text></svg>`;
+    <line x1="${mx.toFixed(1)}" x2="${mx.toFixed(1)}" y1="${T - 12}" y2="${y(sp.bins[sp.me]) - 2}" stroke="var(--accent)" stroke-width="1.5"/>
+    <text class="me" x="${mx.toFixed(1)}" y="${T - 14}" text-anchor="${mx > W - 40 ? "end" : mx < 40 ? "start" : "middle"}">나 ${sp.me}년</text></svg>`;
 }
 function careerLine(P, sp) {
-  return `같은 해 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작한 ${sp.N.toLocaleString()}명 중 ${sp.lt.toLocaleString()}명이 나보다 먼저 커리어를 마쳤고, ${sp.longer.toLocaleString()}명이 더 오래 일했다. 오래 일한 순서로 ${topPct(sp.below)}.`;
+  return `같은 해 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작한 ${sp.N.toLocaleString()}명 중 ${sp.lt.toLocaleString()}명은 디자이너로 나보다 짧게, ${sp.longer.toLocaleString()}명은 더 오래 일했다. 오래 일한 순서로 ${topPct(sp.below)}.`;
 }
 /* 공유 카드 이미지 (1080×1350 PNG) */
 async function shareImage(P, title, sp, earned) {
@@ -1927,15 +1967,15 @@ async function shareImage(P, title, sp, earned) {
   g.save(); g.translate(850, y + 92); g.rotate(-0.12); g.strokeStyle = C.stamp; g.lineWidth = 6; g.font = `800 40px ${F}`; const sw = g.measureText(STAMP[P.end.type]).width + 44; g.strokeRect(-sw / 2, -36, sw, 72); g.fillStyle = C.stamp; g.textAlign = "center"; g.fillText(STAMP[P.end.type], 0, 14); g.restore();
   // 큰 숫자 (도장은 오른쪽)
   y += 40;
-  txt(`${P.t}년`, 100, y + 90, 120, C.acc, 800);
+  txt(`${sp.me}년`, 100, y + 90, 120, C.acc, 800);
   txt(`디자이너로 일한 시간 · 오래 일한 순서로 ${topPct(sp.below)}`, 100, y + 145, 32, C.ink, 600);
   // 분포 막대
   const cx = 100, cw = 880, ch = 300, cy = y + 200, n = sp.bins.length, bw = cw / n, top = Math.max(...sp.bins);
-  sp.bins.forEach((v, i) => { const h = v / top * (ch - 40); g.fillStyle = i === P.t ? C.acc : C.bar; g.fillRect(cx + i * bw + 1, cy + ch - h, Math.max(2, bw - 3), h); });
+  sp.bins.forEach((v, i) => { const h = v / top * (ch - 40); g.fillStyle = i === sp.me ? C.acc : C.bar; g.fillRect(cx + i * bw + 1, cy + ch - h, Math.max(2, bw - 3), h); });
   g.strokeStyle = C.line; g.lineWidth = 2; g.beginPath(); g.moveTo(cx, cy + ch + 1); g.lineTo(cx + cw, cy + ch + 1); g.stroke();
   for (let t = 0; t < n; t += 5) txt(`${t}년`, cx + (t + .5) * bw, cy + ch + 40, 24, C.muted, 500, "center");
-  const mx = cx + (P.t + .5) * bw; txt("나", mx, cy + ch - (sp.bins[P.t] / top) * (ch - 40) - 14, 30, C.acc, 800, "center");
-  txt(`같은 조건 ${sp.N.toLocaleString()}명이 커리어를 마친 해 · 중간값 ${sp.median}년`, 100, cy + ch + 90, 26, C.muted, 500);
+  const mx = cx + (sp.me + .5) * bw; txt("나", mx, cy + ch - (sp.bins[sp.me] / top) * (ch - 40) - 14, 30, C.acc, 800, "center");
+  txt(`같은 조건 ${sp.N.toLocaleString()}명이 디자이너로 일한 햇수 · 중간값 ${sp.median}년`, 100, cy + ch + 90, 26, C.muted, 500);
   // 하단
   txt(`번 돈 약 ${eok(earned)} 원 · 일자리 ${P.jobs.filter((j) => j.kind !== "school").length}곳`, 100, 1180, 30, C.ink, 600);
   txt("디자이너로 살아보기", 100, 1250, 34, C.acc, 800);
@@ -1972,17 +2012,13 @@ function renderRecord() {
     <header>
       <div class="label">커리어 기록부 · ${START_YEAR}–${endYear}</div>
       <h1 class="rec-title">${esc(title)}</h1>
-      <p>${P.startAge}세 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작해 ${P.age}세에 기록을 마쳤다. ${years}년 동안 일자리 ${P.jobs.filter((j) => j.kind !== "school").length}곳. ${esc(P.end.text)}</p>
+      <p>${P.startAge}세 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작해 ${P.age}세에 기록을 마쳤다. 디자이너로 일한 ${workYears(P)}년, 일자리 ${P.jobs.filter((j) => j.kind !== "school").length}곳. ${esc(P.end.text)}</p>
       <span class="stamp">${STAMP[P.end.type]}</span>
     </header>
     <section class="odds">
       <div class="odds-n"><b class="num">${rr.hit.toLocaleString()}</b><span>/ ${mc.N.toLocaleString()}명</span></div>
       <p>같은 해 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작한 ${mc.N.toLocaleString()}명을 같은 확률로 굴리면, ${rr.what}은 ${rr.hit.toLocaleString()}명(${pct(rr.hit / mc.N, 1)})이었다.${rr.hit / mc.N < .05 ? " 드문 기록이다." : ""}</p>
     </section>
-    <section><h2>몇 년 만에 커리어를 마쳤나</h2>
-      ${careerChart(P, sp)}
-      <p style="font-size:14px;margin-top:6px">${careerLine(P, sp)}</p>
-      <p class="fine" style="margin-top:4px">같은 엔진으로 ${sp.N.toLocaleString()}명을 굴린 결과입니다(초점은 '흐름대로'). 다른 직업으로 옮기거나 3년 넘게 쉬면 커리어가 끝난 것으로 셉니다. 60세 정년까지 간 사람은 ${sp.retire}명(${pct(sp.retire / sp.N, 1)})입니다.</p></section>
     <div class="facts">
       <div><b class="num">${eok(earned)}</b><span>일해서 번 돈 (물가 보정 전)</span></div>
       <div><b class="num">${won(peak)}만</b><span>가장 많이 받은 월급</span></div>
@@ -1990,6 +2026,10 @@ function renderRecord() {
       <div><b class="num">${P.kids.length}명</b><span>아이</span></div>
     </div>
     ${lastHtml}
+    <section><h2>디자이너로 몇 년 일했나</h2>
+      ${careerChart(P, sp)}
+      <p style="font-size:14px;margin-top:6px">${careerLine(P, sp)}</p>
+      <p class="fine" style="margin-top:4px">같은 엔진으로 ${sp.N.toLocaleString()}명을 굴린 결과입니다(초점은 '흐름대로'). 다른 직업으로 옮긴 해와 쉰 해는 빼고 셉니다. 떠났다가 돌아온 사람은 ${sp.back}명(${pct(sp.back / sp.N, 1)}), 60세 정년까지 간 사람은 ${sp.retire}명(${pct(sp.retire / sp.N, 1)})입니다.</p></section>
     <section><h2>한 해 한 칸 · 만족도</h2>
       <div class="map">${cells}</div>
       <div class="legend"><span><i style="background:${satColor(1.5)}"></i>낮음</span><span><i style="background:${satColor(4.5)}"></i>높음</span><span><i class="cell none" style="display:inline-block"></i>쉼</span><span><i class="cell pause" style="display:inline-block;background:var(--sunk)"></i>휴직·학업</span><span><i style="background:var(--ink);border-radius:50%;width:6px;height:6px"></i>결혼·출산</span>${P.switchedAt ? "<span>가운데 구멍 = 직군 전향</span>" : ""}</div>
@@ -2011,8 +2051,8 @@ function renderRecord() {
   $app.querySelector("#again").onclick = () => { S = freshState(); render(); };
   $app.querySelector("#data").onclick = () => { S.screen = "data"; S.back = "record"; render(); };
   const note = (t) => { $app.querySelector("#copy-note").textContent = t; };
-  const shortTxt = `[${title}] ${P.startAge}세 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작해 ${P.t}년 만에 ${STAMP[P.end.type]}. 같은 조건 ${sp.N.toLocaleString()}명 중 오래 일한 순서로 ${topPct(sp.below)}. 과연 정년까지 일할 수 있을까요?`;
-  const fullTxt = `[${title}]\n${P.startAge}세 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작 → ${P.age}세. ${P.end.text}\n${P.t}년 · 같은 조건 ${sp.N.toLocaleString()}명 중 오래 일한 순서로 ${topPct(sp.below)} · 번 돈 약 ${eok(earned)} 원 · 최고 월 ${won(peak)}만 원\n` +
+  const shortTxt = `[${title}] ${P.startAge}세 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작해 디자이너로 ${sp.me}년, ${STAMP[P.end.type]}. 같은 조건 ${sp.N.toLocaleString()}명 중 오래 일한 순서로 ${topPct(sp.below)}. 과연 정년까지 일할 수 있을까요?`;
+  const fullTxt = `[${title}]\n${P.startAge}세 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작 → ${P.age}세. ${P.end.text}\n디자이너로 ${sp.me}년 · 같은 조건 ${sp.N.toLocaleString()}명 중 오래 일한 순서로 ${topPct(sp.below)} · 번 돈 약 ${eok(earned)} 원 · 최고 월 ${won(peak)}만 원\n` +
     scenes.slice(0, 6).map((x) => `${START_YEAR + x.t} ${x.text}`).join("\n") + "\n" + P.jobs.map((j) => `${START_YEAR + j.from} ${ROLE[j.role]} ${j.company}`).join("\n") + `\n\n디자이너로 살아보기 ${SHARE_URL}`;
   const copy = (t, msg) => navigator.clipboard.writeText(t).then(() => note(msg), () => note(t));
   const download = (blob) => { const u = URL.createObjectURL(blob), a = document.createElement("a"); a.href = u; a.download = "designer-career.png"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); };
@@ -2100,7 +2140,8 @@ function renderData() {
       <li>60세 종료, 3년 연속 쉼 종료, 회사 이름 예시.</li>
       <li>'통계 확률로 일어난 일'(교통사고, 우울증·공황장애·탈모 진료)은 전국 한 해 인원을 인구 약 5,120만 명으로 나눈 확률을 모든 나이에 똑같이 씁니다. 우울증은 한 해 진료받은 사람 수라 새로 걸리는 확률보다 높게 잡혔을 수 있고, 에너지가 35 아래면 ×1.5로 두었습니다.</li>
       <li>첫 월급의 개인차(같은 회사 규모 안 로그 표준편차 0.18)는 청년패널 신입 디자이너 첫 월급의 분포(25% 200만, 중앙 225만, 95% 300만 원)에 맞춘 값입니다.</li>
-      <li>다른 직업으로 옮긴 뒤 돌아오는 경우는 넣지 않았습니다. 노동패널에서 돌아오는 비율은 연 1~7%입니다.</li>
+      <li>다른 직업으로 옮겨도 바로 끝나지 않습니다. 해마다 디자이너로 돌아올 수 있고(노동패널: 떠난 첫해 ${pct(RET.other_first.back, 1)} n=${RET.other_first.n}, 그 뒤 ${pct(RET.other_later.back, 1)} n=${RET.other_later.n}), ${AWAY_MAX}년 안에 돌아오지 않으면 기록을 마칩니다. ${AWAY_MAX}년과, 그동안 월급을 디자이너 곡선으로 두는 것은 설계상 가정입니다. 다른 일을 하다 쉬게 되는 경우(연 11%)는 넣지 않았습니다.</li>
+      <li>일을 쉬던 사람의 복귀는 쉰 첫해(같은 일 ${pct(R.designer.reentry.back)}, n=${R.designer.reentry.n})와 그 뒤(${pct(RET.not_employed_later.back)}, n=${RET.not_employed_later.n})를 나눠 씁니다.</li>
     </ul></section>
     <section><h2>출처</h2><ol class="sources">
       <li><a href="https://www.kli.re.kr/menu.es?mid=a40302000000" target="_blank" rel="noopener">한국노동연구원 한국노동패널 12~27차</a> — 연간 이동, 나이별 월급, 자영업, 복귀, 직군 전환 도착지, 일반 직장인 비교(2022~2024)</li>

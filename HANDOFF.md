@@ -206,3 +206,13 @@ PRD 본문은 claude.ai 문서에 있다: https://claude.ai/artifact/892mSfiMXa6
 - 기록부: '몇 년 만에 커리어를 마쳤나' 분포 그래프(같은 조건 1,500명, cohort())와 내 위치. 마지막 장을 만족도 위로. 공유(이미지 카드 1080×1350 + navigator.share, 없으면 글 복사 + 이미지 저장).
 - 커리어 길이 확인: 엔진만 굴린 중앙값 6년, 카드·초점을 무작위로 고른 실제 플레이도 6~7년. 카드가 줄이는 게 아니라 노동패널의 직군 이탈률 그대로다. 다른 직업으로 옮기면 끝나고, 돌아오는 경우(노동패널 연 1~7%)는 아직 없다.
 - 웹: https://zero3181.github.io/LoD/ (GitHub Pages, designer-only 브랜치 루트 index.html → prototype/designer.html)
+
+## 디자이너판 v5: 떠났다가 돌아오기 (2026-11-02)
+- 다른 직업으로 옮겨도 바로 끝나지 않는다. 상태 `away`로 계속 진행하고, 해마다 디자이너로 돌아올 수 있다.
+  - 복귀율: scripts/klips_return_rates.py → data/20_klips_return_rates.json. 디자이너→다른 직업 첫해 5.6%(n=54), 그 뒤 1.7%(n=299).
+  - 5년(AWAY_MAX) 안에 돌아오지 않으면 끝(설계상 가정). away 동안 월급은 디자이너 곡선 그대로(가정), 다른 일→쉼(연 11%)은 넣지 않음.
+  - away 동안 카드는 삶 카드(body/love/family/friend/money, meetup 제외)와 복귀 카드 2종(comeback_post 복귀 ×4, old_tools ×2). '이직 준비' 초점은 복귀 ×1.5.
+- 쉼 복귀: 쉰 첫해는 기존 reentry(같은 일 26.1%, n=46), 그 뒤는 3.0%(n=167). 쉼 → 다른 일도 away로 간다.
+- 보정 다시: hetero mean 0.9 그대로가 최적(prototype/calibrate.js, ROLES=designer). 60세까지 디자이너 약 4.5%.
+- 결과(1,500판): 게임 길이 중앙 11년(이전 6년), 디자이너로 일한 햇수 중앙 5년, 떠났다 돌아온 판 약 12%.
+- 기록부: '디자이너로 몇 년 일했나'(away·쉼 해 제외) 분포 그래프를 마지막 장 아래로. 제목·희귀도도 일한 햇수 기준.

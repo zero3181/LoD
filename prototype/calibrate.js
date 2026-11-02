@@ -44,7 +44,7 @@ function run(role, N) {
     for (let t = 0; t < 45; t++) {
       if (t > 0) { api.step(P); api.advanceAge(P); }
       if (P.end) break;
-      const inRole = P.status !== "none" && P.role === role;
+      const inRole = ["wage", "self", "leave"].includes(P.status) && P.role === role; // 쉼·다른 직업(away)은 빼고
       hist[P.age] = inRole;
       if (y && inRole && keep[t] !== undefined) keep[t]++;
       if (inRole && P.age < 60) ages[P.age < 30 ? 0 : P.age < 40 ? 1 : P.age < 50 ? 2 : 3]++;
@@ -69,7 +69,7 @@ function loss(role, r) {
 }
 const fmt = (r) => `keep ${Object.entries(r.keep).map(([k, v]) => `${k}y ${(v * 100).toFixed(0)}`).join(" ")} | band ${Object.entries(r.band).map(([k, v]) => `${k} ${(v * 100).toFixed(0)}`).join(" ")} | age ${r.age.map((x) => (x * 100).toFixed(0)).join("/")} | to60 ${(r.to60 * 100).toFixed(1)}`;
 const out = {};
-for (const role of ["designer", "developer"]) {
+for (const role of (process.env.ROLES || "designer,developer").split(",")) {
   let best = null;
   for (const mean of [0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6, 1.8, 2.1])
     for (const shape of [0.15, 0.2, 0.3, 0.4, 0.5, 0.7, 1, 1000])

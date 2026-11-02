@@ -1,0 +1,54 @@
+{
+ "designer": {
+  "other_later": {
+   "n": 299,
+   "back": 0.017,
+   "other": 0.873,
+   "not_employed": 0.11
+  },
+  "other_first": {
+   "n": 54,
+   "back": 0.056,
+   "other": 0.833,
+   "not_employed": 0.111
+  },
+  "not_employed_later": {
+   "n": 167,
+   "back": 0.03,
+   "other": 0.186,
+   "not_employed": 0.784
+  },
+  "not_employed_first": {
+   "n": 46,
+   "back": 0.261,
+   "other": 0.283,
+   "not_employed": 0.457
+  }
+ },
+ "developer": {
+  "other_later": {
+   "n": 307,
+   "back": 0.026,
+   "other": 0.938,
+   "not_employed": 0.036
+  },
+  "other_first": {
+   "n": 71,
+   "back": 0.056,
+   "other": 0.915,
+   "not_employed": 0.028
+  },
+  "not_employed_later": {
+   "n": 60,
+   "back": 0.117,
+   "other": 0.2,
+   "not_employed": 0.683
+  },
+  "not_employed_first": {
+   "n": 43,
+   "back": 0.372,
+   "other": 0.233,
+   "not_employed": 0.395
+  }
+ }
+}
