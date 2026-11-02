@@ -141,6 +141,8 @@ details.manual[open] summary { margin-bottom: 10px; }
 .choice:hover { border-color: var(--accent); }
 .choice small { color: var(--muted); font-size: 12px; }
 .choice:disabled { opacity: .45; cursor: default; }
+.choice[aria-current="true"] { border-color: var(--accent); }
+.choice em { font-style: normal; margin-left: 6px; }
 .cat { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: 0; color: var(--accent); border: 1px solid currentColor; border-radius: 999px; padding: 0 8px; margin-right: 4px; }
 table { border-collapse: collapse; width: 100%; font-size: 13px; }
 th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -1137,7 +1139,7 @@ function lifeWhy(P, kind) {
 
 /* ── 상태 ── */
 let S = null;
-function freshState() { return { screen: "start", manual: false, pickRole: "designer", pickSex: "female", focus: "flow", speed: 0, feed: [], card: null, check: null, player: null, peers: [] }; }
+function freshState() { return { screen: "start", manual: false, pickRole: "designer", pickSex: "female", focus: "flow", ask: false, speed: 0, feed: [], card: null, check: null, player: null, peers: [] }; }
 
 function startGame(role, sex) {
   const P = newPerson(role, sex, { name: "나" });
@@ -1280,9 +1282,15 @@ function schedule() {
 /* ── 그리기 ── */
 const $app = document.getElementById("app");
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-function whyHtml(why, grade) {
-  if (!why) return "";
-  return `<details class="why"><summary>왜?</summary><div class="whybody">${esc(why)} <span class="grade">${grade || ""}</span></div></details>`;
+/* '왜?'에는 실제 데이터 인용만 보여 준다. 설계상 가정(D)만 있는 근거는 숨기고, 섞여 있으면 가정 문장을 뺀다. */
+function citeOnly(why, grade) {
+  if (!why || !grade || grade === "D") return "";
+  return why.split(/(?<=[.)])\s+/).filter((x) => !/설계상|게임 설계|가정이다/.test(x)).join(" ").trim();
+}
+function whyHtml(why, grade, label = "근거") {
+  const t = citeOnly(why, grade);
+  if (!t) return "";
+  return `<details class="why"><summary>${label}</summary><div class="whybody">${esc(t)}</div></details>`;
 }
 
 function render() {
@@ -1381,7 +1389,7 @@ function renderPlay() {
     <div class="yr"><div class="y">${y.year}<br>${y.age}세</div><div class="lines">
       ${y.lines.map((l) => `<div class="line ${l.big ? "big" : ""} ${l.kind === "peer" ? "peer" : ""}">${esc(l.text)}${whyHtml(l.why, l.grade)}</div>`).join("")}
     </div></div>`).join("");
-  const intro = !S.feed.length ? `<div class="yr"><div class="y">${START_YEAR}<br>${P.age}세</div><div class="lines"><div class="line">${esc(P.company)}에 첫 출근했다. 아래에서 올해의 초점을 고르고 한 해를 보내세요.</div></div></div>` : "";
+  const intro = !S.feed.length ? `<div class="yr"><div class="y">${START_YEAR}<br>${P.age}세</div><div class="lines"><div class="line">${esc(P.company)}에 첫 출근했다. '1년 보내기'를 누르면 올해 어디에 힘을 쓸지 묻습니다.</div></div></div>` : "";
   $app.innerHTML = `
     <div class="idcard">
       <div><div class="who">${P.t + 1}년차 ${ROLE[P.role]}</div><div class="where">${P.age}세 ${SEX[P.sex]} · ${START_YEAR + P.t}년 · ${statusText(P)}</div></div>
@@ -1393,22 +1401,32 @@ function renderPlay() {
     </div>
     <div class="scroll" id="feed"><div class="feed">${intro}${feed}</div></div>
     <div class="controls">
-      <div class="focus" role="group" aria-label="올해의 초점">${Object.entries(FOCUS).map(([k, f]) => `<button id="focus-${k}" data-focus="${k}" aria-pressed="${S.focus === k}">${f.label}</button>`).join("")}</div>
-      <div class="focus-hint">${FOCUS[S.focus].hint}${S.focus !== "flow" && S.focus !== "rest" ? " (설계상 가정 D)" : ""}</div>
+      <div class="focus-hint">자동 진행은 마지막에 고른 '${FOCUS[S.focus].label}'로 이어집니다.</div>
       <div class="go">
         <button class="btn" id="go-year">1년 보내기</button>
         <div class="seg" role="group" aria-label="자동 진행">${[0, 1, 2, 4].map((v) => `<button id="speed-${v}" data-speed="${v}" aria-pressed="${S.speed === v}">${v ? v + "×" : "Ⅱ"}</button>`).join("")}</div>
       </div>
     </div>
-    ${S.card ? cardHtml() : ""}${S.check ? checkHtml() : ""}`;
+    ${S.card ? cardHtml() : ""}${S.check ? checkHtml() : ""}${S.ask && !S.card && !S.check ? focusHtml() : ""}`;
   const feedEl = $app.querySelector("#feed"); feedEl.scrollTop = feedEl.scrollHeight;
-  $app.querySelectorAll("[data-focus]").forEach((b) => b.onclick = () => { S.focus = b.dataset.focus; render(); });
+  $app.querySelectorAll("[data-focus]").forEach((b) => b.onclick = () => { S.focus = b.dataset.focus; S.ask = false; playYear(); render(); schedule(); });
+  const fx = $app.querySelector("#focus-close"); if (fx) fx.onclick = () => { S.ask = false; render(); };
   $app.querySelectorAll("[data-speed]").forEach((b) => b.onclick = () => setSpeed(+b.dataset.speed));
-  $app.querySelector("#go-year").onclick = () => playYear();
+  $app.querySelector("#go-year").onclick = () => { if (S.player.pause) { playYear(); return; } S.ask = true; render(); };
   $app.querySelectorAll("[data-choice]").forEach((b) => b.onclick = () => { chooseCard(+b.dataset.choice); schedule(); });
   const m = $app.querySelector("#mood-save");
   if (m) m.onclick = () => { const v = $app.querySelector("#mood").value.trim(); if (v) S.player.moods[S.check.t] = v; S.check = null; render(); schedule(); };
   schedule();
+}
+
+function focusHtml() {
+  const P = S.player;
+  return `<div class="sheet-wrap"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="focus-title">
+    <div class="label">${START_YEAR + P.t}년 · ${P.age}세 · ${P.t + 1}년차</div>
+    <h2 id="focus-title">올해는 어디에 힘을 쓸까?</h2>
+    <div class="choices">${Object.entries(FOCUS).map(([k, f]) => `<button class="choice" id="focus-${k}" data-focus="${k}"${S.focus === k && S.feed.length ? ' aria-current="true"' : ""}><span>${f.label}${S.focus === k && S.feed.length ? " <em class=\"fine\">지난해</em>" : ""}</span><small>${esc(f.hint)}</small></button>`).join("")}</div>
+    <button class="btn ghost" id="focus-close" style="margin-top:4px">닫기</button>
+  </div></div>`;
 }
 
 function cardHtml() {
@@ -1418,7 +1436,7 @@ function cardHtml() {
     <div class="label"><span class="cat">${CAT[card.cat] || "사건"}</span> ${START_YEAR + P.t}년 · ${P.age}세${card.trigger ? " · 데이터로 일어난 일" : ` · 사건 ${used}/${CARD_N}`}</div>
     <h2 id="card-title">${esc(tv(card.title, P, S))}</h2><p>${esc(tv(card.body, P, S))}</p>
     <div class="choices">${card.choices.map((c, i) => { const off = c.ok && !c.ok(P); return `<button class="choice" id="choice-${i}" data-choice="${i}" ${off ? "disabled" : ""}><span>${esc(c.label)}</span><small>${esc(tv(c.hint, P, S))}</small></button>`; }).join("")}</div>
-    <details class="why"><summary>왜 이런 일이?</summary><div class="whybody">${esc(tv(card.why, P, S))} <span class="grade">${card.grade || "D"}</span></div></details>
+    ${whyHtml(tv(card.why, P, S), card.grade, "근거 데이터")}
   </div></div>`;
 }
 
