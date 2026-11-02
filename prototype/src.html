@@ -102,6 +102,21 @@ details.manual[open] summary { margin-bottom: 10px; }
 .people10 { max-width: 320px; }
 .ends10 { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 2px; }
 .wage-rank .ends { display: flex; flex-direction: column; justify-content: space-between; align-self: stretch; font-size: 11px; color: var(--muted); }
+.goalres { margin-top: 10px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.goalres.ok { color: var(--accent); }
+.newend { font-size: 14px; font-weight: 700; color: var(--accent); margin-bottom: 6px; }
+.endings { display: flex; flex-wrap: wrap; gap: 6px; }
+.endings span { font-size: 12.5px; padding: 5px 9px; border-radius: 6px; border: 1px dashed var(--line); color: var(--muted); }
+.endings span.got { border-style: solid; color: var(--ink); background: var(--surface); }
+.endings span.me { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+details.more > summary { font-size: 15px; font-weight: 700; cursor: pointer; padding: 10px 0; }
+details.more[open] { display: flex; flex-direction: column; gap: 24px; }
+.reveal-go { position: sticky; bottom: 0; display: flex; flex-direction: column; gap: 8px; padding: 14px 0 calc(12px + env(safe-area-inset-bottom, 0px)); background: var(--bg); border-top: 1px solid var(--line); margin-top: 8px; }
+.reveal-go .goal { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.moodbox summary { font-size: 13px; color: var(--muted); cursor: pointer; padding: 4px 0; }
+.moodbox .mood { margin-top: 6px; }
+.line.fx { font-size: 12.5px; color: var(--accent); }
+.nextfocus .ff { align-self: flex-start; }
 .nextfocus { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
 .nextfocus .q { font-size: 14px; font-weight: 700; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -144,6 +159,7 @@ details.manual[open] summary { margin-bottom: 10px; }
 }
 .idcard .who { font-family: var(--font-display); font-size: 19px; font-weight: 700; }
 .idcard .where { color: var(--muted); font-size: 13px; }
+.idcard .where span { white-space: nowrap; }
 .idcard .limit { display: inline-block; margin-top: 6px; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; color: var(--plan); background: color-mix(in srgb, var(--plan) 12%, transparent); }
 .idcard .pay { text-align: right; }
 .idcard .pay b { font-family: var(--font-data); font-size: 22px; font-weight: 500; }
@@ -448,6 +464,17 @@ function comeback(P, out, text, why) {
   out.push({ kind: "comeback", big: true, text: `${text} ${P.company}(${SIZE3[P.size]}).`, why, grade: "B" });
 }
 
+/* 올해 선택(초점·카드)이 확률을 얼마나 움직였는지 한 줄로 */
+const FX_LABEL = { same_job: "지금 회사에 남을", new_job_same_occupation: "다른 회사로 옮길", other_occupation: "디자인을 떠날", not_employed: "일을 쉬게 될", back: "디자이너로 돌아올", to_self: "프리랜서로 독립할" };
+function fxLine(w0, w1, extra) {
+  const n = (w) => { const s = Object.values(w).reduce((a, b) => a + b, 0); return Object.fromEntries(Object.entries(w).map(([k, v]) => [k, v / s])); };
+  const a = n(w0), b = n(w1);
+  let best = extra && extra.a ? { ...extra, r: Math.abs(Math.log(extra.b / extra.a)) } : null;
+  for (const k in a) { if (!FX_LABEL[k] || !a[k]) continue; const r = Math.abs(Math.log(b[k] / a[k])); if (r > .03 && (!best || r > best.r)) best = { k, a: a[k], b: b[k], r }; }
+  if (!best || best.r <= .03) return null;
+  return { kind: "fx", text: `올해 선택으로 ${FX_LABEL[best.k]} 가능성 ${pct(best.a, 1)} → ${pct(best.b, 1)}`, why: "초점과 카드 선택이 거는 배수는 게임 설계상 가정이다.", grade: "D" };
+}
+
 /* ── 1년 진행 ──
    mods: 이번 해 확률 배수 (반기 초점·카드 선택). 설계상 가정(D). 흐름대로 = 배수 없음 = 원자료 그대로. */
 function step(P, mods = {}) {
@@ -462,6 +489,7 @@ function step(P, mods = {}) {
     P.awayYears++;
     const c = P.awayYears === 1 ? RET.other_first : RET.other_later;
     const pb = c.back * (mods.back || 1);
+    if (pb !== c.back) out.push(fxLine({ back: c.back, stay: 1 - c.back }, { back: pb, stay: 1 - c.back }));
     const why = `${SRC.klips}: 디자이너를 떠나 다른 직업으로 일하던 사람이 다음 해 디자이너로 돌아온 비율 — 떠난 첫해 ${pct(c === RET.other_first ? c.back : RET.other_first.back, 1)}(${RET.other_first.n}건), 그 뒤 해마다 ${pct(RET.other_later.back, 1)}(${RET.other_later.n}건).${mods.back ? " 이번 해 선택이 이 비율에 배수를 걸었다(설계상 가정 D)." : ""}`;
     if (rand() < pb) {
       comeback(P, out, `${AWAY_NAME[P.awayKind]} 일을 정리하고 디자이너로 돌아왔다.`, why);
@@ -478,6 +506,7 @@ function step(P, mods = {}) {
   if (P.status === "none") {
     const re = P.role === "planner" ? { back: .3, other: .3, still: .4, n: 17 } : P.noneYears <= 1 ? r.reentry : { back: RET.not_employed_later.back, other: RET.not_employed_later.other, still: RET.not_employed_later.not_employed, n: RET.not_employed_later.n };
     const w = { back: re.back * (mods.back || 1), other: re.other, still: re.still * (mods.still || 1) };
+    const fxn = fxLine({ back: re.back, other: re.other, still: re.still }, w); if (fxn) out.push(fxn);
     const k = pick(w);
     const why = `${SRC.klips}: 일을 쉬던 ${roleName}의 다음 해 상태 ${re.n}건(${P.noneYears <= 1 ? "쉰 첫해" : "쉰 지 2년 이상"}) 중 같은 일 복귀 ${pct(re.back)}, 다른 일 ${pct(re.other)}, 계속 쉼 ${pct(re.still)}.`;
     if (k === "back") {
@@ -508,6 +537,9 @@ function step(P, mods = {}) {
     other_occupation: cell.other_occupation * mEff(P) * (mods.other_occupation || 1),
     not_employed: cell.not_employed * mEff(P) * (mods.not_employed || 1) * (P.energy < 20 ? 1.5 : 1),
   };
+  const w0 = { same_job: cell.same_job, new_job_same_occupation: cell.new_job_same_occupation, other_occupation: cell.other_occupation * mEff(P), not_employed: cell.not_employed * mEff(P) * (P.energy < 20 ? 1.5 : 1) };
+  const ts = P.status === "wage" && mods.to_self ? { k: "to_self", a: r.to_self || 0, b: (r.to_self || 0) * mods.to_self } : null;
+  const fxw = fxLine(w0, w, ts); if (fxw) out.push(fxw);
   const k = pick(w);
   const base = `${SRC.klips}: ${who}의 다음 해 상태 ${cell.n}건${cellNote} — 같은 직장 ${pct(cell.same_job, 1)}, 같은 직군 이직 ${pct(cell.new_job_same_occupation, 1)}, 다른 직업 ${pct(cell.other_occupation, 1)}, 쉼 ${pct(cell.not_employed, 1)}.`;
   const modNote = Object.keys(mods).length ? " 이번 해 선택이 이 비율에 배수를 걸었다(설계상 가정 D)." : "";
@@ -607,13 +639,21 @@ function percentile(sorted, x) { if (!sorted.length) return null; let lo = 0; wh
 
 /* ── 반기 초점 (게임에서는 1년 초점) ── */
 const FOCUS = {
-  flow: { label: "흐름대로", hint: "아무 배수도 걸지 않는다. 통계 그대로 한 해가 간다. 에너지 +6.", mods: {}, energy: 6, skill: 2 },
-  work: { label: "지금 일에 집중", hint: "지금 직장에 남을 확률 ×1.15. 실력 +4, 에너지 −4.", mods: { same_job: 1.15 }, energy: -4, skill: 4 },
-  grow: { label: "실력 키우기", hint: "실력 +8. 다음 이직 때 월급이 3%p 더 오른다. 에너지 −3.", mods: { bonus: 0.03 }, energy: -3, skill: 8 },
-  move: { label: "이직 준비", hint: "같은 직군 이직 ×2, 쉬거나 다른 일을 하던 중이면 디자이너 복귀 ×1.5. 에너지 −3.", mods: { new_job_same_occupation: 2, back: 1.5 }, energy: -3, skill: 3 },
-  side: { label: "사이드·외주", hint: "프리랜서 독립 ×3, 다른 직업 전환 ×1.2. 실력 +5, 에너지 −8.", mods: { to_self: 3, other_occupation: 1.2 }, energy: -8, skill: 5 },
-  rest: { label: "쉬기·사생활", hint: "에너지 +20. 확률은 그대로.", mods: {}, energy: 20, skill: 0 },
+  flow: { label: "흐름대로", hint: "애쓰지 않고 통계 그대로 한 해를 보낸다. 에너지가 조금 찬다.", mods: {}, energy: 6, skill: 2 },
+  work: { label: "지금 일에 집중", hint: "지금 회사에 조금 더 오래 남게 된다. 실력이 오르지만 지친다.", mods: { same_job: 1.15 }, energy: -4, skill: 4 },
+  grow: { label: "실력 키우기", hint: "실력이 크게 오르고, 다음에 이직할 때 월급이 더 오른다. 조금 지친다.", mods: { bonus: 0.03 }, energy: -3, skill: 8 },
+  move: { label: "이직 준비", hint: "다른 회사로 옮길 가능성이 두 배가 된다. 조금 지친다.", mods: { new_job_same_occupation: 2 }, energy: -3, skill: 3 },
+  side: { label: "사이드·외주", hint: "프리랜서로 독립할 가능성이 커지지만, 디자인을 떠날 가능성도 조금 커진다. 많이 지친다.", mods: { to_self: 3, other_occupation: 1.2 }, energy: -8, skill: 5 },
+  rest: { label: "쉬기·사생활", hint: "에너지가 많이 찬다. 확률은 그대로.", mods: {}, energy: 20, skill: 0 },
+  /* 쉬거나 다른 직업으로 일하는 동안의 선택 (배수는 설계상 가정 D) */
+  try: { away: true, label: "적극 지원", hint: "디자이너 채용에 계속 지원한다. 돌아올 가능성이 두 배가 되지만 많이 지친다.", mods: { back: 2 }, energy: -6, skill: 1 },
+  prep: { away: true, label: "포트폴리오 정비", hint: "작업을 다시 모아 정리한다. 돌아올 가능성이 조금 커지고 실력이 오른다.", mods: { back: 1.4 }, energy: -2, skill: 4 },
+  live: { away: true, label: "지금 생활에 집중", hint: "돌아갈 생각은 잠시 접는다. 확률은 그대로, 에너지가 찬다.", mods: {}, energy: 8, skill: 0 },
 };
+
+const isOut = (P) => P.status === "away" || P.status === "none";
+function focusKeys(P) { return Object.keys(FOCUS).filter((k) => !!FOCUS[k].away === isOut(P)); }
+function fixFocus() { const P = S.player; if (P && !P.pause && !focusKeys(P).includes(S.focus)) S.focus = isOut(P) ? "live" : "flow"; }
 
 /* ── 사건 카드 ──
    한 판에서 같은 사건은 한 번만 나온다(원작처럼). repeat: true 인 것(출산)만 예외.
@@ -626,6 +666,7 @@ const isWork = (P) => P.status === "wage" || P.status === "self";
 const isAgency = (P) => P.status === "self" || (P.status === "wage" && /에이전시|스튜디오|대행사|컨설팅/.test(P.company));
 const isClientWork = (P) => isAgency(P) || (isWage(P) && P.size === "S");
 const roleTxt = (P, des, dev) => P.role === "developer" ? dev : des;
+const WORK_CATS = ["work", "people", "company", "growth", "free"], WORK_BOOST = 1.6; // 디자이너 일 카드 비중(설계상 가정)
 const CAT = { work: "일", people: "사람", company: "회사", free: "프리랜서", body: "몸", love: "연애·결혼", family: "가족", friend: "친구", growth: "성장", money: "돈" };
 const LEAVE_PAY = (w) => (Math.min(w, 250) * 3 + Math.min(w, 200) * 3 + Math.min(w * .8, 160) * 6) / 12;
 
@@ -814,7 +855,7 @@ const CARDS = [
   { id: "drinking", cat: "people", when: isWage, title: "회식 2차, 3차", body: "\"오늘은 다 같이 끝까지 가는 거야!\" 시계는 밤 11시였다.",
     why: () => `노동패널 2022~2024 임금근로자: 일주일에 한 번 이상 술을 마신다 ${pct(WK.all.drink_weekly.p)} (남성 ${pct(WK.all_male.drink_weekly.p)}, 여성 ${pct(WK.all_female.drink_weekly.p)}), 디자이너 ${pct(WK.designer.drink_weekly.p)}. 효과는 설계상 가정.`, grade: "C",
     choices: [
-      { label: "끝까지 간다", hint: "에너지 −8, 만족도 ±", apply: (P, c) => { P.energy -= 8; c.sat += rand() < .5 ? .1 : -.1; return "다음 날 팀장이 해장국을 샀다."; } },
+      { label: "끝까지 간다", hint: "에너지 −8, 만족도는 반반", apply: (P, c) => { P.energy -= 8; c.sat += rand() < .5 ? .1 : -.1; return "다음 날 팀장이 해장국을 샀다."; } },
       { label: "1차만 하고 나온다", hint: "변화 없음", apply: () => "택시 안에서 단톡방 사진이 계속 올라왔다." },
     ] },
 
@@ -1044,7 +1085,7 @@ const CARDS = [
   { id: "reunion", cat: "friend", when: (P) => P.t >= 5, title: "동창회에서 연봉 이야기가 나왔다", body: "대기업 다니는 친구, 공무원 친구, 창업한 친구. 다들 숫자를 말하지 않으면서 말했다.",
     why: (P) => `참고: 2023년 임금근로자 월평균 소득 중위값 250만 원, 평균 363만 원(통계청 임금근로일자리 소득). 지금 내 월급은 ${won(currentWage(P))}만 원.`, grade: "A",
     choices: [
-      { label: "솔직하게 말한다", hint: "만족도 ±", apply: (P, c) => { const hi = currentWage(P) >= 250; c.sat += hi ? .1 : -.15; return hi ? "\"오, 생각보다 많이 받네?\"" : "잠깐 조용해졌다."; } },
+      { label: "솔직하게 말한다", hint: "만족도는 반반", apply: (P, c) => { const hi = currentWage(P) >= 250; c.sat += hi ? .1 : -.15; return hi ? "\"오, 생각보다 많이 받네?\"" : "잠깐 조용해졌다."; } },
       { label: "웃으며 넘긴다", hint: "변화 없음", apply: () => "2차는 가지 않았다." },
     ] },
   { id: "friend_startup", cat: "friend", when: (P) => isWork(P) && P.age >= 28 && P.age <= 45, title: (P) => `친구가 창업한다며 ${roleTxt(P, "CDO", "CTO")}를 제안했다`, body: "\"지분 10% 줄게. 월급은 지금의 70%.\"",
@@ -1207,7 +1248,7 @@ const CARDS = [
   { id: "fb_trendy_classic", cat: "work", when: isWork, title: "\"트렌디하면서 클래식하게요\"", body: "\"요즘 느낌인데, 10년 뒤에 봐도 촌스럽지 않게. 아시죠?\" 모른다. 아무도 모른다.",
     choices: [
       { label: "무드보드 두 장을 만들어 고르게 한다", hint: "실력 +4, 에너지 −5", apply: (P) => { P.skill += 4; P.energy -= 5; return "\"둘 다 좋은데 섞어 주세요.\" 예상했던 답이 나왔다."; } },
-      { label: "세리프 폰트에 그라데이션을 얹는다", hint: "만족도 ±", apply: (P, c) => { const ok = rand() < .5; c.sat += ok ? .15 : -.15; return ok ? "\"바로 이거예요!\" 나도 이유는 모르겠다." : "\"음… 이건 너무 클래식한데요?\""; } },
+      { label: "세리프 폰트에 그라데이션을 얹는다", hint: "만족도는 반반", apply: (P, c) => { const ok = rand() < .5; c.sat += ok ? .15 : -.15; return ok ? "\"바로 이거예요!\" 나도 이유는 모르겠다." : "\"음… 이건 너무 클래식한데요?\""; } },
     ] },
   { id: "fb_simple_full", cat: "work", when: isWork, title: "\"심플한데 꽉 차 보이게\"", body: "여백을 살린 시안을 보더니 \"좀 비어 보여요. 근데 복잡하면 안 돼요\"라고 했다.",
     choices: [
@@ -1236,7 +1277,7 @@ const CARDS = [
     ] },
   { id: "fb_ai_5min", cat: "work", when: isWork, w: () => 1.3, title: "\"이거 AI로 하면 5분 아니에요?\"", body: "일정이 2주에서 3일로 줄었다. 이유는 저 한 문장이었다.",
     choices: [
-      { label: "AI로 만든 시안을 그대로 보여 준다", hint: "에너지 −3, 만족도 ±", apply: (P, c) => { P.energy -= 3; c.sat += rand() < .5 ? .1 : -.2; return "손가락이 여섯 개인 모델이 웃고 있었다. 일정은 다시 2주가 됐다."; } },
+      { label: "AI로 만든 시안을 그대로 보여 준다", hint: "에너지 −3, 만족도는 반반", apply: (P, c) => { P.energy -= 3; c.sat += rand() < .5 ? .1 : -.2; return "손가락이 여섯 개인 모델이 웃고 있었다. 일정은 다시 2주가 됐다."; } },
       { label: "AI로 초안, 사람이 마무리한다고 제안한다", hint: "실력 +5, 에너지 −6", apply: (P) => { P.skill += 5; P.energy -= 6; return "일정은 1주로 합의됐다. 진짜로 1주가 걸렸다."; } },
     ] },
   { id: "fb_final_final", cat: "work", when: isWork, title: "최종_진짜최종_수정3_이걸로.fig", body: "열두 번째 수정 끝에 클라이언트가 말했다. \"그냥 처음 1안으로 갈게요.\"",
@@ -1246,7 +1287,7 @@ const CARDS = [
     ] },
   { id: "fb_mz", cat: "work", when: isWork, title: "\"MZ 감성으로 부탁드려요\"", body: "회의실의 평균 나이는 52세. MZ 감성의 정의는 각자 달랐다.",
     choices: [
-      { label: "밈과 이모지를 듬뿍 넣는다", hint: "에너지 −2, 만족도 ±", apply: (P, c) => { P.energy -= 2; c.sat += rand() < .5 ? .1 : -.1; return "부장님이 \"이게 요즘 애들 거구나\" 하며 캡처했다."; } },
+      { label: "밈과 이모지를 듬뿍 넣는다", hint: "에너지 −2, 만족도는 반반", apply: (P, c) => { P.energy -= 2; c.sat += rand() < .5 ? .1 : -.1; return "부장님이 \"이게 요즘 애들 거구나\" 하며 캡처했다."; } },
       { label: "실제 20대에게 물어본다", hint: "실력 +3", apply: (P) => { P.skill += 3; return "인턴이 말했다. \"MZ 감성이라고 하는 게 제일 MZ 감성이 아니에요.\""; } },
     ] },
 
@@ -1311,7 +1352,7 @@ const CARDS = [
     ] },
   { id: "favor_design", cat: "friend", when: () => true, title: "\"디자이너니까 이것 좀 해 줘\"", body: "사촌 결혼식 청첩장, 이모네 카페 메뉴판, 친구 회사 로고. 같은 주에 세 건이 왔다.",
     choices: [
-      { label: "다 해 준다", hint: "에너지 −10, 만족도 ±", apply: (P, c) => { P.energy -= 10; c.sat += rand() < .5 ? .1 : -.1; return "이모가 메뉴판을 코팅해서 걸었다. 폰트는 이미 바뀌어 있었다."; } },
+      { label: "다 해 준다", hint: "에너지 −10, 만족도는 반반", apply: (P, c) => { P.energy -= 10; c.sat += rand() < .5 ? .1 : -.1; return "이모가 메뉴판을 코팅해서 걸었다. 폰트는 이미 바뀌어 있었다."; } },
       { label: "하나만 고른다", hint: "에너지 −3", apply: (P) => { P.energy -= 3; return "청첩장만 했다. 하객 세 명이 누가 만들었는지 물었다."; } },
       { label: "정중하게 견적을 말한다", hint: "만족도 −, 명절이 어색해진다", apply: (P, c) => { c.sat -= .1; return "\"요즘 디자이너는 다 그렇게 받니?\" 할머니가 물었다."; } },
     ] },
@@ -1842,7 +1883,7 @@ const sceneHtml = (P) => `<div class="scene-wrap"><canvas id="scene" class="scen
 
 /* ── 상태 ── */
 let S = null;
-function freshState() { return { screen: "start", manual: false, pickRole: "designer", pickSex: "female", focus: "flow", autoPick: false, speed: 0, feed: [], card: null, check: null, player: null, peers: [] }; }
+function freshState() { return { screen: "start", manual: false, pickRole: "designer", pickSex: "female", focus: "flow", goal: "endure", ff: false, autoPick: false, speed: 0, feed: [], card: null, check: null, player: null, peers: [] }; }
 
 function startGame(role, sex) {
   const P = newPerson(role, sex, { name: "나" });
@@ -1874,6 +1915,8 @@ function satisfaction(P, ctx) {
 function playYear() {
   if (!S.player || S.player.end || S.card || S.check) return;
   const P = S.player;
+  fixFocus();
+  if (!P.pause) (P.focusN ||= {})[S.focus] = ((P.focusN || {})[S.focus] || 0) + 1;
   const ctx = { mods: { ...FOCUS[S.focus].mods }, sat: 0, notes: [], pause: null };
   if (P.pause) { finishYear(ctx); return; } // 휴직·학업 중에는 사건이 없다
   // 1) 강제 카드 2) 데이터로 굴린 삶의 사건 3) 아직 안 나온 사건 하나 (디자이너 전용판은 판이 짧아 해마다 하나씩)
@@ -1888,7 +1931,7 @@ function playYear() {
     // 다른 직업으로 일하는 동안에는 디자이너 일·회사 카드 대신 삶 카드와 복귀 카드만
     const awayOk = (c) => P.status !== "away" || (c.away || (["body", "love", "family", "friend", "money"].includes(c.cat) && c.id !== "meetup"));
     const pool = CARDS.filter((c) => !c.force && !c.trigger && !c.roll && !P.flags["card_" + c.id] && awayOk(c) && c.when(P, S));
-    if (pool.length) card = CARDS.find((c) => c.id === pick(Object.fromEntries(pool.map((c) => [c.id, c.w ? c.w(P, S) : 1]))));
+    if (pool.length) card = CARDS.find((c) => c.id === pick(Object.fromEntries(pool.map((c) => [c.id, (c.w ? c.w(P, S) : 1) * (WORK_CATS.includes(c.cat) && WORKING.includes(P.status) ? WORK_BOOST : 1)]))));
   }
   if (card) { if (!card.repeat) P.flags["card_" + card.id] = true; S.card = { id: card.id, ctx }; render(); return; }
   finishYear(ctx);
@@ -1972,9 +2015,11 @@ function finishYear(ctx) {
   } else { P.wages.push(pre.wage); P.statuses.push(pre.status); P.roles.push(pre.role); P.sats.push(pre.sat); }
   if (resume && !P.end) lines.push(endPause(P));
   S.feed.push({ t: yearT, year: START_YEAR + yearT, age: P.age - 1, lines: [...lines, ...peerLines.slice(0, 3)] });
-  if (P.end) { S.speed = 0; S.screen = "record"; render(); return; }
+  if (P.end) { S.speed = 0; S.ff = false; S.screen = "record"; render(); return; }
   if (CHECKS.includes(P.t)) { S.check = { t: P.t }; }
+  if (S.ff && !isOut(P)) S.ff = false;
   render();
+  if (S.ff) ffTimer = setTimeout(ffTick, 500);
 }
 
 /* ── 자동 진행 ── */
@@ -1983,6 +2028,7 @@ function setSpeed(v) { S.speed = v; for (const o of [S.card, S.check]) if (o && 
 /* 자동 선택: 카드 선택지와 올해의 초점을 무작위로 고른다. 에너지가 35 아래면 쉬기를 고른다. */
 function autoFocus() {
   const P = S.player;
+  if (isOut(P)) return P.energy < 35 ? "live" : pick({ try: 1, prep: 1.5, live: 1.5 });
   if (P.energy < 35) return "rest";
   return pick({ flow: 3, work: 1.5, grow: 1.5, move: 1, side: .7, rest: .8 });
 }
@@ -2021,6 +2067,18 @@ function schedule() {
     return;
   }
   timer = setTimeout(() => { if (S.autoPick) S.focus = autoFocus(); playYear(); schedule(); }, 1600 / S.speed);
+}
+/* 돌아올 때까지 넘기기: '지금 생활에 집중'으로 해마다 진행. 카드·체크포인트에서는 멈췄다가 이어 가고, 돌아오거나 끝나면 멈춘다. */
+let ffTimer = null;
+function ffStart() { S.ff = true; S.speed = 0; clearTimeout(timer); ffTick(); }
+function ffStop() { if (S) S.ff = false; clearTimeout(ffTimer); }
+function ffTick() {
+  clearTimeout(ffTimer);
+  const P = S.player;
+  if (!S.ff || S.screen !== "play") return;
+  if (!P || P.end || !isOut(P)) { S.ff = false; render(); return; }
+  if (S.card || S.check || P.pause) return;
+  S.focus = "live"; playYear();
 }
 function setAutoPick(v) { S.autoPick = v; if (v && !S.speed) S.speed = 1; for (const o of [S.card, S.check]) if (o) delete o.auto; render(); schedule(); }
 
@@ -2070,7 +2128,7 @@ function renderStart() {
       <div class="wide"><b class="num">${to60("designer")}</b><span>60세 정년까지 디자이너로 남는 비율 (게임 추정. 15년이 넘는 기간은 나이대별 5년 유지율을 이어 붙인 값)</span></div>
     </div>
     <div class="form-row"><button class="btn" id="go-random">커리어 시작</button></div>
-    <p class="sublink"><button class="textlink" id="go-data">데이터와 출처 보기</button></p>
+    <p class="sublink"><button class="textlink" id="go-data">데이터와 출처 보기</button>${(() => { const n = ENDINGS.filter(([k]) => loadEndings()[k]).length; return n ? ` <span class="fine">· 모은 엔딩 ${n}/${ENDINGS.length}</span>` : ""; })()}</p>
     <details class="manual" id="manual" ${S.manual ? "open" : ""}>
       <summary>성별 직접 고르기</summary>
       <div class="form-row">
@@ -2152,9 +2210,10 @@ function renderReveal() {
     <div class="tw"><table><thead><tr><th>이름</th><th>나이</th><th>첫 직장</th><th class="r">월급</th></tr></thead><tbody>
       ${S.peers.map((x) => `<tr><td>${x.name} <span class="fine">${SEX[x.sex]}</span></td><td class="num">${x.age}</td><td>${esc(x.company)}<br><span class="fine">${x.size9 ? "직원 " + x.size9 + "명" : SIZE3[x.size]}</span></td><td class="r num">${won(currentWage(x))}</td></tr>`).join("")}
     </tbody></table></div>
-    <div class="form-row"><button class="btn" id="go-play">첫 출근</button></div>
+    <div class="reveal-go">${goalHtml()}<button class="btn" id="go-play">첫 출근</button></div>
   </div></div>`;
   $app.querySelector("#go-play").onclick = () => { S.screen = "play"; render(); };
+  $app.querySelectorAll("[data-goal]").forEach((b) => b.onclick = () => { S.goal = b.dataset.goal; $app.querySelectorAll("[data-goal]").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); });
   mountScene();
 }
 
@@ -2179,17 +2238,21 @@ function renderPlay() {
   const w = currentWage(P);
   const feed = S.feed.map((y) => `
     <div class="yr"><div class="y">${y.year}<br>${y.age}세</div><div class="lines">
-      ${y.lines.map((l) => `<div class="line ${l.big ? "big" : ""} ${l.kind === "peer" ? "peer" : ""}">${esc(l.text)}${whyHtml(l.why, l.grade)}</div>`).join("")}
+      ${y.lines.map((l) => `<div class="line ${l.big ? "big" : ""} ${l.kind === "peer" || l.kind === "fx" ? l.kind : ""}">${esc(l.text)}${whyHtml(l.why, l.grade)}</div>`).join("")}
     </div></div>`).join("");
   const intro = !S.feed.length ? `<div class="yr"><div class="y">${START_YEAR}<br>${P.age}세</div><div class="lines"><div class="line">${esc(P.company)}에 첫 출근했다. '1년 보내기'를 누르면 첫해가 지나갑니다. 첫해는 흐름대로 보내고, 해가 지날 때마다 결과 아래에서 다음 해의 초점을 고를 수 있습니다.</div></div></div>` : "";
-  const nf = S.feed.length && !S.card && !S.check && !P.end && !P.pause && !S.autoPick ? `<div class="nextfocus">
-      <div class="q">${START_YEAR + P.t}년에는 어디에 힘을 쓸까?</div>
-      <div class="chips" role="group" aria-label="다음 해 초점">${Object.entries(FOCUS).map(([k, f]) => `<button id="focus-${k}" data-focus="${k}" aria-pressed="${S.focus === k}">${f.label}</button>`).join("")}</div>
+  fixFocus();
+  const out = isOut(P);
+  const nf = S.ff && !S.card && !S.check && !P.end ? `<div class="nextfocus"><div class="q">돌아올 때까지 넘기는 중…</div><div class="fine">사건이 생기거나 디자이너로 돌아오면 멈춰요.</div><button class="btn ghost ff" id="ff-stop">멈추기</button></div>`
+    : S.feed.length && !S.card && !S.check && !P.end && !P.pause && !S.autoPick ? `<div class="nextfocus">
+      <div class="q">${out ? "디자이너로 돌아갈까?" : `${START_YEAR + P.t}년에는 어디에 힘을 쓸까?`}</div>
+      <div class="chips" role="group" aria-label="다음 해 초점">${Object.entries(FOCUS).filter(([k]) => focusKeys(P).includes(k)).map(([k, f]) => `<button id="focus-${k}" data-focus="${k}" aria-pressed="${S.focus === k}">${f.label}</button>`).join("")}</div>
       <div class="fine">${esc(FOCUS[S.focus].hint)} 고르면 바로 한 해가 지나갑니다. '1년 보내기'는 '${FOCUS[S.focus].label}' 그대로.</div>
+      ${out ? `<button class="textlink ff" id="ff">돌아올 때까지 몇 년 넘기기</button>` : ""}
     </div>` : "";
   $app.innerHTML = `
     <div class="idcard">
-      <div><div class="who">${P.status === "away" ? `디자이너를 떠난 지 ${P.awayYears + 1}년째` : P.status === "none" ? `공백기 ${P.noneYears}년째` : `${P.t + 1}년차 ${ROLE[P.role]}`}</div><div class="where">${P.age}세 ${SEX[P.sex]} · ${START_YEAR + P.t}년 · ${statusText(P)}</div>${limitHtml(P)}</div>
+      <div><div class="who">${P.status === "away" ? `디자이너를 떠난 지 ${P.awayYears + 1}년째` : P.status === "none" ? `공백기 ${P.noneYears}년째` : `${P.t + 1}년차 ${ROLE[P.role]}`}</div><div class="where">${[`${P.age}세 ${SEX[P.sex]}`, `${START_YEAR + P.t}년`, ...statusText(P).split(" · ")].map((x) => `<span>${x}</span>`).join(" · ")}</div>${limitHtml(P)}</div>
       <div class="pay"><div class="label">월 (만 원)</div><b>${P.status === "none" ? "—" : won(w)}</b></div>
       <div class="meters">
         <span class="meter ${P.energy < 25 ? "low" : ""}">에너지 <i style="--v:${P.energy}%"></i></span>
@@ -2199,19 +2262,22 @@ function renderPlay() {
     ${sceneHtml(P)}
     <div class="scroll" id="feed"><div class="feed">${intro}${feed}${nf}</div></div>
     <div class="controls">
-      <div class="focus-hint">${S.autoPick ? `자동 선택 중 · 올해 초점 '${FOCUS[S.focus].label}'` : `올해 초점 '${FOCUS[S.focus].label}' · 자동 진행도 이 초점으로 이어집니다.`}</div>
+      ${S.speed ? `<div class="focus-hint">${S.autoPick ? `자동 선택 중 · 올해 초점 '${FOCUS[S.focus].label}'` : `자동 진행 중 · 올해 초점 '${FOCUS[S.focus].label}'`}</div>` : ""}
       <div class="go">
         <button class="btn" id="go-year">1년 보내기</button>
         <div class="seg" role="group" aria-label="자동 진행">${[0, 1, 2, 4].map((v) => `<button id="speed-${v}" data-speed="${v}" aria-pressed="${S.speed === v}">${v ? v + "×" : "Ⅱ"}</button>`).join("")}</div>
       </div>
-      <label class="autopick"><input type="checkbox" id="auto-pick" ${S.autoPick ? "checked" : ""}> 자동 선택 <span class="fine">선택지를 잠깐 보여 준 뒤 알아서 골라요. 카드를 누르면 멈추고 직접 고를 수 있어요</span></label>
+      <label class="autopick"><input type="checkbox" id="auto-pick" ${S.autoPick ? "checked" : ""}> 자동 선택 <span class="fine">잠깐 보여 준 뒤 알아서 골라요</span></label>
     </div>
     ${S.card ? cardHtml() : ""}${S.check ? checkHtml() : ""}`;
   const feedEl = $app.querySelector("#feed"); feedEl.scrollTop = feedEl.scrollHeight;
   $app.querySelectorAll("[data-focus]").forEach((b) => b.onclick = () => { S.focus = b.dataset.focus; playYear(); render(); schedule(); });
-  $app.querySelectorAll("[data-speed]").forEach((b) => b.onclick = () => setSpeed(+b.dataset.speed));
+  $app.querySelectorAll("[data-speed]").forEach((b) => b.onclick = () => { ffStop(); setSpeed(+b.dataset.speed); });
+  const ffb = $app.querySelector("#ff"); if (ffb) ffb.onclick = () => ffStart();
+  const ffs = $app.querySelector("#ff-stop"); if (ffs) ffs.onclick = () => { ffStop(); render(); };
   const ap = $app.querySelector("#auto-pick"); if (ap) ap.onchange = () => setAutoPick(ap.checked);
   $app.querySelector("#go-year").onclick = () => {
+    ffStop();
     if (S.player.pause) { playYear(); return; }
     if (S.autoPick) S.focus = autoFocus();
     playYear(); render(); schedule();
@@ -2230,7 +2296,7 @@ function renderPlay() {
     $app.querySelectorAll("[data-cfocus]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
     $app.querySelector("#cfocus-hint").textContent = FOCUS[S.focus].hint;
   });
-  if (m) m.onclick = () => { const v = $app.querySelector("#mood").value.trim(); if (v) S.player.moods[S.check.t] = v; S.check = null; if (!S.speed && !S.player.pause) playYear(); render(); schedule(); };
+  if (m) m.onclick = () => { const v = ($app.querySelector("#mood")?.value || "").trim(); if (v) S.player.moods[S.check.t] = v; S.check = null; if (!S.speed && !S.player.pause) playYear(); render(); schedule(); };
   schedule();
   mountScene();
 }
@@ -2241,7 +2307,7 @@ function cardHtml() {
   const a0 = autoOn() ? autoArm(S.card, cardText(card)) : null, a = a0 && !a0.hold ? a0 : null;
   if (a && S.card.pick == null) S.card.pick = autoChoice();
   return `<div class="sheet-wrap"><div class="sheet" id="card-sheet" role="dialog" aria-modal="true" aria-labelledby="card-title">
-    <div class="label"><span class="cat">${CAT[card.cat] || "사건"}</span> ${START_YEAR + P.t}년 · ${P.age}세${card.trigger ? " · 데이터로 일어난 일" : card.roll ? " · 통계 확률로 일어난 일" : ` · 사건 ${used}/${CARD_N}`}</div>
+    <div class="label"><span class="cat">${CAT[card.cat] || "사건"}</span> ${START_YEAR + P.t}년 · ${P.age}세${card.trigger ? " · 데이터로 일어난 일" : card.roll ? " · 통계 확률로 일어난 일" : ""}</div>
     <h2 id="card-title">${esc(tv(card.title, P, S))}</h2><p>${esc(tv(card.body, P, S))}</p>
     <div class="choices">${card.choices.map((c, i) => { const off = c.ok && !c.ok(P); return `<button class="choice${a && S.card.pick === i ? " auto" : ""}" id="choice-${i}" data-choice="${i}" ${off ? "disabled" : ""}><span>${esc(c.label)}</span><small>${esc(tv(c.hint, P, S))}</small></button>`; }).join("")}</div>
     ${a ? autoBar(a, `잠시 후 '${esc(card.choices[S.card.pick].label)}'(으)로 넘어가요`) : ""}
@@ -2256,6 +2322,7 @@ function rowFor(x, isMe) {
 
 function checkHtml() {
   const P = S.player, t = S.check.t;
+  fixFocus();
   const mc = cohort(P.origRole, P.sex);
   const keep = mc.keep[t];
   const inRole = WORKING.includes(P.status) && P.role === P.origRole;
@@ -2269,12 +2336,13 @@ function checkHtml() {
       ${rowFor(P, true)}${S.peers.map((x) => rowFor(x, false)).join("")}
     </tbody></table></div>
     <div class="nextfocus" style="background:var(--sunk)">
-      <div class="q">${START_YEAR + P.t}년에는 어디에 힘을 쓸까?</div>
-      <div class="chips" role="group" aria-label="다음 해 초점">${Object.entries(FOCUS).map(([k, f]) => `<button id="cfocus-${k}" data-cfocus="${k}" aria-pressed="${S.focus === k}">${f.label}</button>`).join("")}</div>
+      <div class="q">${isOut(P) ? "디자이너로 돌아갈까?" : `${START_YEAR + P.t}년에는 어디에 힘을 쓸까?`}</div>
+      <div class="chips" role="group" aria-label="다음 해 초점">${Object.entries(FOCUS).filter(([k]) => focusKeys(P).includes(k)).map(([k, f]) => `<button id="cfocus-${k}" data-cfocus="${k}" aria-pressed="${S.focus === k}">${f.label}</button>`).join("")}</div>
       <div class="fine" id="cfocus-hint">${esc(FOCUS[S.focus].hint)}</div>
     </div>
-    <label class="label" for="mood">지금 기분을 한 줄로 (기록부에 남습니다)</label>
-    <div class="mood"><input id="mood" maxlength="60" placeholder="예: 생각보다 버틸 만하다"><button class="btn" id="mood-save">계속</button></div>
+    <details class="moodbox"><summary>지금 기분 한 줄 남기기 (선택)</summary>
+      <div class="mood"><input id="mood" maxlength="60" placeholder="예: 생각보다 버틸 만하다" aria-label="지금 기분 한 줄"></div></details>
+    <div class="form-row"><button class="btn" id="mood-save">계속</button></div>
     ${autoOn() && !autoArm(S.check, 45).hold ? autoBar(S.check.auto, "잠시 후 다음 해로 넘어가요") : ""}
   </div></div>`;
 }
@@ -2304,6 +2372,8 @@ function wageChart(P) {
 
 const eok = (manwon) => (manwon / 10000).toFixed(1).replace(/\.0$/, "") + "억";
 const NAT = { marry: { female: 31.6, male: 33.9 }, firstBirth: 33.1 };
+const endAge = (P) => (P.end && P.end.type === "retire" ? P.age : P.age - 1); // 피드의 마지막 줄 나이
+const yrs = (j) => j.to == null ? `${START_YEAR + j.from}–` : j.to - 1 > j.from ? `${START_YEAR + j.from}–${START_YEAR + j.to - 1}` : `${START_YEAR + j.from}`;
 function lifetime(P) { return P.wages.reduce((s, w) => s + w * 12, 0) + P.bonus; }
 function titleFor(P) {
   const self = P.statuses.filter((x) => x === "self").length;
@@ -2318,6 +2388,81 @@ function titleFor(P) {
   if (P.flags.comeback) return `한 번 돌아왔다가 ${workYears(P)}년 만에 떠난 ${ROLE[P.origRole]}`;
   if (P.end.type === "break") return "잠시 멈춰 선 사람";
   return `${workYears(P)}년 동안 일한 ${ROLE[P.origRole]}`;
+}
+/* 엔딩 모음: 엔딩 종류 12가지. 이 기기 브라우저에만 저장한다. */
+const ENDINGS = [
+  ["retire_back", "돌아와서 끝까지 남은 디자이너"], ["retire_one", "한 우물을 판 디자이너"], ["retire_switch", "직군을 바꿔 정년까지 간 사람"],
+  ["retire_self", "혼자 일한 사람"], ["retire_many", "여러 회사를 거친 디자이너"], ["retire", "끝까지 남은 디자이너"],
+  ["planner", "기획자가 된 디자이너"], ["comeback", "한 번 돌아왔다가 떠난 디자이너"], ["break", "잠시 멈춰 선 사람"],
+  ["short", "3년 안에 떠난 디자이너"], ["mid", "10년 안에 떠난 디자이너"], ["long", "10년 넘게 일하고 떠난 디자이너"],
+];
+function endingKey(P) {
+  const self = P.statuses.filter((x) => x === "self").length, jobs = P.jobs.filter((j) => j.kind === "wage").length;
+  if (P.end.type === "retire") {
+    if (P.flags.comeback) return "retire_back";
+    if (P.role === P.origRole && jobs <= 2) return "retire_one";
+    if (P.role !== P.origRole) return "retire_switch";
+    if (self >= P.sats.length / 2) return "retire_self";
+    if (jobs >= 6) return "retire_many";
+    return "retire";
+  }
+  if (P.end.type === "planner") return "planner";
+  if (P.flags.comeback) return "comeback";
+  if (P.end.type === "break") return "break";
+  const y = workYears(P);
+  return y <= 3 ? "short" : y <= 10 ? "mid" : "long";
+}
+const END_STORE = "lod-endings-v1";
+function loadEndings() { try { return JSON.parse(localStorage.getItem(END_STORE) || "{}") || {}; } catch (e) { return {}; } }
+function saveEnding(k) { const m = loadEndings(), isNew = !m[k]; m[k] = (m[k] || 0) + 1; try { localStorage.setItem(END_STORE, JSON.stringify(m)); } catch (e) {} return isNew; }
+function endingsHtml(key, isNew) {
+  const m = loadEndings(), n = ENDINGS.filter(([k]) => m[k]).length;
+  return `<section><h2>엔딩 모음 · ${n}/${ENDINGS.length}</h2>${isNew ? `<p class="newend">새 엔딩을 모았어요: ${esc(ENDINGS.find(([k]) => k === key)[1])}</p>` : ""}
+    <div class="endings">${ENDINGS.map(([k, name]) => `<span class="${m[k] ? "got" : ""}${k === key ? " me" : ""}">${m[k] ? esc(name) : "???"}</span>`).join("")}</div>
+    <p class="fine" style="margin-top:6px">이 기기의 브라우저에만 저장됩니다.</p></section>`;
+}
+
+/* 이번 판의 목표. 행복 기준 3.6은 설계상 가정(흐름대로·쉬기 위주로 보내야 닿는 수준). */
+const HAPPY = 3.6;
+const GOALS = { endure: { label: "정년까지 버티기" }, happy: { label: "행복하게 살기" } };
+function goalHtml() {
+  return `<div class="goal" role="group" aria-label="이번 판의 목표"><span>이번 판의 목표</span><div class="chips">${Object.entries(GOALS).map(([k, g]) => `<button data-goal="${k}" aria-pressed="${S.goal === k}">${g.label}</button>`).join("")}</div></div>`;
+}
+function goalResult(P) {
+  const avg = P.sats.reduce((a, b) => a + b, 0) / Math.max(1, P.sats.length);
+  if (S.goal === "happy") return { ok: avg >= HAPPY, text: `평균 만족도 ${avg.toFixed(2)} (기준 ${HAPPY})` };
+  const ok = P.end.type === "retire" && P.role === P.origRole && !isOut(P);
+  return { ok, text: ok ? "디자이너로 60세까지 일했다" : `디자이너로 ${workYears(P)}년 일했다` };
+}
+
+/* 다른 초점이었다면: 같은 조건 N명씩, 초점 하나만 고정하고 사건 카드 없이 굴린다 */
+function focusCompare(role, sex, N = 3000) {
+  return Object.keys(FOCUS).filter((k) => !FOCUS[k].away).map((k) => {
+    const ys = []; let ret = 0, satSum = 0, satN = 0;
+    for (let i = 0; i < N; i++) {
+      const P = newPerson(role, sex); let dy = 0;
+      for (let t = 1; t <= 41 && !P.end; t++) {
+        const f = FOCUS[isOut(P) ? "live" : k];
+        step(P, f.mods);
+        P.energy = Math.max(0, Math.min(100, P.energy + f.energy - (P.status === "wage" && P.size === "S" ? 3 : 0) + (P.status === "none" ? 10 : 0)));
+        P.skill = Math.max(0, Math.min(100, P.skill + f.skill));
+        advanceAge(P);
+        if (WORKING.includes(P.status) && (!P.end || P.end.type === "retire")) dy++;
+        satSum += satisfaction(P, { sat: 0 }); satN++;
+      }
+      ys.push(dy); if (P.end && P.end.type === "retire" && P.role === role && !isOut(P)) ret++;
+    }
+    ys.sort((a, b) => a - b);
+    return { k, median: ys[Math.floor(N / 2)], retire: ret / N, sat: satSum / satN, N };
+  });
+}
+function cmpHtml(P, rows) {
+  const fav = Object.entries(P.focusN || {}).filter(([k]) => !FOCUS[k].away).sort((a, b) => b[1] - a[1])[0];
+  const best = (f) => Math.max(...rows.map(f));
+  return `<div class="tw"><table><thead><tr><th>초점</th><th class="r">디자이너로 일한 해<br><span class="fine">중간값</span></th><th class="r">정년까지</th><th class="r">평균 만족도</th></tr></thead><tbody>
+    ${rows.map((x) => `<tr class="${fav && fav[0] === x.k ? "me" : ""}"><td>${FOCUS[x.k].label}${fav && fav[0] === x.k ? `<br><span class="fine">내가 가장 많이 고름</span>` : ""}</td><td class="r num">${x.median === best((r) => r.median) ? "<b>" + x.median + "년</b>" : x.median + "년"}</td><td class="r num">${x.retire === best((r) => r.retire) ? "<b>" + pct(x.retire, 1) + "</b>" : pct(x.retire, 1)}</td><td class="r num">${x.sat === best((r) => r.sat) ? "<b>" + x.sat.toFixed(2) + "</b>" : x.sat.toFixed(2)}</td></tr>`).join("")}
+    </tbody></table></div>
+    <p class="fine" style="margin-top:6px">같은 조건 ${rows[0].N}명씩 초점 하나만 고정하고, 사건 카드 없이 굴린 값입니다. 쉬거나 다른 직업으로 일하는 해에는 '지금 생활에 집중'으로 둡니다. 초점의 배수는 설계상 가정이고, 확률표는 노동패널입니다.</p>`;
 }
 function rarity(P, mc) {
   const me = P.end.type;
@@ -2345,7 +2490,7 @@ function lifeScenes(P) {
       if (!out.some((o) => o.t === p.t && o.text.includes(p.title))) out.push({ t: p.t, text: `${p.title} → ${p.label}`, note: "" });
     }
   }
-  if (!P.married && !P.life.some((e) => e.kind === "divorce")) out.push({ t: P.t, text: "결혼은 하지 않았다.", note: `같은 나이·성별 확률로만 보면 ${P.startAge}세부터 ${P.age}세까지 결혼하지 않을 가능성은 ${pct(neverMarriedP(P))}였다.` });
+  if (!P.married && !P.life.some((e) => e.kind === "divorce")) out.push({ t: P.t - 1, text: "결혼은 하지 않았다.", note: `같은 나이·성별 확률로만 보면 ${P.startAge}세부터 ${P.age}세까지 결혼하지 않을 가능성은 ${pct(neverMarriedP(P))}였다.` });
   return out.sort((a, b) => a.t - b.t);
 }
 function epilogue(P, mc, earned) {
@@ -2353,8 +2498,8 @@ function epilogue(P, mc, earned) {
   const s = [];
   if (P.end.type === "retire") s.push(P.role !== P.origRole ? `${P.age}세, 마지막 출근 날. ${ROLE[P.origRole]}로 시작해 ${ROLE[P.role]}로 일을 마쳤다.` : `${P.age}세, 마지막 출근 날. ${jobs}곳의 회사를 거쳐 끝까지 ${ROLE[P.role]}로 일했다.`);
   else if (P.end.type === "planner") s.push(`디자이너로 ${workYears(P)}년을 일하고 기획 쪽으로 자리를 옮겼다. 화면을 만들던 사람이 이제 무엇을 만들지 정한다.`);
-  else if (P.end.type === "break") s.push(`${P.age}세, 쉬는 시간이 길어졌다. 다시 돌아올지는 이 기록부도 모른다.`);
-  else { const lj = P.jobs.filter((j) => j.kind === "away").at(-1); s.push(`${lj ? P.startAge + lj.from : P.age}세에 ${ROLE[P.origRole]} 일을 내려놓고 ${josaRo(AWAY_NAME[P.awayKind] || "다른 직업")} 옮겼다. ${AWAY_MAX}년 동안 돌아오지 않았고, ${ROLE[P.origRole]}로서의 커리어는 여기서 마친다.`); }
+  else if (P.end.type === "break") s.push(`${endAge(P)}세, 쉬는 시간이 길어졌다. 다시 돌아올지는 이 기록부도 모른다.`);
+  else { const lj = P.jobs.filter((j) => j.kind === "away").at(-1); s.push(`${lj ? P.startAge + lj.from - 1 : endAge(P)}세에 ${ROLE[P.origRole]} 일을 내려놓고 ${josaRo(AWAY_NAME[P.awayKind] || "다른 직업")} 옮겼다. ${AWAY_MAX}년 동안 돌아오지 않았고, ${ROLE[P.origRole]}로서의 커리어는 여기서 마친다.`); }
   if (P.flags.comeback) s.push(`그 사이 디자이너를 떠났다가 ${P.flags.comeback}번 돌아왔다. 다른 직업으로 옮긴 디자이너가 다음 해 돌아오는 비율은 ${pct(RET.other_first.back, 1)}이다.`);
   const ma = P.life.find((e) => e.kind === "marry");
   if (ma) s.push(`${ma.age}세에 결혼했고${P.kids.length ? `, 아이 ${P.kids.length}명을 키웠다.` : ", 아이는 없었다."}`);
@@ -2409,9 +2554,9 @@ async function shareImage(P, title, sp, earned) {
   g.fillStyle = C.acc; g.fillRect(40, 40, 1000, 18);
   const txt = (t, x, y, size, color, w = 700, align = "left") => { g.font = `${w} ${size}px ${F}`; g.fillStyle = color; g.textAlign = align; g.fillText(t, x, y); };
   const wrap = (t, x, y, maxW, size, color, lh, w = 500) => { g.font = `${w} ${size}px ${F}`; g.fillStyle = color; g.textAlign = "left"; let line = ""; for (const wd of t.split(" ")) { const next = line ? line + " " + wd : wd; if (line && g.measureText(next).width > maxW) { g.fillText(line, x, y); y += lh; line = wd; } else line = next; } if (line) g.fillText(line, x, y); return y + lh; };
-  txt(`커리어 기록부 · ${START_YEAR}–${START_YEAR + P.t}`, 100, 150, 30, C.muted, 500);
+  txt(`커리어 기록부 · ${START_YEAR}–${START_YEAR + P.t - 1}`, 100, 150, 30, C.muted, 500);
   let y = wrap(title, 100, 230, 880, 64, C.ink, 80, 800);
-  y = wrap(`${P.startAge}세 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작해 ${P.age}세에 기록을 마쳤다. ${P.end.text}`, 100, y + 10, 880, 32, C.muted, 46);
+  y = wrap(`${P.startAge}세 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작해 ${endAge(P)}세에 기록을 마쳤다. ${P.end.text}`, 100, y + 10, 880, 32, C.muted, 46);
   // 도장
   g.save(); g.translate(850, y + 92); g.rotate(-0.12); g.strokeStyle = C.stamp; g.lineWidth = 6; g.font = `800 40px ${F}`; const sw = g.measureText(STAMP[P.end.type]).width + 44; g.strokeRect(-sw / 2, -36, sw, 72); g.fillStyle = C.stamp; g.textAlign = "center"; g.fillText(STAMP[P.end.type], 0, 14); g.restore();
   // 큰 숫자 (도장은 오른쪽)
@@ -2448,9 +2593,11 @@ function renderRecord() {
   }).join("");
   const rr = rarity(P, mc);
   const title = titleFor(P);
+  if (!P.endSaved) { const key = endingKey(P); P.endSaved = { key, isNew: saveEnding(key) }; }
+  const gr = goalResult(P);
   const scenes = lifeScenes(P);
   const epi = epilogue(P, mc, earned);
-  const endYear = START_YEAR + years;
+  const endYear = START_YEAR + P.t - 1;
   const sp = careerSpot(P, mc);
   const lastHtml = `<section class="last">
       <div class="label">마지막 장</div>
@@ -2461,10 +2608,12 @@ function renderRecord() {
     <header>
       <div class="label">커리어 기록부 · ${START_YEAR}–${endYear}</div>
       <h1 class="rec-title">${esc(title)}</h1>
-      <p>${P.startAge}세 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작해 ${P.age}세에 기록을 마쳤다. 디자이너로 일한 ${workYears(P)}년, 일자리 ${P.jobs.filter((j) => j.kind !== "school").length}곳. ${esc(P.end.text)}</p>
+      <p>${P.startAge}세 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작해 ${endAge(P)}세에 기록을 마쳤다. 디자이너로 일한 ${workYears(P)}년, 일자리 ${P.jobs.filter((j) => j.kind !== "school").length}곳. ${esc(P.end.text)}</p>
       <span class="stamp">${STAMP[P.end.type]}</span>
+      <div class="goalres ${gr.ok ? "ok" : ""}">목표 '${GOALS[S.goal].label}' ${gr.ok ? "달성" : "실패"} · ${esc(gr.text)}</div>
     </header>
     ${sceneHtml(P)}
+    <div class="form-row"><button class="btn" data-act="share">기록 공유</button><button class="btn ghost" data-act="again">다시 시작</button></div>
     <section class="odds">
       <div class="odds-n"><b class="num">${rr.hit.toLocaleString()}</b><span>/ ${mc.N.toLocaleString()}명</span></div>
       <p>같은 해 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작한 ${mc.N.toLocaleString()}명을 같은 확률로 굴리면, ${rr.what}은 ${rr.hit.toLocaleString()}명(${pct(rr.hit / mc.N, 1)})이었다.${rr.hit / mc.N < .05 ? " 드문 기록이다." : ""}</p>
@@ -2480,6 +2629,11 @@ function renderRecord() {
       ${careerChart(P, sp)}
       <p style="font-size:14px;margin-top:6px">${careerLine(P, sp)}</p>
       <p class="fine" style="margin-top:4px">같은 엔진으로 ${sp.N.toLocaleString()}명을 굴린 결과입니다(초점은 '흐름대로'). 다른 직업으로 옮긴 해와 쉰 해는 빼고 셉니다. 떠났다가 돌아온 사람은 ${sp.back}명(${pct(sp.back / sp.N, 1)}), 60세 정년까지 간 사람은 ${sp.retire}명(${pct(sp.retire / sp.N, 1)})입니다.</p></section>
+    <section><h2>다른 초점이었다면</h2>
+      <p style="font-size:14px">해마다 고른 초점이 결과를 얼마나 바꾸는지, 같은 조건으로 다시 굴려 봅니다.</p>
+      <div id="cmp"><button class="btn ghost" id="cmp-go">초점별로 다시 굴려 보기</button></div></section>
+    ${endingsHtml(P.endSaved.key, P.endSaved.isNew)}
+    <details class="more"><summary>자세한 기록 보기</summary>
     <section><h2>한 해 한 칸 · 만족도</h2>
       <div class="map">${cells}</div>
       <div class="legend"><span><i style="background:${satColor(1.5)}"></i>낮음</span><span><i style="background:${satColor(4.5)}"></i>높음</span><span><i class="cell none" style="display:inline-block"></i>쉼</span><span><i class="cell pause" style="display:inline-block;background:var(--sunk)"></i>휴직·학업</span><span><i style="background:var(--ink);border-radius:50%;width:6px;height:6px"></i>결혼·출산</span>${P.switchedAt ? "<span>가운데 구멍 = 직군 전향</span>" : ""}</div>
@@ -2489,28 +2643,32 @@ function renderRecord() {
     ${scenes.length ? `<section><h2>삶의 장면</h2><ul class="scenes">${scenes.map((x) => `<li><span class="num">${START_YEAR + x.t}</span><div>${esc(x.text)}${x.note ? `<br><span class="fine">${esc(x.note)}</span>` : ""}</div></li>`).join("")}</ul>
       <p class="fine" style="margin-top:6px">결혼·출산·이혼이 일어날지는 노동패널과 통계청 수치로 굴렸습니다. 출처는 데이터 화면에 있습니다.</p></section>` : ""}
     ${P.picks.length ? `<details class="picks"><summary><h2 style="display:inline">내가 고른 것들 · ${P.picks.length}번</h2></summary><ul class="jobs">${P.picks.map((p) => `<li><span class="num">${START_YEAR + p.t}</span> · <span class="cat">${CAT[p.cat] || ""}</span>${esc(p.title)} → <b>${esc(p.label)}</b><br><span class="fine">${esc(p.result)}</span></li>`).join("")}</ul></details>` : ""}
-    <section><h2>일자리</h2><ul class="jobs">${P.jobs.map((j) => `<li><span class="num">${START_YEAR + j.from}–${j.to == null ? "" : START_YEAR + j.to}</span> · <span class="tag ${j.role}">${ROLE[j.role]}</span> ${esc(j.company)}${j.size ? ` <span class="fine">${j.size9 ? "직원 " + j.size9 + "명" : SIZE3[j.size]}</span>` : ""}${j.reason ? `<br><span class="fine">옮긴 이유: ${esc(j.reason)}</span>` : ""}</li>`).join("")}</ul></section>
+    <section><h2>일자리</h2><ul class="jobs">${P.jobs.map((j) => `<li><span class="num">${yrs(j)}</span> · <span class="tag ${j.role}">${ROLE[j.role]}</span> ${esc(j.company)}${j.size ? ` <span class="fine">${j.size9 ? "직원 " + j.size9 + "명" : SIZE3[j.size]}</span>` : ""}${j.reason ? `<br><span class="fine">옮긴 이유: ${esc(j.reason)}</span>` : ""}</li>`).join("")}</ul></section>
     ${Object.keys(P.moods).length ? `<section><h2>그때의 한 줄</h2><ul class="jobs">${Object.entries(P.moods).map(([t, m]) => `<li><span class="num">${t}년 차</span> · ${esc(m)}</li>`).join("")}</ul></section>` : ""}
     <section><h2>동기들의 지금</h2><div class="tw"><table><thead><tr><th>이름</th><th>직군</th><th>지금</th><th class="r">월급</th></tr></thead><tbody>${S.peers.map((x) => rowFor(x, false)).join("")}</tbody></table></div>
       <p class="fine" style="margin-top:6px">동기는 내가 기록을 마친 해까지만 진행했습니다. ${S.peers.filter((x) => x.married).length}명이 결혼했고, 아이는 모두 ${S.peers.reduce((s, x) => s + x.kids.length, 0)}명입니다.</p></section>
+    </details>
     <div class="form-row"><button class="btn" id="share">기록 공유</button><button class="btn ghost" id="save-img">이미지 저장</button><button class="btn ghost" id="copy">글로 복사</button></div>
     <div class="form-row"><button class="btn" id="again">다시 시작</button></div>
     <p class="sublink"><button class="textlink" id="data">데이터와 출처 보기</button></p>
     <p class="fine">다시 시작하면 새 조건으로 처음부터 시작합니다.</p>
     <p class="fine" id="copy-note" aria-live="polite"></p>
   </div></div>`;
-  $app.querySelector("#again").onclick = () => { S = freshState(); render(); };
+  const again = () => { const g = S.goal; S = freshState(); S.goal = g; render(); };
+  $app.querySelectorAll('#again,[data-act="again"]').forEach((b) => b.onclick = again);
+  const cg = $app.querySelector("#cmp-go");
+  if (cg) cg.onclick = () => { cg.disabled = true; cg.textContent = "굴리는 중…"; setTimeout(() => { $app.querySelector("#cmp").innerHTML = cmpHtml(P, focusCompare(P.origRole, P.sex)); }, 30); };
   mountScene();
   $app.querySelector("#data").onclick = () => { S.screen = "data"; S.back = "record"; render(); };
   const note = (t) => { $app.querySelector("#copy-note").textContent = t; };
   const shortTxt = `[${title}] ${P.startAge}세 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작해 디자이너로 ${sp.me}년, ${STAMP[P.end.type]}. 같은 조건 ${sp.N.toLocaleString()}명 중 오래 일한 순서로 ${topPct(sp.below)}. 과연 정년까지 일할 수 있을까요?`;
-  const fullTxt = `[${title}]\n${P.startAge}세 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작 → ${P.age}세. ${P.end.text}\n디자이너로 ${sp.me}년 · 같은 조건 ${sp.N.toLocaleString()}명 중 오래 일한 순서로 ${topPct(sp.below)} · 번 돈 약 ${eok(earned)} 원 · 최고 월 ${won(peak)}만 원\n` +
+  const fullTxt = `[${title}]\n${P.startAge}세 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작 → ${endAge(P)}세. ${P.end.text}\n디자이너로 ${sp.me}년 · 같은 조건 ${sp.N.toLocaleString()}명 중 오래 일한 순서로 ${topPct(sp.below)} · 번 돈 약 ${eok(earned)} 원 · 최고 월 ${won(peak)}만 원\n` +
     scenes.slice(0, 6).map((x) => `${START_YEAR + x.t} ${x.text}`).join("\n") + "\n" + P.jobs.map((j) => `${START_YEAR + j.from} ${ROLE[j.role]} ${j.company}`).join("\n") + `\n\n디자이너로 살아보기 ${SHARE_URL}`;
   const copy = (t, msg) => navigator.clipboard.writeText(t).then(() => note(msg), () => note(t));
   const download = (blob) => { const u = URL.createObjectURL(blob), a = document.createElement("a"); a.href = u; a.download = "designer-career.png"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); };
   $app.querySelector("#copy").onclick = () => copy(fullTxt, "기록을 글로 복사했습니다.");
   $app.querySelector("#save-img").onclick = async () => { note("이미지를 만드는 중…"); const b = await shareImage(P, title, sp, earned); if (b) { download(b); note("이미지를 저장했습니다."); } else note("이미지를 만들지 못했습니다."); };
-  $app.querySelector("#share").onclick = async () => {
+  const doShare = async () => {
     note("공유 카드를 만드는 중…");
     const b = await shareImage(P, title, sp, earned).catch(() => null);
     const file = b && typeof File === "function" ? new File([b], "designer-career.png", { type: "image/png" }) : null;
@@ -2522,6 +2680,7 @@ function renderRecord() {
     copy(shortTxt + " " + SHARE_URL, "공유 글을 복사했고, 카드 이미지를 내려받았습니다.");
     if (b) download(b);
   };
+  $app.querySelectorAll('#share,[data-act="share"]').forEach((x) => x.onclick = doShare);
 }
 
 function renderData() {
@@ -2587,7 +2746,7 @@ function renderData() {
       <p class="fine" style="margin-top:6px">출산은 결혼 다음 해부터 첫째 연 30%(3년까지), 12%(6년까지), 이후 3%, 둘째는 첫째 다음 해부터 4년간 연 13%로 두었습니다. 통계청 2024년 출생통계의 첫째 33.1세·둘째 34.4세에 맞춘 값이고, 게임 속 여성은 첫째 32.8세, 둘째 34.4세, 1인당 아이 0.94명입니다. 2024년 합계출산율 0.75명보다는 조금 많습니다(등급 C). 이혼·별거는 노동패널 기혼자의 연간 비율 ${pct(G.life.divorce.female["35~44"], 2)}~${pct(G.life.divorce.male["~34"], 2)}를 그대로 씁니다. 육아휴직을 쓸지는 플레이어가 고르고, 카드에 2023년 실제 사용률(엄마 84.5%, 아빠 16.1%)을 보여 줍니다.</p></section>
     <section><h2>설계상 가정 (D)</h2><ul class="sources" style="list-style:disc">
       <li>한 턴은 1년입니다. PRD의 반기 턴은 연간 자료를 그대로 쓰기 위해 1년으로 바꿨습니다.</li>
-      <li>올해의 초점이 거는 확률 배수, 사건 카드 ${CARD_N}종의 내용과 효과, 에너지·실력·만족도 계산. 사건은 한 판에서 한 번씩만 나옵니다. 근거 통계가 있는 카드는 '왜?'에 출처와 함께 등급 C로 표시했습니다.</li>
+      <li>올해의 초점이 거는 확률 배수(쉬거나 다른 직업으로 일하는 동안의 적극 지원 ×2, 포트폴리오 정비 ×1.4 포함), 일하는 동안 일·회사·성장 카드를 1.6배 자주 뽑는 비중, 이번 판 목표의 행복 기준(평균 만족도 ${HAPPY}), 사건 카드 ${CARD_N}종의 내용과 효과, 에너지·실력·만족도 계산. 사건은 한 판에서 한 번씩만 나옵니다. 근거 통계가 있는 카드는 '왜?'에 출처와 함께 등급 C로 표시했습니다.</li>
       <li>육아휴직 뒤 원래 직장 복귀, 석사 뒤 월급 +3~6%, 부수입·지출 카드의 금액.</li>
       <li>60세 종료, 공백 ${BREAK_MAX}년째 종료, 다른 직업 ${AWAY_MAX}년 종료, 쉬게 된 이유(노동패널에 없어 청년패널 퇴사 사유나 최근 출산으로 붙임), 회사 이름 예시.</li>
       <li>'통계 확률로 일어난 일'(교통사고, 우울증·공황장애·탈모 진료)은 전국 한 해 인원을 인구 약 5,120만 명으로 나눈 확률을 모든 나이에 똑같이 씁니다. 우울증은 한 해 진료받은 사람 수라 새로 걸리는 확률보다 높게 잡혔을 수 있고, 에너지가 35 아래면 ×1.5로 두었습니다.</li>
