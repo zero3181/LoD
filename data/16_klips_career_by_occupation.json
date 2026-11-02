@@ -1,0 +1,792 @@
+{
+ "meta": {
+  "source": "한국노동패널(KLIPS) 12~27차(2009~2024) 개인, 비가중",
+  "groups": {
+   "designer": "KSCO7 285",
+   "developer": "KSCO7 222+223",
+   "planner": "KSCO7 273"
+  },
+  "notes": [
+   "주된 일자리 기준. 같은 일자리 = 다음 해 취업 시작 년·월이 같음.",
+   "만족도는 원자료(1 매우 만족)를 뒤집어 5 = 매우 만족으로 표시.",
+   "기업 규모 = 전체 종업원수 범주(p__0403), 모름 제외.",
+   "21차(2018)부터 통합표본 추가."
+  ]
+ },
+ "designer": {
+  "person_years": 1017,
+  "persons": 212,
+  "by_age": {
+   "20~24": {
+    "n": 62,
+    "female_share": 0.984,
+    "wage_median": 170.0,
+    "self_employed_share": 0.016,
+    "self_income_median": 100.0,
+    "regular_share": 0.738,
+    "firm_size3": {
+     "n": 32,
+     "M": 0.469,
+     "S": 0.406,
+     "L": 0.125
+    }
+   },
+   "25~29": {
+    "n": 202,
+    "female_share": 0.851,
+    "wage_median": 200.0,
+    "self_employed_share": 0.079,
+    "self_income_median": 200.0,
+    "regular_share": 0.838,
+    "firm_size3": {
+     "n": 100,
+     "S": 0.59,
+     "M": 0.31,
+     "L": 0.1
+    }
+   },
+   "30~34": {
+    "n": 211,
+    "female_share": 0.607,
+    "wage_median": 250.0,
+    "self_employed_share": 0.085,
+    "self_income_median": 200.0,
+    "regular_share": 0.868,
+    "firm_size3": {
+     "n": 94,
+     "S": 0.5,
+     "M": 0.351,
+     "L": 0.149
+    }
+   },
+   "35~39": {
+    "n": 215,
+    "female_share": 0.521,
+    "wage_median": 290.0,
+    "self_employed_share": 0.293,
+    "self_income_median": 150.0,
+    "regular_share": 0.873,
+    "firm_size3": {
+     "n": 74,
+     "S": 0.486,
+     "M": 0.297,
+     "L": 0.216
+    }
+   },
+   "40~44": {
+    "n": 165,
+    "female_share": 0.37,
+    "wage_median": 300.0,
+    "self_employed_share": 0.236,
+    "self_income_median": 200.0,
+    "regular_share": 0.86,
+    "firm_size3": {
+     "n": 56,
+     "S": 0.446,
+     "M": 0.339,
+     "L": 0.214
+    }
+   },
+   "45~49": {
+    "n": 85,
+    "female_share": 0.341,
+    "wage_median": 265.0,
+    "self_employed_share": 0.271,
+    "self_income_median": 250.0,
+    "regular_share": 0.831,
+    "firm_size3": {
+     "n": 27,
+     "S": 0.593,
+     "M": 0.259,
+     "L": 0.148
+    }
+   },
+   "50~54": {
+    "n": 53,
+    "female_share": 0.434,
+    "wage_median": 400.0,
+    "self_employed_share": 0.453,
+    "self_income_median": 350.0,
+    "regular_share": 0.963,
+    "firm_size3": {
+     "n": 10,
+     "S": 0.5,
+     "L": 0.4,
+     "M": 0.1
+    }
+   },
+   "55~59": {
+    "n": 14,
+    "female_share": 0.286,
+    "wage_median": 250.0,
+    "self_employed_share": 0.571,
+    "self_income_median": 165.0,
+    "regular_share": 1.0,
+    "firm_size3": {
+     "n": 1,
+     "L": 1.0
+    }
+   },
+   "60+": {
+    "n": 9,
+    "female_share": 0.0,
+    "wage_median": 380.0,
+    "self_employed_share": 0.667,
+    "self_income_median": 110.0,
+    "regular_share": 0.667,
+    "firm_size3": {
+     "n": 2,
+     "L": 0.5,
+     "M": 0.5
+    }
+   }
+  },
+  "annual_transition": {
+   "all": {
+    "n": 863,
+    "same_job": 0.815,
+    "other_occupation": 0.07,
+    "not_employed": 0.064,
+    "new_job_same_occupation": 0.052,
+    "to_self_employed_share": 0.017
+   },
+   "35~44": {
+    "n": 333,
+    "same_job": 0.865,
+    "other_occupation": 0.063,
+    "not_employed": 0.042,
+    "new_job_same_occupation": 0.03,
+    "to_self_employed_share": 0.021
+   },
+   "45+": {
+    "n": 133,
+    "same_job": 0.872,
+    "not_employed": 0.045,
+    "other_occupation": 0.045,
+    "new_job_same_occupation": 0.038,
+    "to_self_employed_share": 0.008
+   },
+   "~34": {
+    "n": 397,
+    "same_job": 0.753,
+    "not_employed": 0.088,
+    "other_occupation": 0.083,
+    "new_job_same_occupation": 0.076,
+    "to_self_employed_share": 0.018
+   },
+   "male": {
+    "n": 368,
+    "same_job": 0.853,
+    "other_occupation": 0.06,
+    "new_job_same_occupation": 0.046,
+    "not_employed": 0.041,
+    "to_self_employed_share": 0.022
+   },
+   "female": {
+    "n": 495,
+    "same_job": 0.786,
+    "not_employed": 0.081,
+    "other_occupation": 0.077,
+    "new_job_same_occupation": 0.057,
+    "to_self_employed_share": 0.014
+   }
+  },
+  "reentry_next_year_from_not_employed": {
+   "n": 46,
+   "still_not_employed": 0.457,
+   "other_occupation": 0.283,
+   "back_same_occupation": 0.261
+  },
+  "still_in_occupation_after": {
+   "1y": {
+    "n": 180,
+    "same_occupation": 0.794,
+    "not_employed": 0.106
+   },
+   "2y": {
+    "n": 171,
+    "same_occupation": 0.696,
+    "not_employed": 0.14
+   },
+   "3y": {
+    "n": 148,
+    "same_occupation": 0.676,
+    "not_employed": 0.142
+   },
+   "5y": {
+    "n": 126,
+    "same_occupation": 0.563,
+    "not_employed": 0.095
+   },
+   "7y": {
+    "n": 96,
+    "same_occupation": 0.5,
+    "not_employed": 0.177
+   },
+   "10y": {
+    "n": 73,
+    "same_occupation": 0.315,
+    "not_employed": 0.274
+   }
+  },
+  "wage_change_yoy_median": {
+   "same_job": {
+    "n": 538,
+    "pct": 0.0
+   },
+   "job_change": {
+    "n": 34,
+    "pct": 7.7
+   }
+  },
+  "size3_transition_on_job_change": {
+   "n": 10,
+   "counts": {
+    "L": {
+     "L": 1,
+     "M": 1,
+     "S": 0
+    },
+    "M": {
+     "L": 0,
+     "M": 2,
+     "S": 1
+    },
+    "S": {
+     "L": 0,
+     "M": 1,
+     "S": 4
+    }
+   }
+  },
+  "satisfaction_mean_1to5_high_is_good": {
+   "임금": 2.97,
+   "고용안정": 3.41,
+   "일의 내용": 3.64,
+   "근무환경": 3.48,
+   "근로시간": 3.49,
+   "발전가능성": 3.41,
+   "인간관계": 3.44,
+   "인사공정성": 3.19,
+   "복리후생": 2.94
+  }
+ },
+ "developer": {
+  "person_years": 2291,
+  "persons": 430,
+  "by_age": {
+   "20~24": {
+    "n": 50,
+    "female_share": 0.56,
+    "wage_median": 200.0,
+    "self_employed_share": 0.04,
+    "self_income_median": 175.0,
+    "regular_share": 0.771,
+    "firm_size3": {
+     "n": 26,
+     "L": 0.385,
+     "M": 0.308,
+     "S": 0.308
+    }
+   },
+   "25~29": {
+    "n": 325,
+    "female_share": 0.317,
+    "wage_median": 230.0,
+    "self_employed_share": 0.018,
+    "self_income_median": 180.0,
+    "regular_share": 0.871,
+    "firm_size3": {
+     "n": 195,
+     "M": 0.39,
+     "L": 0.374,
+     "S": 0.236
+    }
+   },
+   "30~34": {
+    "n": 462,
+    "female_share": 0.203,
+    "wage_median": 290.0,
+    "self_employed_share": 0.043,
+    "self_income_median": 225.0,
+    "regular_share": 0.918,
+    "firm_size3": {
+     "n": 281,
+     "M": 0.406,
+     "L": 0.349,
+     "S": 0.246
+    }
+   },
+   "35~39": {
+    "n": 516,
+    "female_share": 0.136,
+    "wage_median": 350.0,
+    "self_employed_share": 0.097,
+    "self_income_median": 400.0,
+    "regular_share": 0.917,
+    "firm_size3": {
+     "n": 297,
+     "M": 0.481,
+     "L": 0.32,
+     "S": 0.199
+    }
+   },
+   "40~44": {
+    "n": 445,
+    "female_share": 0.099,
+    "wage_median": 425.0,
+    "self_employed_share": 0.16,
+    "self_income_median": 400.0,
+    "regular_share": 0.956,
+    "firm_size3": {
+     "n": 239,
+     "M": 0.519,
+     "L": 0.289,
+     "S": 0.192
+    }
+   },
+   "45~49": {
+    "n": 261,
+    "female_share": 0.061,
+    "wage_median": 500.0,
+    "self_employed_share": 0.299,
+    "self_income_median": 454.5,
+    "regular_share": 0.972,
+    "firm_size3": {
+     "n": 107,
+     "M": 0.495,
+     "L": 0.327,
+     "S": 0.178
+    }
+   },
+   "50~54": {
+    "n": 153,
+    "female_share": 0.039,
+    "wage_median": 500.0,
+    "self_employed_share": 0.333,
+    "self_income_median": 490.0,
+    "regular_share": 0.931,
+    "firm_size3": {
+     "n": 45,
+     "M": 0.4,
+     "S": 0.333,
+     "L": 0.267
+    }
+   },
+   "55~59": {
+    "n": 63,
+    "female_share": 0.016,
+    "wage_median": 500.0,
+    "self_employed_share": 0.286,
+    "self_income_median": 500.0,
+    "regular_share": 0.911,
+    "firm_size3": {
+     "n": 27,
+     "M": 0.444,
+     "L": 0.37,
+     "S": 0.185
+    }
+   },
+   "60+": {
+    "n": 10,
+    "female_share": 0.0,
+    "wage_median": 690.0,
+    "self_employed_share": 0.0,
+    "self_income_median": null,
+    "regular_share": 1.0,
+    "firm_size3": {
+     "n": 3,
+     "M": 0.667,
+     "L": 0.333
+    }
+   }
+  },
+  "annual_transition": {
+   "all": {
+    "n": 1888,
+    "same_job": 0.871,
+    "new_job_same_occupation": 0.055,
+    "other_occupation": 0.043,
+    "not_employed": 0.031,
+    "to_self_employed_share": 0.008
+   },
+   "35~44": {
+    "n": 824,
+    "same_job": 0.882,
+    "new_job_same_occupation": 0.062,
+    "other_occupation": 0.035,
+    "not_employed": 0.021,
+    "to_self_employed_share": 0.011
+   },
+   "45+": {
+    "n": 397,
+    "same_job": 0.927,
+    "not_employed": 0.033,
+    "other_occupation": 0.028,
+    "new_job_same_occupation": 0.013,
+    "to_self_employed_share": 0.005
+   },
+   "~34": {
+    "n": 667,
+    "same_job": 0.823,
+    "new_job_same_occupation": 0.07,
+    "other_occupation": 0.063,
+    "not_employed": 0.043,
+    "to_self_employed_share": 0.007
+   },
+   "male": {
+    "n": 1599,
+    "same_job": 0.877,
+    "new_job_same_occupation": 0.055,
+    "other_occupation": 0.041,
+    "not_employed": 0.027,
+    "to_self_employed_share": 0.009
+   },
+   "female": {
+    "n": 289,
+    "same_job": 0.834,
+    "other_occupation": 0.059,
+    "not_employed": 0.055,
+    "new_job_same_occupation": 0.052,
+    "to_self_employed_share": 0.007
+   }
+  },
+  "reentry_next_year_from_not_employed": {
+   "n": 43,
+   "still_not_employed": 0.395,
+   "back_same_occupation": 0.372,
+   "other_occupation": 0.233
+  },
+  "still_in_occupation_after": {
+   "1y": {
+    "n": 356,
+    "same_occupation": 0.876,
+    "not_employed": 0.059
+   },
+   "2y": {
+    "n": 305,
+    "same_occupation": 0.83,
+    "not_employed": 0.049
+   },
+   "3y": {
+    "n": 261,
+    "same_occupation": 0.793,
+    "not_employed": 0.061
+   },
+   "5y": {
+    "n": 220,
+    "same_occupation": 0.695,
+    "not_employed": 0.064
+   },
+   "7y": {
+    "n": 141,
+    "same_occupation": 0.709,
+    "not_employed": 0.043
+   },
+   "10y": {
+    "n": 110,
+    "same_occupation": 0.673,
+    "not_employed": 0.082
+   }
+  },
+  "wage_change_yoy_median": {
+   "same_job": {
+    "n": 1396,
+    "pct": 2.5
+   },
+   "job_change": {
+    "n": 84,
+    "pct": 11.3
+   }
+  },
+  "size3_transition_on_job_change": {
+   "n": 37,
+   "counts": {
+    "L": {
+     "L": 6,
+     "M": 2,
+     "S": 0
+    },
+    "M": {
+     "L": 7,
+     "M": 13,
+     "S": 1
+    },
+    "S": {
+     "L": 0,
+     "M": 3,
+     "S": 5
+    }
+   }
+  },
+  "satisfaction_mean_1to5_high_is_good": {
+   "임금": 3.18,
+   "고용안정": 3.55,
+   "일의 내용": 3.72,
+   "근무환경": 3.63,
+   "근로시간": 3.59,
+   "발전가능성": 3.55,
+   "인간관계": 3.55,
+   "인사공정성": 3.33,
+   "복리후생": 3.15
+  }
+ },
+ "planner": {
+  "person_years": 475,
+  "persons": 114,
+  "by_age": {
+   "20~24": {
+    "n": 9,
+    "female_share": 0.889,
+    "wage_median": 200.0,
+    "self_employed_share": 0.0,
+    "self_income_median": null,
+    "regular_share": 0.333,
+    "firm_size3": {
+     "n": 5,
+     "S": 0.6,
+     "M": 0.2,
+     "L": 0.2
+    }
+   },
+   "25~29": {
+    "n": 58,
+    "female_share": 0.638,
+    "wage_median": 200.0,
+    "self_employed_share": 0.034,
+    "self_income_median": 390.0,
+    "regular_share": 0.786,
+    "firm_size3": {
+     "n": 23,
+     "S": 0.565,
+     "L": 0.217,
+     "M": 0.217
+    }
+   },
+   "30~34": {
+    "n": 91,
+    "female_share": 0.571,
+    "wage_median": 270.0,
+    "self_employed_share": 0.033,
+    "self_income_median": 250.0,
+    "regular_share": 0.906,
+    "firm_size3": {
+     "n": 46,
+     "L": 0.391,
+     "S": 0.348,
+     "M": 0.261
+    }
+   },
+   "35~39": {
+    "n": 99,
+    "female_share": 0.434,
+    "wage_median": 340.0,
+    "self_employed_share": 0.081,
+    "self_income_median": 375.0,
+    "regular_share": 1.0,
+    "firm_size3": {
+     "n": 54,
+     "L": 0.463,
+     "M": 0.296,
+     "S": 0.241
+    }
+   },
+   "40~44": {
+    "n": 106,
+    "female_share": 0.226,
+    "wage_median": 380.0,
+    "self_employed_share": 0.179,
+    "self_income_median": 400.0,
+    "regular_share": 0.943,
+    "firm_size3": {
+     "n": 51,
+     "L": 0.451,
+     "M": 0.314,
+     "S": 0.235
+    }
+   },
+   "45~49": {
+    "n": 62,
+    "female_share": 0.258,
+    "wage_median": 400.0,
+    "self_employed_share": 0.21,
+    "self_income_median": 400.0,
+    "regular_share": 0.816,
+    "firm_size3": {
+     "n": 22,
+     "M": 0.591,
+     "L": 0.273,
+     "S": 0.136
+    }
+   },
+   "50~54": {
+    "n": 28,
+    "female_share": 0.0,
+    "wage_median": 500.0,
+    "self_employed_share": 0.393,
+    "self_income_median": 300.0,
+    "regular_share": 1.0,
+    "firm_size3": {
+     "n": 8,
+     "L": 0.625,
+     "S": 0.375
+    }
+   },
+   "55~59": {
+    "n": 12,
+    "female_share": 0.0,
+    "wage_median": 850.0,
+    "self_employed_share": 0.667,
+    "self_income_median": 330.0,
+    "regular_share": 0.75,
+    "firm_size3": {
+     "n": 3,
+     "M": 0.333,
+     "L": 0.333,
+     "S": 0.333
+    }
+   },
+   "60+": {
+    "n": 10,
+    "female_share": 0.0,
+    "wage_median": 225.0,
+    "self_employed_share": 0.0,
+    "self_income_median": null,
+    "regular_share": 0.3,
+    "firm_size3": {
+     "n": 4,
+     "S": 1.0
+    }
+   }
+  },
+  "annual_transition": {
+   "all": {
+    "n": 411,
+    "same_job": 0.835,
+    "other_occupation": 0.1,
+    "not_employed": 0.054,
+    "new_job_same_occupation": 0.012,
+    "to_self_employed_share": 0.012
+   },
+   "35~44": {
+    "n": 181,
+    "same_job": 0.89,
+    "other_occupation": 0.055,
+    "not_employed": 0.039,
+    "new_job_same_occupation": 0.017,
+    "to_self_employed_share": 0.011
+   },
+   "45+": {
+    "n": 95,
+    "same_job": 0.853,
+    "other_occupation": 0.126,
+    "not_employed": 0.021,
+    "to_self_employed_share": 0.021
+   },
+   "~34": {
+    "n": 135,
+    "same_job": 0.748,
+    "other_occupation": 0.141,
+    "not_employed": 0.096,
+    "new_job_same_occupation": 0.015,
+    "to_self_employed_share": 0.007
+   },
+   "male": {
+    "n": 256,
+    "same_job": 0.875,
+    "other_occupation": 0.094,
+    "not_employed": 0.02,
+    "new_job_same_occupation": 0.012,
+    "to_self_employed_share": 0.008
+   },
+   "female": {
+    "n": 155,
+    "same_job": 0.768,
+    "other_occupation": 0.11,
+    "not_employed": 0.11,
+    "new_job_same_occupation": 0.013,
+    "to_self_employed_share": 0.019
+   }
+  },
+  "reentry_next_year_from_not_employed": {
+   "n": 17,
+   "other_occupation": 0.529,
+   "still_not_employed": 0.471
+  },
+  "still_in_occupation_after": {
+   "1y": {
+    "n": 95,
+    "same_occupation": 0.768,
+    "not_employed": 0.105
+   },
+   "2y": {
+    "n": 91,
+    "same_occupation": 0.67,
+    "not_employed": 0.088
+   },
+   "3y": {
+    "n": 77,
+    "same_occupation": 0.571,
+    "not_employed": 0.104
+   },
+   "5y": {
+    "n": 65,
+    "same_occupation": 0.462,
+    "not_employed": 0.046
+   },
+   "7y": {
+    "n": 49,
+    "same_occupation": 0.286,
+    "not_employed": 0.082
+   },
+   "10y": {
+    "n": 39,
+    "same_occupation": 0.333,
+    "not_employed": 0.026
+   }
+  },
+  "wage_change_yoy_median": {
+   "same_job": {
+    "n": 289,
+    "pct": 0.9
+   },
+   "job_change": {
+    "n": 4,
+    "pct": 1.5
+   }
+  },
+  "size3_transition_on_job_change": {
+   "n": 2,
+   "counts": {
+    "L": {
+     "M": 1
+    },
+    "M": {
+     "M": 1
+    }
+   }
+  },
+  "satisfaction_mean_1to5_high_is_good": {
+   "임금": 3.16,
+   "고용안정": 3.49,
+   "일의 내용": 3.69,
+   "근무환경": 3.52,
+   "근로시간": 3.47,
+   "발전가능성": 3.47,
+   "인간관계": 3.52,
+   "인사공정성": 3.32,
+   "복리후생": 3.08
+  }
+ },
+ "all_employed_wage_by_age": {
+  "20~24": 153.0,
+  "25~29": 200.0,
+  "30~34": 250.0,
+  "35~39": 276.0,
+  "40~44": 300.0,
+  "45~49": 270.0,
+  "50~54": 245.0,
+  "55~59": 210.0,
+  "60+": 150.0
+ }
+}

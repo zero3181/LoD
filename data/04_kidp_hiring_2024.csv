@@ -1,0 +1,6 @@
+segment,pct_firms_hired_experienced,avg_experienced_hired,pct_firms_hired_new_grad,avg_new_grad_hired,pct_firms_lost_experienced,avg_experienced_left,pct_firms_lost_new,avg_new_left
+활용업체 전체,4.6,0.06,3.8,0.05,5.7,0.08,2.1,0.02
+대기업,36.3,0.55,17.8,0.21,35.7,0.58,16.1,0.16
+중견기업,5.0,0.16,5.0,0.13,5.6,0.20,3.0,0.05
+중기업,7.2,0.09,4.6,0.06,8.4,0.12,3.2,0.04
+소기업,3.4,0.04,3.4,0.04,4.6,0.06,1.6,0.02

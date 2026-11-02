@@ -1,0 +1,55 @@
+N 13158
+
+# Q4 employment type counts
+  5539  42.1%  A full-time employee in-house
+  3757  28.6%  A full-time employee at an agency or consultancy
+  2006  15.2%  Self-employed or freelancing
+   402   3.1%  A contract employee in-house
+   396   3.0%  Not working
+   389   3.0%  An educator
+   364   2.8%  Other
+   305   2.3%  A contract employee at an agency or consultancy
+
+# Q1 years counts [('1-4 years', 4168), ('5-9 years', 3682), ('10-14 years', 2059), ('15-20 years', 1298), ('20+ years', 1243), ('Less than 1 year', 708)]
+
+# median salary (USD) by employment x years [n]
+A full-time employee in-house Less than 1 year:45000[165] | 1-4 years:50000[1712] | 5-9 years:62000[1744] | 10-14 years:77000[913] | 15-19 years:-[0] | 20+ years:89000[399]
+A full-time employee at an agency or consultancy Less than 1 year:40000[137] | 1-4 years:47000[1372] | 5-9 years:60000[1136] | 10-14 years:74500[542] | 15-19 years:-[0] | 20+ years:100000[224]
+Self-employed or freelancing Less than 1 year:20000[84] | 1-4 years:25000[366] | 5-9 years:40000[461] | 10-14 years:50000[364] | 15-19 years:-[0] | 20+ years:70000[362]
+A contract employee in-house Less than 1 year:30000[37] | 1-4 years:42000[176] | 5-9 years:71000[106] | 10-14 years:87777[47] | 15-19 years:-[0] | 20+ years:-[13]
+Not working Less than 1 year:-[0] | 1-4 years:-[0] | 5-9 years:-[0] | 10-14 years:-[0] | 15-19 years:-[0] | 20+ years:-[0]
+An educator Less than 1 year:-[6] | 1-4 years:34000[27] | 5-9 years:55500[46] | 10-14 years:59000[77] | 15-19 years:-[0] | 20+ years:70000[146]
+Other Less than 1 year:15000[73] | 1-4 years:22000[130] | 5-9 years:45000[39] | 10-14 years:64500[26] | 15-19 years:-[0] | 20+ years:95000[37]
+A contract employee at an agency or consultancy Less than 1 year:31200[43] | 1-4 years:41600[135] | 5-9 years:50000[67] | 10-14 years:72000[32] | 15-19 years:-[0] | 20+ years:-[8]
+
+# job stability by employment (%)
+A full-time employee in-house Fairly stable:61 | Rock solid:30 | Somewhat shaky:7 | Not sure:1 | Non-existent:1
+A full-time employee at an agency or consultancy Fairly stable:60 | Rock solid:29 | Somewhat shaky:9 | Not sure:1 | Non-existent:1
+Self-employed or freelancing Fairly stable:45 | Somewhat shaky:28 | Non-existent:12 | Rock solid:11 | Not sure:3
+A contract employee in-house Fairly stable:50 | Somewhat shaky:31 | Non-existent:8 | Rock solid:7 | Not sure:3
+Not working 
+An educator Fairly stable:59 | Rock solid:25 | Somewhat shaky:11 | Non-existent:3 | Not sure:2
+Other Fairly stable:53 | Rock solid:20 | Somewhat shaky:15 | Not sure:7 | Non-existent:6
+A contract employee at an agency or consultancy Fairly stable:45 | Somewhat shaky:36 | Non-existent:11 | Rock solid:7 | Not sure:1
+
+# "My job is" by employment (%)
+A full-time employee in-house Pretty good:67 | Not great:17 | The best:14 | The worst:1 | Not sure:1
+A full-time employee at an agency or consultancy Pretty good:65 | The best:17 | Not great:16 | The worst:1 | Not sure:1
+Self-employed or freelancing Pretty good:56 | The best:30 | Not great:10 | Not sure:3 | The worst:1
+A contract employee in-house Pretty good:62 | Not great:22 | The best:11 | Not sure:2 | The worst:2
+Not working 
+An educator Pretty good:67 | The best:23 | Not great:8 | Not sure:2 | The worst:1
+Other Pretty good:59 | The best:18 | Not great:13 | Not sure:7 | The worst:2
+A contract employee at an agency or consultancy Pretty good:64 | Not great:19 | The best:13 | The worst:2 | Not sure:2
+
+# side activities (multi) share, all
+ 53.9% Design for friends and family
+ 52.9% Maintain personal projects
+ 47.6% Take occasional freelance projects
+ 31.0% Volunteer
+ 16.6% Have regular freelance clients
+ 15.8% Own my own business
+ 10.7% Teach
+  7.7% None of these
+
+# tenure at current workplace, all [('1-2 years', 28.8), ('Less than 1 year', 27.6), ('3-4 years', 19.1), ('5-7 years', 9.3), ('10+ years', 8.5), ('8-10 years', 3.8), ('', 3.0)]

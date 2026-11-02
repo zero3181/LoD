@@ -1,0 +1,598 @@
+{
+ "meta": {
+  "built_from": [
+   "data/16_ 원자료 KLIPS 12~27차",
+   "data/14_ 원자료 YP2021 직업력"
+  ],
+  "notes": [
+   "디자이너: 청년패널 값은 패션·실내장식 제외(KECO 4151·4154·4155). 노동패널 값은 KSCO 285 전체(나눌 수 없음).",
+   "연간 이동 = 다음 해 상태. same_job / new_job_same_occupation / other_occupation / not_employed.",
+   "비가중, 표본 수 n 을 함께 적었다. n<30 칸은 게임에서 상위 칸(성별 합계)으로 대체한다."
+  ]
+ },
+ "klips": {
+  "designer": {
+   "transition": {
+    "male": {
+     "~34": {
+      "n": 97,
+      "same_job": 0.7732,
+      "other_occupation": 0.0928,
+      "new_job_same_occupation": 0.0825,
+      "not_employed": 0.0515
+     },
+     "35~44": {
+      "n": 184,
+      "same_job": 0.8859,
+      "other_occupation": 0.0543,
+      "not_employed": 0.0326,
+      "new_job_same_occupation": 0.0272
+     },
+     "45+": {
+      "n": 87,
+      "same_job": 0.8736,
+      "not_employed": 0.046,
+      "new_job_same_occupation": 0.046,
+      "other_occupation": 0.0345
+     }
+    },
+    "female": {
+     "~34": {
+      "n": 300,
+      "same_job": 0.7467,
+      "not_employed": 0.1,
+      "other_occupation": 0.08,
+      "new_job_same_occupation": 0.0733
+     },
+     "35~44": {
+      "n": 149,
+      "same_job": 0.8389,
+      "other_occupation": 0.0738,
+      "not_employed": 0.0537,
+      "new_job_same_occupation": 0.0336
+     },
+     "45+": {
+      "n": 46,
+      "same_job": 0.8696,
+      "other_occupation": 0.0652,
+      "not_employed": 0.0435,
+      "new_job_same_occupation": 0.0217
+     }
+    }
+   },
+   "other_occupation_destination": {
+    "n": 60,
+    "other": 0.85,
+    "developer": 0.1,
+    "planner": 0.05
+   },
+   "self_employment": {
+    "wage_to_self_annual": 0.0102,
+    "n_wage": 588,
+    "self_to_wage_annual": 0.0563,
+    "n_self": 160
+   },
+   "not_employed_next_year": {
+    "male": {
+     "n": 12,
+     "still_not_employed": 0.4167,
+     "other_occupation": 0.3333,
+     "back_same_occupation": 0.25
+    },
+    "female": {
+     "n": 34,
+     "still_not_employed": 0.4706,
+     "back_same_occupation": 0.2647,
+     "other_occupation": 0.2647
+    }
+   },
+   "wage_by_sex_age": {
+    "male": {
+     "20~24": {
+      "n": 1,
+      "median": 179.0
+     },
+     "25~29": {
+      "n": 29,
+      "median": 190.0
+     },
+     "30~34": {
+      "n": 73,
+      "median": 250.0
+     },
+     "35~39": {
+      "n": 74,
+      "median": 300.0
+     },
+     "40~44": {
+      "n": 79,
+      "median": 330.0
+     },
+     "45~49": {
+      "n": 39,
+      "median": 260.0
+     },
+     "50~54": {
+      "n": 19,
+      "median": 420.0
+     },
+     "55~59": {
+      "n": 5,
+      "median": 250.0
+     },
+     "60+": {
+      "n": 3,
+      "median": 380.0
+     }
+    },
+    "female": {
+     "20~24": {
+      "n": 60,
+      "median": 167.0
+     },
+     "25~29": {
+      "n": 155,
+      "median": 200.0
+     },
+     "30~34": {
+      "n": 119,
+      "median": 250.0
+     },
+     "35~39": {
+      "n": 78,
+      "median": 265.0
+     },
+     "40~44": {
+      "n": 42,
+      "median": 230.0
+     },
+     "45~49": {
+      "n": 20,
+      "median": 282.5
+     },
+     "50~54": {
+      "n": 8,
+      "median": 200.0
+     },
+     "55~59": {
+      "n": 0,
+      "median": null
+     },
+     "60+": {
+      "n": 0,
+      "median": null
+     }
+    }
+   },
+   "wage_by_age": {
+    "20~24": {
+     "n": 61,
+     "median": 170.0
+    },
+    "25~29": {
+     "n": 184,
+     "median": 200.0
+    },
+    "30~34": {
+     "n": 192,
+     "median": 250.0
+    },
+    "35~39": {
+     "n": 152,
+     "median": 290.0
+    },
+    "40~44": {
+     "n": 121,
+     "median": 300.0
+    },
+    "45~49": {
+     "n": 59,
+     "median": 265.0
+    },
+    "50~54": {
+     "n": 27,
+     "median": 400.0
+    },
+    "55~59": {
+     "n": 5,
+     "median": 250.0
+    },
+    "60+": {
+     "n": 3,
+     "median": 380.0
+    }
+   },
+   "self_income_by_age": {
+    "20~24": 100.0,
+    "25~29": 200.0,
+    "30~34": 200.0,
+    "35~39": 150.0,
+    "40~44": 200.0,
+    "45~49": 250.0,
+    "50~54": 350.0,
+    "55~59": 165.0,
+    "60+": 110.0
+   },
+   "size3_wage_multiplier_25_44": {
+    "L": {
+     "n": 52,
+     "mult": 1.267
+    },
+    "M": {
+     "n": 105,
+     "mult": 1.015
+    },
+    "S": {
+     "n": 166,
+     "mult": 0.92
+    }
+   },
+   "wage_log_sd_within_age_25_44": 0.365,
+   "satisfaction_mean_1to5": {
+    "임금": 2.97,
+    "고용안정": 3.41,
+    "일의 내용": 3.64,
+    "근무환경": 3.48,
+    "근로시간": 3.49,
+    "발전가능성": 3.41,
+    "인간관계": 3.44,
+    "인사공정성": 3.19,
+    "복리후생": 2.94
+   }
+  },
+  "developer": {
+   "transition": {
+    "male": {
+     "~34": {
+      "n": 492,
+      "same_job": 0.8272,
+      "new_job_same_occupation": 0.0732,
+      "other_occupation": 0.065,
+      "not_employed": 0.0346
+     },
+     "35~44": {
+      "n": 731,
+      "same_job": 0.8837,
+      "new_job_same_occupation": 0.0643,
+      "other_occupation": 0.0328,
+      "not_employed": 0.0192
+     },
+     "45+": {
+      "n": 376,
+      "same_job": 0.9309,
+      "not_employed": 0.0319,
+      "other_occupation": 0.0239,
+      "new_job_same_occupation": 0.0133
+     }
+    },
+    "female": {
+     "~34": {
+      "n": 175,
+      "same_job": 0.8114,
+      "not_employed": 0.0686,
+      "new_job_same_occupation": 0.0629,
+      "other_occupation": 0.0571
+     },
+     "35~44": {
+      "n": 93,
+      "same_job": 0.871,
+      "other_occupation": 0.0538,
+      "new_job_same_occupation": 0.043,
+      "not_employed": 0.0323
+     },
+     "45+": {
+      "n": 21,
+      "same_job": 0.8571,
+      "other_occupation": 0.0952,
+      "not_employed": 0.0476
+     }
+    }
+   },
+   "other_occupation_destination": {
+    "n": 82,
+    "other": 0.9512,
+    "designer": 0.0366,
+    "planner": 0.0122
+   },
+   "self_employment": {
+    "wage_to_self_annual": 0.008,
+    "n_wage": 1507,
+    "self_to_wage_annual": 0.025,
+    "n_self": 240
+   },
+   "not_employed_next_year": {
+    "male": {
+     "n": 34,
+     "back_same_occupation": 0.4118,
+     "still_not_employed": 0.3824,
+     "other_occupation": 0.2059
+    },
+    "female": {
+     "n": 9,
+     "still_not_employed": 0.4444,
+     "other_occupation": 0.3333,
+     "back_same_occupation": 0.2222
+    }
+   },
+   "wage_by_sex_age": {
+    "male": {
+     "20~24": {
+      "n": 21,
+      "median": 200.0
+     },
+     "25~29": {
+      "n": 218,
+      "median": 222.5
+     },
+     "30~34": {
+      "n": 356,
+      "median": 289.0
+     },
+     "35~39": {
+      "n": 399,
+      "median": 370.0
+     },
+     "40~44": {
+      "n": 328,
+      "median": 430.0
+     },
+     "45~49": {
+      "n": 174,
+      "median": 500.0
+     },
+     "50~54": {
+      "n": 99,
+      "median": 500.0
+     },
+     "55~59": {
+      "n": 44,
+      "median": 500.0
+     },
+     "60+": {
+      "n": 10,
+      "median": 690.0
+     }
+    },
+    "female": {
+     "20~24": {
+      "n": 25,
+      "median": 190.0
+     },
+     "25~29": {
+      "n": 100,
+      "median": 255.0
+     },
+     "30~34": {
+      "n": 86,
+      "median": 300.0
+     },
+     "35~39": {
+      "n": 62,
+      "median": 300.0
+     },
+     "40~44": {
+      "n": 42,
+      "median": 350.0
+     },
+     "45~49": {
+      "n": 9,
+      "median": 340.0
+     },
+     "50~54": {
+      "n": 1,
+      "median": 340.0
+     },
+     "55~59": {
+      "n": 1,
+      "median": 265.0
+     },
+     "60+": {
+      "n": 0,
+      "median": null
+     }
+    }
+   },
+   "wage_by_age": {
+    "20~24": {
+     "n": 46,
+     "median": 200.0
+    },
+    "25~29": {
+     "n": 318,
+     "median": 230.0
+    },
+    "30~34": {
+     "n": 442,
+     "median": 290.0
+    },
+    "35~39": {
+     "n": 461,
+     "median": 350.0
+    },
+    "40~44": {
+     "n": 370,
+     "median": 425.0
+    },
+    "45~49": {
+     "n": 183,
+     "median": 500.0
+    },
+    "50~54": {
+     "n": 100,
+     "median": 500.0
+    },
+    "55~59": {
+     "n": 45,
+     "median": 500.0
+    },
+    "60+": {
+     "n": 10,
+     "median": 690.0
+    }
+   },
+   "self_income_by_age": {
+    "20~24": 175.0,
+    "25~29": 180.0,
+    "30~34": 225.0,
+    "35~39": 400.0,
+    "40~44": 400.0,
+    "45~49": 454.5,
+    "50~54": 490.0,
+    "55~59": 500.0,
+    "60+": null
+   },
+   "size3_wage_multiplier_25_44": {
+    "L": {
+     "n": 335,
+     "mult": 1.207
+    },
+    "M": {
+     "n": 457,
+     "mult": 0.971
+    },
+    "S": {
+     "n": 219,
+     "mult": 0.862
+    }
+   },
+   "wage_log_sd_within_age_25_44": 0.323,
+   "satisfaction_mean_1to5": {
+    "임금": 3.18,
+    "고용안정": 3.55,
+    "일의 내용": 3.72,
+    "근무환경": 3.63,
+    "근로시간": 3.59,
+    "발전가능성": 3.55,
+    "인간관계": 3.55,
+    "인사공정성": 3.33,
+    "복리후생": 3.15
+   }
+  }
+ },
+ "yp": {
+  "designer": {
+   "n_first_jobs": 129,
+   "female_share_first_job": 0.736,
+   "start_age": {
+    "male": {
+     "n": 34,
+     "q25": 24.0,
+     "median": 25.0,
+     "q75": 26.0
+    },
+    "female": {
+     "n": 95,
+     "q25": 22.0,
+     "median": 23.0,
+     "q75": 24.5
+    }
+   },
+   "first_wage_median": {
+    "male": {
+     "n": 25,
+     "median": 230.0
+    },
+    "female": {
+     "n": 88,
+     "median": 220.0
+    }
+   },
+   "first_job_size9": {
+    "n": 129,
+    "1~4": 0.1628,
+    "5~9": 0.2171,
+    "10~29": 0.3256,
+    "30~49": 0.093,
+    "50~99": 0.0853,
+    "100~299": 0.031,
+    "300~499": 0.0233,
+    "500~999": 0.0233,
+    "1000+": 0.0388
+   },
+   "first_job_regular_share": 0.817,
+   "quit_reasons": {
+    "n": 51,
+    "전망 없음": 0.2353,
+    "보수·승진 불만": 0.1373,
+    "적성 불일치": 0.1176,
+    "근무조건·환경": 0.1176,
+    "폐업·해고·사업종료": 0.098,
+    "계약 만료": 0.0588,
+    "기타": 0.0588,
+    "건강": 0.0392,
+    "기술 부족": 0.0392,
+    "창업·개인사업": 0.0392,
+    "학업 계속": 0.0392,
+    "육아·가사": 0.0196
+   },
+   "gap_months": {
+    "n": 48,
+    "le1": 0.292,
+    "2to6": 0.354,
+    "gt6": 0.354,
+    "median": 4.5
+   }
+  },
+  "developer": {
+   "n_first_jobs": 156,
+   "female_share_first_job": 0.353,
+   "start_age": {
+    "male": {
+     "n": 101,
+     "q25": 25.0,
+     "median": 25.0,
+     "q75": 26.0
+    },
+    "female": {
+     "n": 55,
+     "q25": 23.0,
+     "median": 24.0,
+     "q75": 25.0
+    }
+   },
+   "first_wage_median": {
+    "male": {
+     "n": 99,
+     "median": 266.6666666666667
+    },
+    "female": {
+     "n": 55,
+     "median": 283.3333333333333
+    }
+   },
+   "first_job_size9": {
+    "n": 156,
+    "1~4": 0.0321,
+    "5~9": 0.1154,
+    "10~29": 0.2244,
+    "30~49": 0.2115,
+    "50~99": 0.1154,
+    "100~299": 0.109,
+    "300~499": 0.0385,
+    "500~999": 0.0641,
+    "1000+": 0.0897
+   },
+   "first_job_regular_share": 0.955,
+   "quit_reasons": {
+    "n": 31,
+    "보수·승진 불만": 0.1613,
+    "전망 없음": 0.1613,
+    "적성 불일치": 0.1613,
+    "근무조건·환경": 0.129,
+    "기술 부족": 0.0968,
+    "계약 만료": 0.0968,
+    "학업 계속": 0.0645,
+    "동료·상사 불화": 0.0645,
+    "기타": 0.0323,
+    "창업·개인사업": 0.0323
+   },
+   "gap_months": {
+    "n": 28,
+    "le1": 0.464,
+    "2to6": 0.393,
+    "gt6": 0.143,
+    "median": 2.0
+   }
+  }
+ }
+}
