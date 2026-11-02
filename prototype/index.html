@@ -1959,7 +1959,7 @@ function finishYear(ctx) {
     if (life) applyLife(x, life);
     advanceAge(x);
     x.wages.push(currentWage(x));
-    const PEER = { move: () => `${josaRo(x.company)} 옮겼다.`, switch: () => `${ROLE[x.role]}로 전향했다.`, self: () => "프리랜서로 독립했다.", back: () => "다시 회사에 들어갔다.", none: () => "일을 쉬게 됐다.", leave_role: () => `디자이너 일을 그만두고 ${josaRo(AWAY_NAME[x.awayKind])} 옮겼다.`, comeback: () => "디자이너로 돌아왔다.", end: () => x.end.text };
+    const PEER = { move: () => `${josaRo(x.company)} 옮겼다.`, switch: () => `${ROLE[x.role]}로 전향했다.`, self: () => "프리랜서로 독립했다.", back: () => "다시 회사에 들어갔다.", none: () => "일을 쉬게 됐다.", leave_role: () => `디자이너 일을 그만두고 ${josaRo(AWAY_NAME[x.awayKind])} 옮겼다.`, comeback: () => "디자이너로 돌아왔다.", still: () => `공백 ${x.noneYears}년째, 아직 일을 쉬고 있다.`, end: () => x.end.type === "break" ? `공백이 ${BREAK_MAX}년째 이어졌다.` : x.end.text };
     if (life === "marry") { peerLines.push({ kind: "peer", text: `${x.name} (${ROLE[x.origRole]}) — 결혼한다는 소식을 전했다.`, why: lifeWhy(x, "marry"), grade: "B" }); if (!P.flags.card_peer_wedding) S.peerWedding = x.name; }
     if (life === "birth") peerLines.push({ kind: "peer", text: `${x.name} (${ROLE[x.origRole]}) — ${x.kids.length > 1 ? "둘째" : "첫아이"}가 태어났다.`, why: lifeWhy(x, "birth"), grade: "C" });
     for (const e of ev) peerLines.push({ kind: "peer", text: `${x.name} (${ROLE[x.origRole]}) — ${(PEER[e.kind] || (() => e.text))()}`, why: e.why, grade: e.grade });
