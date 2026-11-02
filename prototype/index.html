@@ -115,6 +115,8 @@ details.manual[open] summary { margin-bottom: 10px; }
 .why summary { display: inline; list-style: none; font-size: 11px; color: var(--accent); cursor: pointer; margin-left: 6px; white-space: nowrap; }
 .why summary::-webkit-details-marker { display: none; }
 .why[open] .whybody { display: block; }
+.evidence { background: var(--sunk); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font-size: 12.5px; line-height: 1.55; color: var(--muted); }
+.evidence-label { font-size: 11px; font-weight: 700; color: var(--accent); margin-bottom: 4px; letter-spacing: .02em; }
 .whybody { margin-top: 6px; background: var(--sunk); border: 1px solid var(--line); padding: 8px 10px; font-size: 12px; color: var(--muted); border-radius: 4px; }
 .grade { font-family: var(--font-data); font-size: 10px; border: 1px solid currentColor; border-radius: 3px; padding: 0 4px; margin-left: 4px; }
 
@@ -125,6 +127,9 @@ details.manual[open] summary { margin-bottom: 10px; }
 .focus button[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 14%, var(--surface)); font-weight: 600; }
 .focus-hint { font-size: 12px; color: var(--muted); min-height: 1.5em; }
 .go { display: flex; gap: 8px; }
+.autopick { display: flex; align-items: center; gap: 8px; font-size: 13px; min-height: 36px; cursor: pointer; flex-wrap: wrap; }
+.autopick input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
+.autopick .fine { font-size: 11.5px; }
 .go .btn:first-child { flex: 1; }
 
 /* ── 카드 (이벤트·체크포인트) ── */
@@ -1374,7 +1379,7 @@ function lifeWhy(P, kind) {
 
 /* ── 상태 ── */
 let S = null;
-function freshState() { return { screen: "start", manual: false, pickRole: "designer", pickSex: "female", focus: "flow", ask: false, speed: 0, feed: [], card: null, check: null, player: null, peers: [] }; }
+function freshState() { return { screen: "start", manual: false, pickRole: "designer", pickSex: "female", focus: "flow", ask: false, autoPick: false, speed: 0, feed: [], card: null, check: null, player: null, peers: [] }; }
 
 function startGame(role, sex) {
   const P = newPerson(role, sex, { name: "나" });
@@ -1510,11 +1515,25 @@ function finishYear(ctx) {
 /* ── 자동 진행 ── */
 let timer = null;
 function setSpeed(v) { S.speed = v; schedule(); render(); }
+/* 자동 선택: 카드 선택지와 올해의 초점을 무작위로 고른다. 에너지가 35 아래면 쉬기를 고른다. */
+function autoFocus() {
+  const P = S.player;
+  if (P.energy < 35) return "rest";
+  return pick({ flow: 3, work: 1.5, grow: 1.5, move: 1, side: .7, rest: .8 });
+}
+function autoChoice() {
+  const P = S.player, card = CARDS.find((c) => c.id === S.card.id);
+  const ok = card.choices.map((c, i) => (!c.ok || c.ok(P) ? i : -1)).filter((i) => i >= 0);
+  return ok[Math.floor(rand() * ok.length)];
+}
 function schedule() {
   clearTimeout(timer);
-  if (!S.speed || S.screen !== "play" || S.card || S.check || !S.player || S.player.end) return;
-  timer = setTimeout(() => { playYear(); schedule(); }, 1600 / S.speed);
+  if (!S.speed || S.screen !== "play" || !S.player || S.player.end) return;
+  if (S.check) { if (S.autoPick) timer = setTimeout(() => { S.check = null; render(); schedule(); }, 2000 / S.speed); return; }
+  if (S.card) { if (S.autoPick) timer = setTimeout(() => { chooseCard(autoChoice()); render(); schedule(); }, 2600 / S.speed); return; }
+  timer = setTimeout(() => { if (S.autoPick) { S.focus = autoFocus(); S.ask = false; } playYear(); schedule(); }, 1600 / S.speed);
 }
+function setAutoPick(v) { S.autoPick = v; if (v && !S.speed) S.speed = 1; render(); schedule(); }
 
 /* ── 그리기 ── */
 const $app = document.getElementById("app");
@@ -1524,9 +1543,10 @@ function citeOnly(why, grade) {
   if (!why || !grade || grade === "D") return "";
   return why.split(/(?<=[.)])\s+/).filter((x) => !/설계상|게임 설계|가정이다/.test(x)).join(" ").trim();
 }
-function whyHtml(why, grade, label = "근거") {
+function whyHtml(why, grade, label = "근거", open = false) {
   const t = citeOnly(why, grade);
   if (!t) return "";
+  if (open) return `<div class="evidence"><div class="evidence-label">${label}</div>${esc(t)}</div>`;
   return `<details class="why"><summary>${label}</summary><div class="whybody">${esc(t)}</div></details>`;
 }
 
@@ -1638,18 +1658,24 @@ function renderPlay() {
     </div>
     <div class="scroll" id="feed"><div class="feed">${intro}${feed}</div></div>
     <div class="controls">
-      <div class="focus-hint">자동 진행은 마지막에 고른 '${FOCUS[S.focus].label}'로 이어집니다.</div>
+      <div class="focus-hint">${S.autoPick ? `자동 선택 중 · 올해 초점 '${FOCUS[S.focus].label}'` : `자동 진행은 마지막에 고른 '${FOCUS[S.focus].label}'로 이어집니다.`}</div>
       <div class="go">
         <button class="btn" id="go-year">1년 보내기</button>
         <div class="seg" role="group" aria-label="자동 진행">${[0, 1, 2, 4].map((v) => `<button id="speed-${v}" data-speed="${v}" aria-pressed="${S.speed === v}">${v ? v + "×" : "Ⅱ"}</button>`).join("")}</div>
       </div>
+      <label class="autopick"><input type="checkbox" id="auto-pick" ${S.autoPick ? "checked" : ""}> 자동 선택 <span class="fine">카드 선택지와 올해의 초점을 알아서 고르며 계속 진행</span></label>
     </div>
     ${S.card ? cardHtml() : ""}${S.check ? checkHtml() : ""}${S.ask && !S.card && !S.check ? focusHtml() : ""}`;
   const feedEl = $app.querySelector("#feed"); feedEl.scrollTop = feedEl.scrollHeight;
   $app.querySelectorAll("[data-focus]").forEach((b) => b.onclick = () => { S.focus = b.dataset.focus; S.ask = false; playYear(); render(); schedule(); });
   const fx = $app.querySelector("#focus-close"); if (fx) fx.onclick = () => { S.ask = false; render(); };
   $app.querySelectorAll("[data-speed]").forEach((b) => b.onclick = () => setSpeed(+b.dataset.speed));
-  $app.querySelector("#go-year").onclick = () => { if (S.player.pause) { playYear(); return; } S.ask = true; render(); };
+  const ap = $app.querySelector("#auto-pick"); if (ap) ap.onchange = () => setAutoPick(ap.checked);
+  $app.querySelector("#go-year").onclick = () => {
+    if (S.player.pause) { playYear(); return; }
+    if (S.autoPick) { S.focus = autoFocus(); playYear(); if (S.card) { chooseCard(autoChoice()); render(); } return; }
+    S.ask = true; render();
+  };
   $app.querySelectorAll("[data-choice]").forEach((b) => b.onclick = () => { chooseCard(+b.dataset.choice); schedule(); });
   const m = $app.querySelector("#mood-save");
   if (m) m.onclick = () => { const v = $app.querySelector("#mood").value.trim(); if (v) S.player.moods[S.check.t] = v; S.check = null; render(); schedule(); };
@@ -1673,7 +1699,7 @@ function cardHtml() {
     <div class="label"><span class="cat">${CAT[card.cat] || "사건"}</span> ${START_YEAR + P.t}년 · ${P.age}세${card.trigger ? " · 데이터로 일어난 일" : card.roll ? " · 통계 확률로 일어난 일" : ` · 사건 ${used}/${CARD_N}`}</div>
     <h2 id="card-title">${esc(tv(card.title, P, S))}</h2><p>${esc(tv(card.body, P, S))}</p>
     <div class="choices">${card.choices.map((c, i) => { const off = c.ok && !c.ok(P); return `<button class="choice" id="choice-${i}" data-choice="${i}" ${off ? "disabled" : ""}><span>${esc(c.label)}</span><small>${esc(tv(c.hint, P, S))}</small></button>`; }).join("")}</div>
-    ${whyHtml(tv(card.why, P, S), card.grade, "근거 데이터")}
+    ${whyHtml(tv(card.why, P, S), card.grade, "근거 데이터", true)}
   </div></div>`;
 }
 
