@@ -205,7 +205,7 @@ PRD 본문은 claude.ai 문서에 있다: https://claude.ai/artifact/892mSfiMXa6
 - 자동 선택: 80억 분의 1 방식. 고를 선택지를 미리 표시하고 글 길이/9초(5~14초, 2×는 ÷1.4, 4×는 ÷2) 진행 막대 뒤 선택. 카드를 누르거나 '직접 고르기'를 누르면 멈춤. 체크포인트도 같은 방식, 입력칸을 누르면 멈춤.
 - 기록부: '몇 년 만에 커리어를 마쳤나' 분포 그래프(같은 조건 1,500명, cohort())와 내 위치. 마지막 장을 만족도 위로. 공유(이미지 카드 1080×1350 + navigator.share, 없으면 글 복사 + 이미지 저장).
 - 커리어 길이 확인: 엔진만 굴린 중앙값 6년, 카드·초점을 무작위로 고른 실제 플레이도 6~7년. 카드가 줄이는 게 아니라 노동패널의 직군 이탈률 그대로다. 다른 직업으로 옮기면 끝나고, 돌아오는 경우(노동패널 연 1~7%)는 아직 없다.
-- 웹: https://zero3181.github.io/LoD/ (GitHub Pages, designer-only 브랜치 루트 index.html → prototype/designer.html)
+- 웹: https://life.favorite.kr/ (GitHub Pages + Cloudflare DNS, 예전 주소 zero3181.github.io/LoD/는 자동 이동, designer-only 브랜치 루트 index.html → prototype/designer.html)
 
 ## 디자이너판 v5: 떠났다가 돌아오기 (2026-11-02)
 - 다른 직업으로 옮겨도 바로 끝나지 않는다. 상태 `away`로 계속 진행하고, 해마다 디자이너로 돌아올 수 있다.
