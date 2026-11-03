@@ -118,6 +118,12 @@ KEEP_BAND = {"designer": {"25": [0.58, 43], "30": [0.51, 45], "35": [0.60, 48], 
 # 노동패널에서 30세 이하에 처음 그 직군으로 관찰된 사람의 k년 뒤 같은 직군 비율 [값, n] (보정 목표)
 KEEP_YOUNG = {"designer": {"1y": [0.73, 92], "3y": [0.66, 67], "5y": [0.56, 57], "10y": [0.23, 30], "12y": [0.33, 24], "15y": [0.45, 11]},
               "developer": {"1y": [0.87, 158], "3y": [0.77, 110], "5y": [0.70, 83], "10y": [0.69, 45], "12y": [0.57, 35], "15y": [0.64, 22]}}
+# 회사 → 프리랜서 연간 확률(노동패널 연 1.0%)에 곱하는 나이대별 배수 (2026-11-03 맞춤, scratchpad calib_self.js 방식).
+# 목표: 노동패널 디자이너 나이대별 자영업 비중 20대 6.4% · 30~34 8.5% · 35~49 평균 27% · 50~59 48%.
+# 실제로는 다른 일을 하다 프리랜서로 들어오는 사람이 많지만, 게임은 신입으로 들어온 사람만 따라가므로 전환 확률을 키워 비중을 맞춘다.
+# 35~39세에 29%로 뛰고 40대에 평평한 모양은 같은 사람을 따라가는 방식으로는 만들 수 없어 35~49세를 한 구간으로 맞췄다.
+# 결과: 6.5 / 8.5 / 15.6·30.8·35.7(평균 27.3) / 47.4%. 정년 비율·일한 햇수는 거의 그대로.
+SELF_AGE = {"designer": {"~29": 3.3, "30~34": 1.0, "35~39": 7.5, "40~44": 7.5, "45~49": 7.5, "50+": 13.8}, "developer": {}}
 # 2020~2024 노동패널 취업자 나이 분포 (60세 미만으로 다시 나눔), n
 AGE_DIST = {"designer": {"share": [0.244, 0.352, 0.313, 0.090], "n": 369},
             "developer": {"share": [0.163, 0.356, 0.337, 0.143], "n": 1082}}
@@ -142,7 +148,7 @@ game = {
     "worker": {k: v for k, v in json.load(open(D("data", "19_worker_stats.json"))).items() if k in ["all", "all_male", "all_female", "designer"]},
     # 직군을 떠난 뒤 돌아오는 비율 (scripts/klips_return_rates.py → data/20_)
     "ret": json.load(open(D("data", "20_klips_return_rates.json"))),
-    "roles": {g: role(g) | {"hetero": HETERO[g], "keep_young": KEEP_YOUNG[g], "keep_band": KEEP_BAND[g], "age_dist": AGE_DIST[g]} for g in ["designer", "developer"]}
+    "roles": {g: role(g) | {"hetero": HETERO[g], "keep_young": KEEP_YOUNG[g], "keep_band": KEEP_BAND[g], "age_dist": AGE_DIST[g], "self_age_mult": SELF_AGE[g]} for g in ["designer", "developer"]}
              | {
               "planner": planner()},
     "size_move": size,
