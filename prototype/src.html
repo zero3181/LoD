@@ -972,7 +972,8 @@ function takeHome(P, w) {
 /* 내 몫 생활비(월): 생애 단계의 소비 비중 × 실수령. 기혼은 배우자도 나만큼 번다고 보고 가구 소득(×2)으로 비중을 찾고, 최저선은 절반이 내 몫(설계상 가정) */
 function spendOf(P, th, gross) {
   const g = SPEND_G[spendGroup(P)], hh = P.married ? 2 : 1;
-  return Math.max(g.floor / hh, shareAt(P.home ? g.ptsOwn : g.pts, (gross || 0) * hh) * th) + (P.flags.pet != null ? MONEY.pet : 0);
+  const v = shareAt(P.home ? g.ptsOwn : g.pts, (gross || 0) * hh) * th * (P.flags.frugal > 0 ? .85 : 1); // 허리띠를 졸라매면 15% 덜 쓴다(설계상 가정)
+  return Math.max(g.floor / hh, v) + (P.flags.pet != null ? MONEY.pet : 0);
 }
 /* ── 큰돈: 집 · 자녀 · 부모 · 차 ──
    집값 = 가구 연소득 × PIR(국토교통부 2024년도 주거실태조사, 자가 가구 중위수: 수도권 8.7배, 전국 6.3배, 도 지역 4.0배).
@@ -984,7 +985,26 @@ function spendOf(P, th, gross) {
 /* 퇴직금: 근로자퇴직급여보장법 제8조, 계속근로 1년에 30일분 평균임금 → 회사에서 일한 해마다 세전 월급 한 달 치를 쌓고 그 회사를 떠날 때(정년 포함) 받는다.
    퇴직소득세는 빼지 않았다(설계상 가정).
    예금 이자: 한국은행 2025년 9월 예금은행 저축성수신금리(신규취급액) 연 2.52%, 이자소득세 15.4%(소득세 14% + 지방소득세) 뺀 뒤 → 연 약 2.13%. 연초 현금이 플러스일 때만 붙는다. */
-const SAVE = { rate: .0252, tax: .154 };
+const SAVE = { rate: .0252, tax: .154,
+  // 코스피 연간 등락률(%) 2000~2024년(위키백과 '역대 코스피 지수', 한국거래소 마감 지수). 배당은 빠진 지수라 실제 수익보다 조금 낮다
+  kospi: [-50.92, 37.47, -9.54, 29.19, 10.51, 53.96, 3.99, 32.25, -40.73, 49.65, 21.88, -10.98, 9.38, .72, -4.76, 2.39, 3.32, 21.76, -17.28, 7.67, 30.75, 3.63, -24.89, 18.73, -9.63],
+  // 연금저축·IRP 세액공제: 연 900만 원 한도, 총급여 5,500만 원 이하 16.5%, 초과 13.2%(지방소득세 포함, 소득세법)
+  irpCap: 900, irpLo: .165, irpHi: .132, irpCut: 5500 };
+/* 60세 이후: 국민연금 노령연금 ≈ 소득대체율 43%(2026년부터 가입분, 2025.3 연금개혁) × (A값 + 내 평균 소득) ÷ 2 × 가입 햇수 ÷ 40.
+   A값(전체 가입자 평균소득월액) 약 309만 원, 기준소득월액 상한 637만 원(2025.7~), 1969년생부터 65세 지급, 가입 10년 이상.
+   적정 노후생활비: 국민연금연구원 2024년 국민노후보장패널 10차 부가조사, 개인 197.6만 원 · 부부 298.1만 원(월). 재평가·크레딧·물가는 단순화(설계상 가정). */
+const PENSION = { a: 309, cap: 637, rate: .43, age: 65, min: 10, need1: 197.6, need2: 298.1 };
+function pensionOf(P) {
+  const ws = P.wages.map((w, i) => ["wage", "self", "leave"].includes(P.statuses[i]) ? Math.min(PENSION.cap, w) : null).filter((w) => w != null);
+  const n = ws.length, b = n ? ws.reduce((a, x) => a + x, 0) / n : 0;
+  return { n, b, m: n < PENSION.min ? 0 : PENSION.rate * (PENSION.a + b) / 2 * Math.min(n, 40) / 40 };
+}
+function retireOf(P) {
+  const pen = pensionOf(P), need = P.married ? PENSION.need2 / 2 : PENSION.need1, cash = Math.max(0, P.cash);
+  const gap = need * 12 * (PENSION.age - RETIRE_AGE);
+  const until = cash < gap ? RETIRE_AGE + cash / (need * 12) : need - pen.m <= 0 ? Infinity : PENSION.age + (cash - gap) / ((need - pen.m) * 12);
+  return { pen, need, until };
+}
 const HOME = { pir: { metro: 8.7, all: 6.3, prov: 4.0 }, ltv: .7, cap: 60000, dsr: .4, rate: .0396, credit: .0531, years: 30, move: 300,
   hpi: [3.1, 3.1, 1.9, 6.9, 0, .31, 3.51, .7, 1.48, 1.10, -.36, 5.36, 9.9, -4.68] }; // 2007 2008 2010 2011 2012 2013 2015~2022
 const hhIncome = (P) => currentWage(P) * 12 * (P.married ? 2 : 1); // 기혼은 배우자도 나만큼 번다(생활비와 같은 가정)
@@ -2628,6 +2648,52 @@ const CARDS = [
       { label: "비용을 내가 다 낸다", hint: "3년 동안 해마다 −1,128만, 만족도 +", apply: (P, c) => { addRecur(P, "요양원 비용", 1128, 3, false); c.sat += .1; return "동생은 미안하다며 매주 반찬을 보냈다."; } },
       { label: "집에서 모신다", hint: "에너지 −15, 올해 쉼 확률 ×3, 만족도 −", apply: (P, c) => { P.energy -= 15; mul(c, "not_employed", 3); c.sat -= .2; return "밤에 세 번씩 깼다. 동생이 주말을 맡았다."; } },
     ] },
+  { id: "invest", cat: "money", when: (P) => P.cash >= 3000 && P.age <= 52 && P.invest == null, due: () => .35, title: "모은 돈을 어떻게 굴릴까", body: (P) => `통장에 ${manwon(P.cash)} 원. 동기들 단톡방은 온통 ETF 이야기다.`,
+    why: "한국은행 2025년 9월 예금은행 저축성수신금리 2.52%(이자소득세 15.4%). 코스피 2000~2024년 연간 등락률(위키백과 '역대 코스피 지수'): 가장 좋은 해 +53.96%(2005), 가장 나쁜 해 −50.92%(2000), 25년 평균 +6.7%, 1999년 말 1,028에서 2024년 말 2,399로 연 3.4%. 배당은 빠져 있다. 해마다 25개 해 중 하나를 뽑는다(설계상 가정).", grade: "B",
+    choices: [
+      { label: "예금에 둔다", hint: "연 2.52%(세후 약 2.1%), 흔들리지 않는다", apply: (P) => { P.invest = 0; return "정기예금 만기 알림을 캘린더에 넣었다."; } },
+      { label: "반은 주식·ETF에", hint: "모은 돈의 50%가 코스피를 따라 오르내린다", apply: (P) => { P.invest = .5; return "코스피200 ETF를 매달 자동으로 사게 걸어 뒀다."; } },
+      { label: "대부분 주식에", hint: "모은 돈의 80%가 코스피를 따라 오르내린다. 만족도 +", apply: (P, c) => { P.invest = .8; c.sat += .05; return "증권 앱이 홈 화면 첫 줄로 올라왔다."; } },
+    ] },
+  { id: "crash", cat: "money", when: (P) => (P.invest || 0) > 0 && P.flags.crashT === P.t - 1, due: () => 1, title: "주가가 크게 빠졌다", body: "작년 한 해 계좌가 빨갛다. 뉴스에서는 '바닥이 어디냐'를 묻는다.",
+    why: "코스피는 2000~2024년 25년 중 6년이 −9% 아래로 떨어졌고(2000 −50.9%, 2008 −40.7%, 2022 −24.9%), 큰 하락 다음 해에는 2001 +37.5%, 2009 +49.7%, 2023 +18.7%로 올랐다(위키백과 '역대 코스피 지수'). 다음 해 수익은 여전히 25개 해 중 하나를 뽑는다.", grade: "B",
+    choices: [
+      { label: "그대로 둔다", hint: "만족도 −, 에너지 −3", apply: (P, c) => { c.sat -= .1; P.energy -= 3; return "앱을 지웠다. 석 달 뒤에 다시 깔았다."; } },
+      { label: "다 팔고 예금으로", hint: "앞으로 주식 0%", apply: (P) => { P.invest = 0; return "\"다시는 안 한다.\" 마음이 편해졌다."; } },
+      { label: "오히려 더 산다", hint: "주식 비중 +20%p, 에너지 −2", apply: (P) => { P.invest = Math.min(1, (P.invest || 0) + .2); P.energy -= 2; return "보너스를 전부 ETF에 넣었다."; } },
+    ] },
+  { id: "irp", cat: "money", when: (P) => isWage(P) && P.age >= 27 && P.age <= 55 && !P.irp, due: () => .3, title: "연말정산 시즌", body: "옆자리 동료가 연금저축으로 148만 원을 돌려받았다고 한다.",
+    why: "소득세법: 연금저축·IRP 납입액 연 900만 원까지 세액공제. 총급여 5,500만 원 이하 16.5%, 초과 13.2%(지방소득세 포함) → 최대 148만 5천 원 / 118만 8천 원. 55세 전에 깨면 기타소득세 16.5%. 넣은 돈은 자산으로 남고 굴리는 방식은 나머지 돈과 같다고 두었다(설계상 가정).", grade: "B",
+    choices: [
+      { label: "연 900만 원 채운다", hint: (P) => `해마다 세금 +${won(900 * (currentWage(P) * 12 <= SAVE.irpCut ? SAVE.irpLo : SAVE.irpHi))}만 돌려받음(회사 다니는 동안). 에너지 −1`, apply: (P) => { P.irp = 900; P.energy -= 1; return "IRP 계좌를 하나 더 만들었다."; } },
+      { label: "연 300만 원만", hint: (P) => `해마다 세금 +${won(300 * (currentWage(P) * 12 <= SAVE.irpCut ? SAVE.irpLo : SAVE.irpHi))}만 돌려받음`, apply: (P) => { P.irp = 300; return "매달 25만 원 자동이체."; } },
+      { label: "묶이는 돈은 싫다", hint: "변화 없음", apply: () => "\"55세까지 못 찾는다고?\" 창을 닫았다." },
+    ] },
+  { id: "debt_squeeze", cat: "money", when: (P) => P.cash < -1000 && (P.flags.debtY || 0) >= 2, due: () => .6, title: "신용대출 이자가 쌓인다", body: (P) => `마이너스 통장이 ${manwon(-P.cash)} 원. 이자만 한 해 ${manwon(-P.cash * HOME.credit)} 원이 나간다.`,
+    why: "한국은행 2025년 9월 예금은행 일반신용대출 금리 5.31%. 생활비 15% 줄이기, 집을 팔 때 중개보수만 낸다는 것은 설계상 가정(양도세는 1주택 비과세로 보고 뺐다).", grade: "C",
+    choices: [
+      { label: "허리띠를 졸라맨다", hint: "3년 동안 생활비 −15%, 에너지 −4, 만족도 −", apply: (P, c) => { P.flags.frugal = 3; P.energy -= 4; c.sat -= .15; return "배달 앱을 지웠다. 점심은 도시락."; } },
+      { label: "집을 팔고 전세로 옮긴다", ok: (P) => !!P.home, hint: (P) => P.home ? `집값 ${manwon(P.home.value)} − 대출 ${manwon(P.home.loan)} − 중개보수가 현금으로. 만족도 −` : "집이 있어야 한다", apply: (P, c) => { const h = P.home, fee = Math.round(brokerFee(h.value)); P.cash += h.value - h.loan; P.bonus -= fee; P.home = null; c.sat -= .2; return "이삿날, 아이가 현관 키 번호를 다시 외웠다."; } },
+      { label: "그대로 버틴다", hint: "변화 없음", apply: () => "다음 달 월급날을 기다렸다." },
+    ] },
+  { id: "wage_peak", cat: "company", when: (P) => isWage(P) && P.size !== "S" && P.age >= 55 && P.age <= 58, due: () => .35, title: "임금피크제가 시작된다", body: "인사팀 메일: '만 56세부터 임금이 단계적으로 조정됩니다.'",
+    why: "고용노동부(2016): 300인 이상 사업장 48.6%가 임금피크제를 도입. 최근 도입률은 확인하지 못했다. 감액 폭(20%)은 설계상 가정.", grade: "C",
+    choices: [
+      { label: "받아들인다", hint: "월급 −20%, 지금 직장 유지 ×1.2", apply: (P, c) => { P.p *= .8; mul(c, "same_job", 1.2); P.flags.peak = P.t; return "명함은 그대로다. 월급만 줄었다."; } },
+      { label: "다른 길을 알아본다", hint: "월급 −20%, 프리랜서 독립 ×2, 이직 ×1.5", apply: (P, c) => { P.p *= .8; mul(c, "to_self", 2); mul(c, "new_job_same_occupation", 1.5); return "퇴근 후 포트폴리오를 다시 열었다."; } },
+    ] },
+  { id: "early_retire", cat: "company", when: (P) => isWage(P) && P.size !== "S" && P.age >= 50 && P.age <= 57, due: () => .12, title: "희망퇴직 공고가 떴다", body: (P) => `만 50세 이상, 근속 10년 이상. 위로금은 월급 24개월 치(약 ${manwon(currentWage(P) * 24)} 원).`,
+    why: "통계청 2025년 5월 고령층 부가조사: 가장 오래 다닌 일자리를 그만둔 평균 나이 52.9세. 위로금 24개월 치와 신청하면 회사를 나간다는 것은 설계상 가정.", grade: "C",
+    choices: [
+      { label: "신청한다", hint: (P) => `위로금 +${manwon(currentWage(P) * 24)}(퇴직금 따로), 올해 회사를 나간다`, apply: (P, c) => { P.bonus += Math.round(currentWage(P) * 24); mul(c, "same_job", .02); return "마지막 출근 날, 사원증을 반납함에 넣었다."; } },
+      { label: "남는다", hint: "에너지 −5, 만족도 −", apply: (P, c) => { P.energy -= 5; c.sat -= .1; return "옆자리가 셋 비었다. 일은 그대로다."; } },
+    ] },
+  { id: "startup_age", cat: "company", when: (P) => isWage(P) && P.size === "S" && P.t - (P.jobs.at(-1).from || 0) >= 5, due: () => .3, title: (P) => `회사가 ${P.t - P.jobs.at(-1).from + 1}년 차가 됐다`, body: (P) => `${P.company}. 창업 멤버는 거의 남지 않았다. 대표가 '이제 다음 단계'를 이야기한다.`,
+    why: "통계청 기업생멸행정통계: 신생기업 5년 생존율 34.3%(2016년 창업 → 2021년, 2023.12 발표), 최근 36.5%(2025 발표). 5년을 넘긴 회사가 크거나(30%) 문을 닫을(30%) 확률은 설계상 가정.", grade: "C",
+    choices: [
+      { label: "끝까지 함께한다", hint: "30%: 회사가 커진다(월급 +10%) · 30%: 문을 닫는다 · 40%: 그대로", apply: (P, c) => { const r = rand(); if (r < .3) { P.size = "M"; P.company = choose(COMPANY[P.role].M); P.jobs.at(-1).company = P.company; P.p *= 1.1; mul(c, "same_job", 1.2); return `투자를 받고 ${P.company}로 컸다. 사무실이 두 층이 됐다.`; } if (r < .6) { mul(c, "same_job", .02); mul(c, "not_employed", 2); return "마지막 달 월급은 두 번에 나눠 들어왔다."; } return "올해도 비슷했다. 회의실 이름만 바뀌었다."; } },
+      { label: "이제 옮긴다", hint: "이직 ×3", apply: (P, c) => { mul(c, "new_job_same_occupation", 3); return "헤드헌터에게 먼저 연락했다."; } },
+    ] },
   { id: "car_buy", cat: "money", when: (P) => P.age >= 28 && P.age <= 50 && P.flags.car == null && isWork(P), due: (P) => P.kids.length ? .25 : .08, title: "차를 살까",
     body: (P) => P.kids.length ? "카시트에 유모차까지. 택시 기사님이 한숨을 쉬었다." : "주말마다 차를 빌리다 보니 1년에 백만 원이 넘었다.",
     why: "한국자동차산업협회 2021년 신차 등록 분석(2022.4 발표): 평균 신차 판매가격 4,420만 원(전년 3,949만 원). 5년 할부(이자 제외), 중고차 1,500만 원, 10년 뒤 교체는 설계상 가정.", grade: "C",
@@ -3867,7 +3933,11 @@ function finishYear(ctx) {
     const h = P.home; let hl = null;
     if (h) { const intr = h.loan * h.rate, prin = Math.min(h.loan, h.loan0 / HOME.years), g = choose(HOME.hpi), dv = h.value * g / 100; h.loan -= prin; h.value += dv; hl = { intr: Math.round(intr), prin: Math.round(prin), g, dv: Math.round(dv), rate: h.rate }; }
     const credit = P.cash < 0 ? Math.round(-P.cash * HOME.credit) : 0;
-    const interest = P.cash > 0 ? Math.round(P.cash * SAVE.rate * (1 - SAVE.tax)) : 0;
+    const inv = P.invest || 0, kr = inv && P.cash > 0 ? choose(SAVE.kospi) : null;
+    const interest = P.cash > 0 ? Math.round(P.cash * (1 - inv) * SAVE.rate * (1 - SAVE.tax)) : 0;
+    const stock = kr != null ? Math.round(P.cash * inv * kr / 100) : 0; // 국내 상장주식 매매차익은 대부분 비과세
+    if (kr != null && kr <= -15) P.flags.crashT = P.t;
+    const irp = P.irp && pre.status === "wage" ? Math.round(P.irp * (pre.wage * 12 <= SAVE.irpCut ? SAVE.irpLo : SAVE.irpHi)) : 0;
     // 퇴직금: 올해 회사에서 일했으면 한 달 치를 쌓고, 회사를 떠났으면 받는다
     let sev = 0;
     if (pre.status === "wage") {
@@ -3878,11 +3948,13 @@ function finishYear(ctx) {
     sev = Math.round(sev);
     const rec = (P.recur ||= []).filter((r) => r.left > 0), recAmt = rec.reduce((a, r) => a + r.amt, 0);
     rec.forEach((r) => r.left--); P.recur = P.recur.filter((r) => r.left > 0);
-    const net = Math.round((th - sp) * 12 - gift + dB - (hl ? hl.intr + hl.prin : 0) - credit - recAmt + interest + sev);
+    const net = Math.round((th - sp) * 12 - gift + dB - (hl ? hl.intr + hl.prin : 0) - credit - recAmt + interest + sev + stock + irp);
+    if (P.flags.frugal > 0) P.flags.frugal--;
     P.cash += net;
     const nw = netWorth(P);
-    lines.push({ kind: "money", net, cash: nw, home: !!h, hl, credit, interest, sev, rec: rec.map((r) => [r.what, r.amt]), th: Math.round(th), sp: Math.round(sp), gift, grp: grp.name, dB: Math.round(dB), text: `올해 남은 돈 ${manwon(net, true)} 원 → 자산 ${manwon(nw)} 원`,
-      why: `신한은행 보통사람 금융생활 보고서 2024: '${grp.name}' 그룹은 소득 구간에 따라 소득의 ${Math.round(Math.min(...grp.sav) * 100)}~${Math.round(Math.max(...grp.sav) * 100)}%를 저축·투자하고 ${Math.round(Math.min(...grp.debt) * 100)}~${Math.round(Math.max(...grp.debt) * 100)}%를 빚 갚는 데 쓴다. 하위 20% 구간의 월 소비는 ${grp.floor}만 원이다. 내 소득 구간에서 저축·투자 비중과 부채상환의 절반만 자산으로 남고, 나머지(소비와 예비자금)는 쓴다고 두었다. 경조사 참석은 이 나이대 연평균 ${GIFT_N(P.age)}회(같은 보고서), 한 번에 11만 7천 원(NH농협은행 2025 축의금 평균). 세전 월급에서 4대보험 근로자 부담 약 9.4%(2025 요율)와 소득세를 뺐다. 부채상환의 절반을 원금으로 본 것, 예비자금을 모두 쓴다고 본 것, 기혼은 배우자도 나만큼 번다고 본 것, 소득세 근사, 반려동물 월 ${MONEY.pet}만 원, 물가 보정 없음은 설계상 가정.${hl ? ` 집: 생활비의 부채상환 몫 대신 주담대 원리금을 따로 냈다. 금리 연 ${(hl.rate * 100).toFixed(2)}%(한국은행 2025년 9월 예금은행 주담대 신규취급액 3.96%에서 시작), 30년 원금 균등 상환(설계상 가정). 집값은 지표누리 '주택매매가격 동향'(한국부동산원·KB)의 2007~2022년 전국 연간 변동률 중 한 해를 뽑았다(올해 ${hl.g}%).` : ""}${sev ? ` 퇴직금 ${manwon(sev)} 원: 근로자퇴직급여보장법(1년에 30일분 평균임금)대로 이 회사에서 일한 해마다 월급 한 달 치를 쌓았다. 퇴직소득세는 빼지 않았다(설계상 가정).` : ""}${interest ? ` 예금 이자: 한국은행 2025년 9월 저축성수신금리 연 2.52%에서 이자소득세 15.4%를 뺐다.` : ""}${credit ? ` 현금이 마이너스라 신용대출 이자 연 5.31%(한국은행 2025년 9월 예금은행 일반신용대출)를 붙였다.` : ""}`, grade: "C" });
+    P.flags.debtY = P.cash < 0 ? (P.flags.debtY || 0) + 1 : 0;
+    lines.push({ kind: "money", net, cash: nw, home: !!h, hl, credit, interest, sev, stock, kr, irp, rec: rec.map((r) => [r.what, r.amt]), th: Math.round(th), sp: Math.round(sp), gift, grp: grp.name, dB: Math.round(dB), text: `올해 남은 돈 ${manwon(net, true)} 원 → 자산 ${manwon(nw)} 원`,
+      why: `신한은행 보통사람 금융생활 보고서 2024: '${grp.name}' 그룹은 소득 구간에 따라 소득의 ${Math.round(Math.min(...grp.sav) * 100)}~${Math.round(Math.max(...grp.sav) * 100)}%를 저축·투자하고 ${Math.round(Math.min(...grp.debt) * 100)}~${Math.round(Math.max(...grp.debt) * 100)}%를 빚 갚는 데 쓴다. 하위 20% 구간의 월 소비는 ${grp.floor}만 원이다. 내 소득 구간에서 저축·투자 비중과 부채상환의 절반만 자산으로 남고, 나머지(소비와 예비자금)는 쓴다고 두었다. 경조사 참석은 이 나이대 연평균 ${GIFT_N(P.age)}회(같은 보고서), 한 번에 11만 7천 원(NH농협은행 2025 축의금 평균). 세전 월급에서 4대보험 근로자 부담 약 9.4%(2025 요율)와 소득세를 뺐다. 부채상환의 절반을 원금으로 본 것, 예비자금을 모두 쓴다고 본 것, 기혼은 배우자도 나만큼 번다고 본 것, 소득세 근사, 반려동물 월 ${MONEY.pet}만 원, 물가 보정 없음은 설계상 가정.${hl ? ` 집: 생활비의 부채상환 몫 대신 주담대 원리금을 따로 냈다. 금리 연 ${(hl.rate * 100).toFixed(2)}%(한국은행 2025년 9월 예금은행 주담대 신규취급액 3.96%에서 시작), 30년 원금 균등 상환(설계상 가정). 집값은 지표누리 '주택매매가격 동향'(한국부동산원·KB)의 2007~2022년 전국 연간 변동률 중 한 해를 뽑았다(올해 ${hl.g}%).` : ""}${sev ? ` 퇴직금 ${manwon(sev)} 원: 근로자퇴직급여보장법(1년에 30일분 평균임금)대로 이 회사에서 일한 해마다 월급 한 달 치를 쌓았다. 퇴직소득세는 빼지 않았다(설계상 가정).` : ""}${interest ? ` 예금 이자: 한국은행 2025년 9월 저축성수신금리 연 2.52%에서 이자소득세 15.4%를 뺐다.` : ""}${kr != null ? ` 주식: 모은 돈의 ${Math.round(inv * 100)}%를 코스피에 넣었다고 보고, 2000~2024년 연간 등락률 중 한 해(올해 ${kr}%)를 뽑았다(위키백과 '역대 코스피 지수', 배당 제외).` : ""}${irp ? ` 연금저축·IRP 연 ${P.irp}만 원 세액공제(소득세법, 총급여 5,500만 원 이하 16.5%·초과 13.2%).` : ""}${credit ? ` 현금이 마이너스라 신용대출 이자 연 5.31%(한국은행 2025년 9월 예금은행 일반신용대출)를 붙였다.` : ""}`, grade: "C" });
   }
   const yearT = P.t;
   const peerLines = [];
@@ -4300,7 +4372,7 @@ function lineHtml(l) {
   }
   if (l.card) return `<div class="ev"><div class="ev-t">${esc(l.card.title)}</div><div class="ev-c">→ ${esc(l.card.label)}</div><div class="ev-r">${esc(l.card.result)}${l.card.money ? ` <span class="cash ${l.card.money < 0 ? "dn" : "up"}">자산 ${manwon(l.card.money, true)}</span>` : ""}${w}</div></div>`;
   if (l.kind === "money") return `<div class="moneyline"><span>올해 남은 돈 <b class="num cash ${l.net < 0 ? "dn" : "up"}">${manwon(l.net, true)}</b></span><span>자산${l.home ? "(집 포함)" : ""} <b class="num ${l.cash < 0 ? "neg" : ""}">${manwon(l.cash)}</b></span>${w}
-    <div class="sub">실수령 월 ${won(l.th)}만 − 생활비 월 ${won(l.sp)}만(${esc(l.grp || "")}) − 경조사 ${l.gift || 0}만${l.dB ? ` · 카드 ${manwon(l.dB, true)}` : ""}${l.hl ? ` · 주담대 원리금 −${won(l.hl.intr + l.hl.prin)}만 · 집값 ${l.hl.g > 0 ? "+" : ""}${l.hl.g}%(${manwon(l.hl.dv, true)})` : ""}${l.sev ? ` · 퇴직금 +${won(l.sev)}만` : ""}${l.interest ? ` · 예금 이자 +${won(l.interest)}만` : ""}${l.credit ? ` · 신용대출 이자 −${won(l.credit)}만` : ""}${(l.rec || []).map(([w2, a]) => ` · ${esc(w2)} −${won(a)}만`).join("")}</div></div>`;
+    <div class="sub">실수령 월 ${won(l.th)}만 − 생활비 월 ${won(l.sp)}만(${esc(l.grp || "")}) − 경조사 ${l.gift || 0}만${l.dB ? ` · 카드 ${manwon(l.dB, true)}` : ""}${l.hl ? ` · 주담대 원리금 −${won(l.hl.intr + l.hl.prin)}만 · 집값 ${l.hl.g > 0 ? "+" : ""}${l.hl.g}%(${manwon(l.hl.dv, true)})` : ""}${l.sev ? ` · 퇴직금 +${won(l.sev)}만` : ""}${l.interest ? ` · 예금 이자 +${won(l.interest)}만` : ""}${l.kr != null ? ` · 주식 ${l.kr > 0 ? "+" : ""}${l.kr}%(${manwon(l.stock, true)})` : ""}${l.irp ? ` · 연금 세액공제 +${won(l.irp)}만` : ""}${l.credit ? ` · 신용대출 이자 −${won(l.credit)}만` : ""}${(l.rec || []).map(([w2, a]) => ` · ${esc(w2)} −${won(a)}만`).join("")}</div></div>`;
   return `<div class="line ${l.big ? "big" : ""} ${l.kind === "fx" ? "fx" : ""}">${esc(l.text)}${w}</div>`;
 }
 function yearHtml(y) {
@@ -4905,7 +4977,7 @@ function rarity(P, mc) {
   const me = P.end.type;
   const my = workYears(P), myT = my <= 1 ? "1년 남짓" : `${my}년 앞뒤`;
   const hit = mc.ends.filter((e) => e.type === me && (me === "retire" ? e.same === (P.role === P.origRole) : Math.abs(e.years - my) <= 2)).length;
-  const what = me === "retire" ? (P.role === P.origRole ? `60세까지 ${ROLE[P.origRole]}로 남은 사람` : "중간에 직군을 바꿔 60세까지 일한 사람")
+  const what = me === "retire" ? (P.role === P.origRole ? `60세에 ${ROLE[P.origRole]}로 일하고 있던 사람(중간에 떠났다 돌아온 사람·프리랜서 포함)` : "중간에 직군을 바꿔 60세까지 일한 사람")
     : me === "planner" ? `${JOB()}로 ${myT} 일하고 기획 쪽으로 옮긴 사람` : me === "break" ? `${JOB()}로 ${myT} 일하고 긴 쉼에 들어간 사람` : `${JOB()}로 ${myT} 일하고 다른 직업으로 옮긴 사람`;
   return { hit, what };
 }
@@ -5074,6 +5146,7 @@ function renderRecord() {
       <div><b class="num">${won(peak)}만</b><span>가장 많이 받은 월급</span></div>
       <div><b class="num">${marryAt ? marryAt.age + "세" : "—"}${P.kids.length ? ` · ${P.kids.length}명` : ""}</b><span>결혼${P.kids.length ? " · 아이" : ""}</span></div>
     </div>
+    ${retireHtml(P)}
     <section class="stack" style="gap:8px">
       <div class="bar-sub"><span class="eyebrow">엔딩 모음</span><span class="eyebrow"><span class="num">${ec.n}/${ec.N}</span> · 숨은 엔딩 <span class="num">${ec.h}/${ec.H}</span></span></div>
       <div class="slots" aria-label="엔딩 ${ENDINGS.length}개 중 ${nE}개 모음">${ENDINGS.map(([k, name, h]) => `<i class="${k === P.endSaved.key ? "me" : endM[k] ? "got" : ""}${h ? " hid" : ""}" title="${endM[k] ? esc(name) : h ? "숨은 엔딩" : "???"}"></i>`).join("")}</div>
@@ -5217,6 +5290,11 @@ function renderData() {
         <tr><td>자녀 결혼</td><td>보증금 지원 5,000만 원</td><td>듀오 2026 결혼비용 보고서(신혼집 평균 3억 2,201만 원, 언론 보도)</td></tr>
         <tr><td>퇴직금</td><td>회사에서 일한 해마다 월급 한 달 치, 떠날 때 받음</td><td>근로자퇴직급여보장법 제8조(1년에 30일분 평균임금)</td></tr>
         <tr><td>예금 이자</td><td>연 ${(SAVE.rate * 100).toFixed(2)}%, 세후 약 ${(SAVE.rate * (1 - SAVE.tax) * 100).toFixed(2)}%</td><td>한국은행 2025년 9월 저축성수신금리 · 이자소득세 15.4%</td></tr>
+        <tr><td>주식</td><td>고르면 모은 돈의 50·80%가 코스피 연간 등락률(2000~2024 중 하나)을 따른다</td><td>위키백과 '역대 코스피 지수'(배당 제외)</td></tr>
+        <tr><td>연금저축·IRP</td><td>연 900만 원까지 세액공제 16.5%·13.2%</td><td>소득세법</td></tr>
+        <tr><td>임금피크·희망퇴직</td><td>56세 전후 월급 −20% · 위로금 24개월 치</td><td>고용노동부 2016(300인 이상 48.6% 도입) · 고령층 부가조사 2025(52.9세), 금액은 가정</td></tr>
+        <tr><td>국민연금</td><td>43% × (A값 309만 + 내 평균) ÷ 2 × 가입 햇수 ÷ 40, 65세부터</td><td>2025.3 연금개혁 · 국민연금공단 상한 637만(2025.7)</td></tr>
+        <tr><td>노후생활비</td><td>개인 월 197.6만 · 부부 298.1만</td><td>국민연금연구원 국민노후보장패널 10차(2024)</td></tr>
         <tr><td>자동차</td><td>신차 4,420만 원(5년 할부)</td><td>한국자동차산업협회 2021년 신차 등록 분석</td></tr>
       </tbody></table></div></section>
     <section><h2>설계상 가정 (D)</h2><ul class="sources" style="list-style:disc">
@@ -5260,6 +5338,11 @@ function renderData() {
       <li>듀오 2026 결혼비용 보고서(언론 보도) — 총 결혼비용 평균 3억 8,113만 원, 신혼집 3억 2,201만 원 · 혼인·출산 증여재산공제 최대 1억 5,000만 원</li>
       <li>한국자동차산업협회 2021년 신차 등록 분석(2022.4.6) — 평균 신차 판매가격 4,420만 원</li>
       <li>근로자퇴직급여보장법 제8조 — 계속근로 1년에 30일분 이상 평균임금을 퇴직금으로</li>
+      <li><a href="https://ko.wikipedia.org/wiki/%EC%BD%94%EC%8A%A4%ED%94%BC" target="_blank" rel="noopener">위키백과 '코스피' 역대 코스피 지수</a> — 2000~2024년 연말 지수와 연간 등락률</li>
+      <li>소득세법 연금계좌 세액공제 — 연 900만 원 한도, 총급여 5,500만 원 이하 16.5%·초과 13.2%(지방소득세 포함)</li>
+      <li><a href="https://mobile.newsis.com/view/NISX20250320_0003107056" target="_blank" rel="noopener">국민연금 개혁 여야 합의</a>(2025.3) — 보험료율 13%, 소득대체율 43%(2026년부터) · 국민연금공단 기준소득월액 상한 637만 원(2025.7~) · 1969년생부터 65세 지급</li>
+      <li>국민연금연구원 2024년 국민노후보장패널 10차 부가조사(언론 보도) — 적정 노후생활비 개인 197만 6천 원, 부부 298만 1천 원</li>
+      <li>고용노동부 임금피크제 도입 현황(2016, 300인 이상 48.6%, 언론 보도) · 통계청 기업생멸행정통계 신생기업 5년 생존율 34.3%(2016년 창업)·36.5%(2025 발표)</li>
       <li><a href="https://www.bok.or.kr/portal/bbs/B0000501/view.do?menuNo=201264&nttId=10094322" target="_blank" rel="noopener">한국은행 2025년 9월 금융기관 가중평균금리</a> — 예금은행 저축성수신금리 2.52%(신규취급액) · 이자소득세 15.4%(소득세법, 지방소득세 포함)</li>
       <li><a href="https://1in8b.life/ko/" target="_blank" rel="noopener">80억 분의 1 (1in8b.life)</a> — 영감을 받은 작품</li>
     </ol></section>
@@ -5267,6 +5350,20 @@ function renderData() {
     <div class="form-row"><button class="btn" id="back">돌아가기</button></div>
   </div></div>`;
   $app.querySelector("#back").onclick = () => { S.screen = S.back || "start"; render(); };
+}
+
+/* 엔딩: 60세 이후 — 국민연금과 모은 현금으로 언제까지 버티나 */
+function retireHtml(P) {
+  const r = retireOf(P), age = endAge(P);
+  const u = r.until === Infinity ? "연금으로 충분" : r.until >= 100 ? "100세 넘게" : `${Math.floor(r.until)}세까지`;
+  return `<section class="stack" style="gap:8px"><div class="eyebrow">${age < RETIRE_AGE ? `${age}세에 멈췄지만, ` : ""}60세 이후</div>
+    <div class="facts">
+      <div><b class="num">${r.pen.m ? `월 ${won(r.pen.m)}만` : "없음"}</b><span>국민연금 예상(${PENSION.age}세부터, 가입 ${r.pen.n}년${r.pen.n < PENSION.min ? " · 10년 미만" : ""})</span></div>
+      <div><b class="num">월 ${won(r.need)}만</b><span>적정 노후생활비 ${P.married ? "(부부 298만의 내 몫)" : "(개인)"}</span></div>
+      <div><b class="num">${PENSION.age - RETIRE_AGE}년</b><span>60세부터 연금까지 월급도 연금도 없는 기간</span></div>
+      <div><b class="num ${r.until !== Infinity && r.until < 80 ? "neg" : ""}">${u}</b><span>모은 현금으로 버티는 나이(집 제외, 이자 없음)</span></div>
+    </div>
+    <p class="fine">국민연금은 2026년 개혁 뒤 소득대체율 43%로 단순 계산(A값 약 309만 원, 상한 637만 원, 오늘 돈 기준). 노후생활비는 국민연금연구원 국민노후보장패널 10차(2024). 집은 팔거나 주택연금으로 바꾸면 더 버틸 수 있다.</p></section>`;
 }
 
 /* ── 시작 ── */
