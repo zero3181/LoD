@@ -31,34 +31,69 @@
 <meta name="twitter:description" content="과연 정년까지 일할 수 있을까요?">
 <meta name="twitter:image" content="https://life.favorite.kr/prototype/og-image.png">
 <meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap">
 <style>
 @font-face { font-family: "Pretendard Variable"; font-weight: 45 920; font-style: normal; font-display: swap; src: url("PretendardVariable.woff2") format("woff2-variations"); }
 /* Layout: one phone-width column shaped like a personnel record — an ID card header, a running log, and a control strip. */
 :root {
-  --bg: #e9ecef;
-  --surface: #ffffff;
-  --sunk: #f4f6f8;
-  --ink: #15181c;
-  --muted: #5b636d;
-  --line: #cfd4da;
-  --des: #2541b2;        /* 디자이너: 코발트 잉크 */
-  --dev: #1d7350;        /* 개발자 */
-  --plan: #9a5f07;       /* 기획자 (NPC) */
-  --stamp: #c2352b;      /* 기록부 도장, 한 곳에만 */
-  --font-display: "Pretendard Variable", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  /* Gris 디자인 시스템 (Claude Design '디자이너로 살아보기 리디자인' 1a 정돈) */
+  --graphite-0: #FFFFFF; --graphite-25: #FAF8F3; --graphite-50: #F4F0E6; --graphite-100: #E7E2D6; --graphite-200: #D2CDC1; --graphite-300: #B3B1AA;
+  --graphite-400: #949390; --graphite-500: #777674; --graphite-600: #5C5B5A; --graphite-700: #454444; --graphite-800: #302F30; --graphite-900: #1E1E1F;
+  --bleu-50: #F0F7FB; --bleu-100: #DCEDF5; --bleu-200: #BFDFEC; --bleu-300: #9ED0E2; --bleu-400: #7FBFD6; --bleu-500: #5FA8C4; --bleu-600: #4A8CA8; --bleu-700: #3A6E85; --bleu-800: #2C5262; --bleu-900: #1F3A45;
+  --ocre-100: #F4EBD4; --ocre-300: #DCC488; --ocre-500: #BC9440; --ocre-700: #7C5F27; --ocre-800: #5A451D; --ocre-900: #3C2E13;
+  --terre-100: #F0E1D7; --terre-500: #9A6038; --terre-700: #643A21;
+  --brique-400: #B8705C; --brique-500: #9C5A46; --brique-600: #7E4535;
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px; --radius-xl: 20px;
+  --shadow-hairline: 0 0 0 .5px rgba(48,47,48,.16);
+  --shadow-1: 0 1px 2px rgba(30,30,31,.08);
+  --shadow-2: 0 2px 6px rgba(30,30,31,.09), 0 0 0 .5px rgba(48,47,48,.07);
+  --shadow-3: 0 8px 24px rgba(30,30,31,.12), 0 0 0 .5px rgba(48,47,48,.06);
+  --shadow-4: 0 20px 48px rgba(30,30,31,.18);
+  --ease: cubic-bezier(.4,0,.2,1); --ease-out: cubic-bezier(.16,1,.3,1);
+
+  --bg: var(--graphite-50);
+  --surface: var(--graphite-0);
+  --sunk: var(--graphite-100);
+  --ink: var(--graphite-900);
+  --muted: var(--graphite-600);
+  --faint: var(--graphite-400);
+  --line: var(--graphite-200);
+  --des: var(--bleu-700);
+  --dev: #5C7A4A;
+  --plan: var(--ocre-700);
+  --stamp: var(--brique-600);
+  --ok: #5C7A4A;
+  --fill-accent: var(--bleu-600);
+  --fill-quiet: rgba(48,47,48,.06);
+  --accent-soft: var(--bleu-100);
+  --warm-soft: var(--ocre-100);
+  --warm-ink: var(--ocre-900);
+  --meter-fill: var(--graphite-800);
+  --bar-bg: rgba(244,240,230,.88);
+  --scrim: rgba(30,30,31,.42);
+  --font-display: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
   --font-body: var(--font-display);
-  --font-data: var(--font-display);
+  --font-data: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --accent: var(--des);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #101316; --surface: #191d22; --sunk: #14171b; --ink: #e5e8eb; --muted: #9aa3ad; --line: #2d333a;
-    --des: #8197ff; --dev: #4fc78f; --plan: #e3a640; --stamp: #ff6f61; color-scheme: dark;
+    --bg: #121213; --surface: #1E1E1F; --sunk: #302F30; --ink: #F4F0E6; --muted: #B3B1AA; --faint: #777674; --line: #454444;
+    --des: var(--bleu-300); --dev: #9DBB86; --plan: var(--ocre-300); --stamp: var(--brique-400); --ok: #9DBB86;
+    --fill-quiet: rgba(244,240,230,.08); --accent-soft: rgba(74,140,168,.24); --warm-soft: rgba(188,148,64,.2); --warm-ink: var(--ocre-300);
+    --meter-fill: var(--graphite-200); --bar-bg: rgba(18,18,19,.86); --scrim: rgba(0,0,0,.55);
+    --shadow-2: 0 2px 6px rgba(0,0,0,.4), 0 0 0 .5px rgba(244,240,230,.08); --shadow-hairline: 0 0 0 .5px rgba(244,240,230,.18);
+    color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #101316; --surface: #191d22; --sunk: #14171b; --ink: #e5e8eb; --muted: #9aa3ad; --line: #2d333a;
-  --des: #8197ff; --dev: #4fc78f; --plan: #e3a640; --stamp: #ff6f61; color-scheme: dark;
+  --bg: #121213; --surface: #1E1E1F; --sunk: #302F30; --ink: #F4F0E6; --muted: #B3B1AA; --faint: #777674; --line: #454444;
+  --des: var(--bleu-300); --dev: #9DBB86; --plan: var(--ocre-300); --stamp: var(--brique-400); --ok: #9DBB86;
+  --fill-quiet: rgba(244,240,230,.08); --accent-soft: rgba(74,140,168,.24); --warm-soft: rgba(188,148,64,.2); --warm-ink: var(--ocre-300);
+  --meter-fill: var(--graphite-200); --bar-bg: rgba(18,18,19,.86); --scrim: rgba(0,0,0,.55);
+  --shadow-2: 0 2px 6px rgba(0,0,0,.4), 0 0 0 .5px rgba(244,240,230,.08); --shadow-hairline: 0 0 0 .5px rgba(244,240,230,.18);
+  color-scheme: dark;
 }
 html, body { height: 100%; }
 body {
@@ -438,19 +473,258 @@ dialog.confirm .form-row { justify-content: flex-end; margin-top: 14px; gap: 8px
 .instab .hi { color: var(--accent); font-weight: 700; } .instab .lo { color: var(--muted); } .instab .unk { color: var(--line); }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; } .rev, .avgbox, .gains, .promo, .newins, .evres { opacity: 1; } .bub { display: none; } }
 
+/* ── Gris 1a: 위계·정렬·컴포넌트 정리. 흰 카드 + 하단 고정 버튼 ── */
+h1 { font-weight: 800; letter-spacing: -.02em; }
+.label, .eyebrow { font: 600 12px/16px var(--font-body); letter-spacing: .14em; color: var(--muted); }
+.num { font-family: var(--font-data); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.fine { font-size: 13px; line-height: 18px; color: var(--muted); }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.textlink { color: var(--accent); text-decoration: none; font-weight: 500; font-size: 13px; }
+.textlink:hover { color: var(--ink); }
+.textlink.plain { color: var(--muted); }
+.ic { display: inline-block; flex: none; vertical-align: -3px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 50px; padding: 0 22px; border: 1px solid transparent; border-radius: var(--radius-lg); background: var(--fill-accent); color: #fff; font: 600 17px/22px var(--font-body); letter-spacing: -.01em; transition: filter .14s var(--ease), transform .08s var(--ease); }
+.btn:hover:not(:disabled) { filter: brightness(.93); }
+.btn:active:not(:disabled) { transform: scale(.97); }
+.btn.ghost { background: var(--fill-quiet); color: var(--ink); border-color: transparent; }
+.btn.danger { background: var(--stamp); border-color: transparent; color: #fff; }
+.btn.icon { width: 44px; min-height: 44px; padding: 0; border-radius: var(--radius-md); background: transparent; color: var(--ink); }
+.btn.icon:hover { background: var(--fill-quiet); filter: none; }
+.seg { display: inline-flex; padding: 2px; gap: 2px; border: 0; border-radius: var(--radius-md); background: var(--fill-quiet); overflow: visible; }
+.seg.full { display: flex; width: 100%; }
+.seg.full button { flex: 1 1 0; }
+.seg button { border: 0; background: transparent; min-height: 32px; padding: 0 12px; border-radius: 8px; font: 500 15px/20px var(--font-body); color: var(--ink); white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: var(--shadow-1); }
+.chips button, .focus button { border: 0; background: var(--surface); box-shadow: var(--shadow-hairline); border-radius: 999px; padding: 0 12px; min-height: 36px; font: 500 14px var(--font-body); color: var(--ink); }
+.chips button:hover, .focus button:hover { box-shadow: 0 0 0 1px var(--fill-accent); }
+.chips button[aria-pressed="true"], .focus button[aria-pressed="true"] { background: var(--fill-accent); color: #fff; box-shadow: none; font-weight: 600; }
+.badge { --c: var(--graphite-700); display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font: 600 12px/16px var(--font-body); letter-spacing: -.01em; color: var(--c); background: color-mix(in oklab, var(--c) 14%, var(--surface)); white-space: nowrap; }
+.badge.accent { --c: var(--des); } .badge.warm { --c: var(--plan); } .badge.earth { --c: var(--terre-500); } .badge.danger { --c: var(--stamp); } .badge.success { --c: var(--ok); }
+.card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-2); }
+.kv > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 13px 16px; font-size: 15px; }
+.kv > div + div { border-top: .5px solid var(--line); }
+.kv > div > span:first-child { color: var(--muted); white-space: nowrap; }
+.kv b { font-weight: 600; text-align: right; }
+.kv b.big { font: 700 17px var(--font-data); }
+.evd summary { list-style: none; display: inline-flex; align-items: center; gap: 6px; font: 500 13px var(--font-body); color: var(--accent); cursor: pointer; min-height: 32px; }
+.evd summary::-webkit-details-marker { display: none; }
+.evd[open] summary { margin-bottom: 4px; }
+.evidence { font-size: 12.5px; line-height: 1.6; color: var(--muted); }
+/* 하단 고정 막대 (엄지 영역) */
+.bar { position: sticky; bottom: -20px; z-index: 3; margin: 4px -16px -20px; padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--bar-bg); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-top: .5px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+.bar .btn { width: 100%; }
+.bar-sub { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.bar-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* 시작 */
+.start { gap: 18px; }
+.start h1 { font: 800 34px/41px var(--font-display); letter-spacing: -.02em; white-space: nowrap; }
+.challenge { font: 600 20px/25px var(--font-body); color: var(--accent); letter-spacing: -.01em; }
+.start .lede { font-size: 15px; line-height: 22px; color: var(--muted); text-wrap: pretty; }
+.scene { border: 0; border-radius: var(--radius-lg); }
+.scene-cap { font-size: 12px; color: var(--faint); margin-top: 4px; }
+.rules-card > div { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; padding: 12px 16px; font-size: 15px; line-height: 20px; }
+.rules-card > div + div { border-top: .5px solid var(--line); }
+.rules-card b { color: var(--accent); font-weight: 600; }
+.facts { gap: 1px; background: var(--line); border: 0; border-radius: var(--radius-lg); overflow: hidden; }
+.facts div { padding: 10px 14px; }
+.facts b { font: 700 20px/24px var(--font-data); letter-spacing: -.02em; }
+.facts span { font-size: 13px; line-height: 18px; }
+.vault summary, details.manual summary, details.more > summary { font: 600 15px var(--font-body); color: var(--ink); padding: 6px 0; }
+.sub-eyebrow { font: 500 13px var(--font-body); color: var(--muted); }
+.h17 { font: 600 17px/22px var(--font-body); }
+.h17 em { font-style: normal; color: var(--accent); }
+.row10 { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; }
+.p10 { display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--graphite-200); }
+.p10.up { color: var(--graphite-500); } .p10.me { color: var(--accent); }
+.p10 span { font: 600 11px var(--font-body); height: 13px; }
+.ends10 { font-size: 12px; }
+/* 플레이: 상태 카드 */
+.idcard { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border: 0; border-radius: var(--radius-lg); box-shadow: var(--shadow-2); }
+.id-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.id-top .who { font: 600 15px/20px var(--font-body); }
+.id-top .pay { font: 700 15px var(--font-data); white-space: nowrap; }
+.idcard .where { font-size: 13px; line-height: 18px; color: var(--muted); margin-top: -6px; }
+.idcard .limit { align-self: flex-start; margin: -2px 0 0; }
+.idcard .meters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.meter { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.meter .mk { display: flex; justify-content: space-between; gap: 4px; font: 500 12px var(--font-body); color: var(--muted); }
+.meter .mk b { font: 500 12px var(--font-data); color: var(--ink); }
+.meter i { height: 4px; border: 0; border-radius: 2px; background: var(--sunk); }
+.meter i::after { background: var(--meter-fill); border-radius: 2px; }
+.meter.low i::after { background: var(--brique-500); }
+.id-foot { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; color: var(--muted); border-top: .5px solid var(--line); padding-top: 8px; }
+.id-foot b { font: 600 12px var(--font-data); color: var(--ink); }
+.id-foot b.behind, .id-foot b.neg { color: var(--stamp); } .id-foot b.ok { color: var(--accent); }
+.app[data-screen="play"] .scene { width: 100%; height: 96px; aspect-ratio: auto; object-fit: cover; }
+/* 플레이: 기록 (최신순 한 장) */
+#feed { padding-block: 12px; }
+.feed { gap: 0; background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-2); overflow: hidden; }
+.yr { border: 0; border-radius: 0; background: transparent; padding: 12px 14px; gap: 8px; }
+.yr + .yr { border-top: .5px solid var(--line); }
+.yr.hot { border-color: var(--line); }
+.yr-h { align-items: center; font-family: var(--font-body); }
+.yr-h b { font: 700 15px var(--font-data); }
+.yr-h > span { font-size: 12px; color: var(--faint); }
+.yr-h .yr-tag { margin-left: auto; }
+.chunk + .chunk { border-top: .5px solid var(--line); padding-top: 8px; }
+.ck { font: 600 11px var(--font-body); letter-spacing: .14em; color: var(--faint); }
+.line { font-size: 15px; line-height: 20px; text-wrap: pretty; }
+.line.big { font-weight: 500; }
+.c-peer .line, .c-proj .line { font-size: 13px; line-height: 18px; color: var(--muted); }
+.line.fx { font-size: 12px; color: var(--muted); }
+.ev-c { color: var(--accent); }
+/* 플레이: 하단 조작 막대 */
+.controls { margin: 0 -16px; padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px)); gap: 10px; background: var(--bar-bg); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-top: .5px solid var(--line); }
+.fq { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.fq .q { font: 600 13px var(--font-body); }
+.focus { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 2px 16px; }
+.focus::-webkit-scrollbar { display: none; }
+.focus button { flex: none; }
+.focus-desc { font-size: 12px; color: var(--muted); margin-top: -4px; }
+.go { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; }
+.go .btn:first-child { padding-inline: 12px; }
+.go .seg button { padding: 0 10px; min-height: 36px; }
+/* 대화창 (시트) */
+.sheet-wrap { background: var(--scrim); }
+.sheet { border-radius: var(--radius-xl) var(--radius-xl) 0 0; box-shadow: var(--shadow-4); padding: 10px 20px calc(16px + env(safe-area-inset-bottom, 0px)); gap: 16px; }
+.sheet::before { content: ""; flex: none; align-self: center; width: 36px; height: 5px; border-radius: 3px; background: var(--line); margin-bottom: -4px; }
+.sheet.rise { animation: sheetin .24s var(--ease-out); }
+@keyframes sheetin { from { transform: translateY(14px); opacity: 0; } }
+.sheet h2 { font: 700 28px/34px var(--font-display); letter-spacing: -.01em; }
+.sheet.proj h2 { font-size: 22px; line-height: 28px; }
+.sh-head { display: flex; flex-direction: column; gap: 6px; }
+.sh-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.sh-lead { font-size: 17px; line-height: 22px; color: var(--muted); text-wrap: pretty; }
+.sheet .form-row:has(#notice-ok, #mood-save, #proj-go, #proj-done, #card-ok) { position: sticky; bottom: calc(-16px - env(safe-area-inset-bottom, 0px)); z-index: 2; background: var(--surface); margin: 0 -20px calc(-16px - env(safe-area-inset-bottom, 0px)); padding: 12px 20px calc(16px + env(safe-area-inset-bottom, 0px)); border-top: .5px solid var(--line); box-shadow: none; flex-wrap: nowrap; }
+.sheet .form-row:has(#notice-ok, #mood-save, #proj-done, #card-ok) .btn { flex: 1 1 auto; }
+.keystat { display: flex; align-items: baseline; gap: 10px; padding: 12px 14px; border-radius: var(--radius-md); background: var(--sunk); }
+.keystat b { font: 700 22px var(--font-data); white-space: nowrap; letter-spacing: -.02em; }
+.keystat span { font-size: 13px; line-height: 18px; color: var(--muted); }
+.rules .rh { font: 600 12px var(--font-body); letter-spacing: .14em; color: var(--muted); padding-bottom: 6px; }
+.rule { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-top: .5px solid var(--line); }
+.rule .ic { margin-top: 1px; color: var(--muted); }
+.rule b { display: block; font: 600 15px/20px var(--font-body); }
+.rule span { display: block; font-size: 13px; line-height: 18px; color: var(--muted); }
+.rule.danger .ic { color: var(--stamp); } .rule.accent .ic { color: var(--accent); } .rule.ok .ic { color: var(--ok); }
+.choices { gap: 10px; }
+.choice { display: flex; flex-direction: row; align-items: center; gap: 12px; padding: 14px 16px; border: 0; border-radius: var(--radius-lg); background: var(--bg); box-shadow: var(--shadow-hairline); text-align: left; color: var(--ink); }
+.choice:hover { border-color: transparent; box-shadow: 0 0 0 1px var(--graphite-300); }
+.choice .ct { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.choice .t { font: 600 17px/22px var(--font-body); }
+.choice .d { font-size: 13px; line-height: 18px; color: var(--muted); }
+.fx { display: flex; gap: 6px; flex-wrap: wrap; }
+.fx span { font: 500 12px/16px var(--font-data); padding: 2px 6px; border-radius: 4px; background: var(--surface); box-shadow: var(--shadow-hairline); }
+.choice > .ic { color: var(--graphite-300); }
+.choice[aria-checked="true"], .choice.auto { background: var(--accent-soft); box-shadow: 0 0 0 2px var(--fill-accent); }
+.choice[aria-checked="true"] > .ic, .choice.auto > .ic { color: var(--accent); }
+.autobar { background: var(--sunk); } .autobar i { background: var(--fill-accent); }
+.autonote button { border: 0; background: var(--fill-quiet); border-radius: var(--radius-md); }
+.auto-offer { border: 0; background: var(--fill-quiet); border-radius: var(--radius-md); padding: 8px 12px; margin-bottom: 0; }
+/* 프로젝트 */
+.coach { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border: 0; border-radius: var(--radius-md); background: var(--accent-soft); color: var(--ink); font-size: 13px; line-height: 18px; }
+.coach .ic { color: var(--accent); }
+.proj .brief { font-size: 15px; line-height: 20px; color: var(--muted); }
+.pgroup { display: flex; flex-direction: column; gap: 8px; }
+.prow { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font: 600 13px var(--font-body); }
+.prow .r { font-weight: 400; color: var(--muted); }
+.prow .warn { color: var(--stamp); } .prow .okc { color: var(--ok); }
+.blocks { display: flex; gap: 2px; height: 10px; }
+.blocks i { flex: 1; border-radius: 2px; background: var(--sunk); }
+.axrows { gap: 0; margin: 0; }
+.axrow { display: flex; align-items: center; gap: 12px; min-height: 56px; border-top: .5px solid var(--line); }
+.axrow .sq { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+.axrow .axn { flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; grid-area: auto; }
+.axrow .axn .n { font: 600 17px/22px var(--font-body); }
+.axrow .axn .x { font-size: 12px; color: var(--faint); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.axrow .v { font: 700 20px var(--font-data); width: 28px; text-align: center; }
+.stepper { display: inline-flex; align-items: center; background: var(--fill-quiet); border-radius: var(--radius-md); }
+.stepper button { width: 44px; height: 36px; border: 0; background: transparent; border-radius: var(--radius-md); color: var(--ink); display: flex; align-items: center; justify-content: center; font-size: 0; }
+.stepper button:disabled { color: var(--faint); opacity: 1; }
+.stepper .sep { width: 1px; height: 18px; background: var(--line); }
+.sheet .form-row.p-actions .btn { flex: 1.3 1 0; min-width: 0; padding-inline: 10px; font-size: 16px; }
+.sheet .form-row.p-actions #proj-go { flex: 2 1 0; }
+.team { border-top: .5px solid var(--line); }
+.mem-ax { border: 0; background: var(--fill-quiet); }
+.make, .revroom { border: 0; border-radius: var(--radius-lg); }
+.evcard { border: 0; box-shadow: 0 0 0 2px var(--fill-accent); border-radius: var(--radius-lg); }
+.rv-score { display: flex; align-items: flex-end; gap: 12px; }
+.rv-score .big { font: 800 56px/56px var(--font-data); letter-spacing: -.03em; }
+.rv-score .of { font: 500 15px var(--font-data); color: var(--faint); padding-bottom: 6px; }
+.rv-score .badge { margin: 0 0 8px auto; }
+.gains { margin-top: 8px; gap: 8px; }
+.gains span { font: 500 13px var(--font-data); padding: 4px 8px; border-radius: 6px; background: var(--fill-quiet); border: 0; }
+.revs { display: flex; flex-direction: column; gap: 0; }
+.rev { display: grid; grid-template-columns: minmax(0, 1fr) 40px; gap: 4px 12px; padding: 12px 0; border: 0; border-top: .5px solid var(--line); border-radius: 0; background: transparent; }
+.rev-who { font: 600 15px var(--font-body); color: var(--ink); }
+.rev-who .fine { font-weight: 400; color: var(--faint); }
+.rev-score { grid-row: span 2; font: 700 24px var(--font-data); text-align: right; line-height: 1.2; }
+.rev-score.hi { color: var(--accent); } .rev-score.lo { color: var(--stamp); }
+.rev-q { font-size: 15px; line-height: 20px; color: var(--muted); }
+@keyframes stampin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.promo { background: var(--accent-soft); color: var(--ink); border-radius: var(--radius-lg); }
+.promo b { color: var(--accent); opacity: 1; letter-spacing: .14em; }
+.newins { border: 0; background: var(--warm-soft); color: var(--warm-ink); border-radius: var(--radius-lg); padding: 14px 16px; font-weight: 600; font-size: 15px; }
+.newins b { color: var(--plan); letter-spacing: .14em; font-size: 12px; opacity: 1; }
+.evres { border-left: 0; background: var(--fill-quiet); border-radius: var(--radius-md); padding: 10px 12px; }
+/* 체크포인트 동기 목록 */
+.peers { display: flex; flex-direction: column; }
+.peer { display: flex; align-items: center; gap: 12px; padding: 10px 8px; border-top: .5px solid var(--line); }
+.peer.me { background: color-mix(in oklab, var(--fill-accent) 9%, var(--surface)); border-radius: var(--radius-md); border-top-color: transparent; }
+.peer.me + .peer { border-top-color: transparent; }
+.av { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: #fff; font: 600 13px var(--font-body); flex: none; }
+.peer .pi { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.peer .pn { font: 600 15px var(--font-body); } .peer .pn small { font: 500 12px var(--font-body); margin-left: 4px; }
+.peer .ps { font-size: 13px; line-height: 18px; color: var(--muted); }
+.peer .pp { font: 600 15px var(--font-data); }
+.satline { font-size: 14px; color: var(--muted); } .satline b { color: var(--ink); }
+.moodbox summary { font-size: 13px; }
+/* 엔딩 기록 */
+.record { gap: 20px; }
+.record header { gap: 8px; }
+.eyebrow.end { color: var(--stamp); }
+.rec-title { font: 800 28px/34px var(--font-display); letter-spacing: -.02em; text-wrap: pretty; }
+.rec-sum { font-size: 15px; line-height: 21px; color: var(--muted); }
+.record .odds { border: 0; border-top: 3px solid var(--fill-accent); border-radius: var(--radius-lg); box-shadow: var(--shadow-2); background: var(--surface); padding: 16px; }
+.odds-n b { font: 800 34px/1 var(--font-data); color: var(--accent); letter-spacing: -.03em; }
+.odds-n span { font: 400 12px var(--font-data); color: var(--faint); margin-top: 4px; }
+.odds p { font-size: 13px; line-height: 18px; color: var(--muted); }
+.record .facts div { padding: 12px 14px; }
+.record .facts b { font-size: 22px; line-height: 28px; }
+.record .facts span { font-size: 12px; line-height: 16px; }
+.slots { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; }
+.slots i { height: 20px; border-radius: 4px; background: var(--sunk); }
+.slots i.got { background: var(--graphite-300); } .slots i.me { background: var(--fill-accent); }
+.record h2 { font: 600 12px/16px var(--font-body); letter-spacing: .14em; color: var(--muted); border-bottom: .5px solid var(--line); }
+.last { border: 0; box-shadow: var(--shadow-2); border-radius: var(--radius-lg); }
+.endings span { border-radius: var(--radius-sm); }
+.toast { background: rgba(30,30,31,.92); border-radius: var(--radius-lg); }
+dialog.confirm { border: 0; border-radius: var(--radius-lg); box-shadow: var(--shadow-4); }
+.tag { border: 0; border-radius: 999px; padding: 1px 8px; font-weight: 600; background: color-mix(in oklab, currentColor 12%, transparent); }
+.cat { border: 0; background: color-mix(in oklab, currentColor 12%, transparent); padding: 1px 8px; }
+.sizebar { border: 0; border-radius: var(--radius-sm); }
+.sizebar span.on { background: var(--fill-accent); }
+.step .bar { border: 0; height: 8px; }
+.step .bar i { background: var(--fill-accent); }
+tr.me td { background: color-mix(in oklab, var(--fill-accent) 9%, var(--surface)); }
+th, td { border-bottom: .5px solid var(--line); }
+.nextfocus { border: 0; border-radius: var(--radius-lg); }
+.achs div { border-radius: var(--radius-sm); }
+
 /* ── 반응형 ── */
 /* 장면은 화면 높이의 1/4을 넘지 않게(비율 유지) */
 .scene { width: min(100%, calc(26vh * 192 / 60)); aspect-ratio: 192 / 60; height: auto; margin-inline: auto; }
 .scene-wrap { text-align: center; }
 .scene-cap { text-align: left; }
 @media (max-width: 719px) { .sheet .form-row .btn { flex: 1 1 auto; } }
-@media (pointer: coarse) { .seg button, .chips button, .focus button, .crunch .seg button { min-height: 44px; } .moodbox summary { padding-block: 10px; } }
+@media (pointer: coarse) { .seg button, .chips button, .focus button { min-height: 40px; } .go .seg button { min-height: 44px; } .stepper button { height: 40px; } .moodbox summary { padding-block: 10px; } }
 @media (min-width: 720px) {
   .app:not([data-screen="play"]) { max-width: 720px; }
   .facts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .facts .wide { grid-column: 1 / -1; }
   .sheet-wrap { align-items: center; padding: 24px; }
-  .sheet { border-radius: 10px; max-height: 90vh; }
+  .sheet { border-radius: var(--radius-xl); max-height: 90vh; }
+  .sheet::before { display: none; }
+  .bar { margin-inline: 0; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
 }
 /* 넓은 화면의 플레이: 왼쪽에 사원증·장면·조작, 오른쪽에 해마다의 기록. 폰 가로 화면도 같은 2단 */
 @media (min-width: 960px), (min-width: 640px) and (max-height: 560px) {
@@ -463,7 +737,9 @@ dialog.confirm .form-row { justify-content: flex-end; margin-top: 14px; gap: 8px
   .app[data-screen="play"] > .scene-wrap { grid-area: scene; }
   .app[data-screen="play"] > .scene-wrap .scene { width: 100%; }
   .app[data-screen="play"] > #feed { grid-area: feed; padding-top: 12px; }
-  .app[data-screen="play"] > .controls { grid-area: ctl; align-self: start; border-top: 0; margin-top: 12px; }
+  .app[data-screen="play"] > .controls { grid-area: ctl; align-self: start; border-top: 0; margin: 12px 0 0; padding: 0; background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .app[data-screen="play"] .focus { margin: 0; padding: 2px 0; flex-wrap: wrap; }
+  .app[data-screen="play"] .scene { height: auto; aspect-ratio: 192 / 60; }
 }
 @media (min-width: 640px) and (max-height: 560px) and (max-width: 959px) {
   .app[data-screen="play"] { grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); gap: 0 16px; overflow: hidden; }
@@ -902,7 +1178,7 @@ function fixFocus() { const P = S.player; if (P && !P.pause && !focusKeys(P).inc
 const AX = ["res", "ux", "vis", "com"];
 const AXN = { res: "리서치", ux: "구조·UX", vis: "비주얼", com: "설득·협업" };
 const AXJ = { res: ["는", "가"], ux: ["는", "가"], vis: ["은", "이"], com: ["은", "이"] };
-const AXC = { res: "#1f9d8a", ux: "#3d5bd9", vis: "#e0603f", com: "#d99a1e" };
+const AXC = { res: "#4A8CA8", ux: "#454444", vis: "#9C5A46", com: "#BC9440" };
 const AXV = { res: ["인터뷰 정리 중", "자료 조사 중"], ux: ["와이어프레임 그리는 중", "흐름도 정리 중"], vis: ["시안 다듬는 중", "색과 글꼴 고르는 중"], com: ["리뷰 자료 만드는 중", "회의 중"] };
 const PTYPES = {
   renewal: { name: "앱 리뉴얼", w: [2, 4, 3, 1], where: "in", brief: "출시 5년 된 앱. 사용자는 늘었는데 리뷰 평점이 떨어지고 있다." },
@@ -3041,31 +3317,27 @@ function bindVault() {
   };
 }
 function renderStart() {
-  const d = R.designer;
+  const d = R.designer, e = loadEndings(), nE = ENDINGS.filter(([k]) => e[k]).length;
+  const rules = [["프로젝트", "2년마다 대표 프로젝트를 맡아 시간을 나누고 리뷰를 받습니다."], ["팀", "리드가 되면 팀원이 생깁니다. 지치면 떠납니다."], ["성장", "잘하면 평판이 오르고 승진합니다."], ["현실", "이직·전향·공백은 실제 통계의 확률대로 옵니다."]];
   $app.innerHTML = `
   <div class="scroll"><div class="start">
-    <div class="label">2026년 11월</div>
     <div class="hero">
+      <div class="eyebrow">2026년 11월 · 노동패널 기반 시뮬레이션</div>
       <h1>디자이너로 살아보기</h1>
-      <p class="challenge">과연 정년까지 일할 수 있을까요?</p>
-      <p class="lede">첫 출근부터 60세 정년까지 살아 봅니다. 성별과 첫 회사 규모는 실제 청년 신입 디자이너의 비율대로 정해지고, 해마다 무슨 일이 생길지는 노동패널에서 같은 사람을 15년 동안 따라간 기록으로 굴립니다. 회사 생활의 사건은 일반 직장인 통계로 만들었습니다.</p>
+      <p class="challenge">정년까지 일할 수 있을까요?</p>
+      <p class="lede">첫 출근부터 60세까지. 실제 신입 디자이너 비율과 15년 추적 기록으로 굴립니다.</p>
     </div>
     <div class="scene-wrap showcase"><canvas id="scene" class="scene" data-show="1" width="${SW}" height="${SH}" aria-hidden="true"></canvas></div>
-    <ol class="howto">
-      <li><b>프로젝트</b> 2년에 한 번 대표 프로젝트를 맡아 시간을 나누고 리뷰를 받습니다. 만드는 도중 돌발 상황이 끼어들기도 합니다.</li>
-      <li><b>팀</b> 리드 디자이너가 되면 팀원이 생깁니다. 영역에 배치해 키우세요. 지치면 떠납니다.</li>
-      <li><b>성장</b> 잘하면 평판이 오르고 승진하며, 디자이너로 오래 남을 가능성이 커집니다.</li>
-      <li><b>현실</b> 그래도 이직·전향·공백은 실제 통계의 확률대로 찾아옵니다.</li>
-    </ol>
-    <div class="facts">
-      <div><b class="num">${people(ROLE_W.designer)}명</b><span>한 해 첫 직장을 디자이너로 시작하는 사람 (같은 해 태어난 약 ${people(ENT.births_per_year_weighted)}명 중)</span></div>
-      <div><b class="num">${pct(d.female_share)}</b><span>그중 여성</span></div>
-      <div><b class="num">${pct(d.first_size9["1~4"] + d.first_size9["5~9"] + d.first_size9["10~29"])}</b><span>첫 직장이 직원 30명 미만</span></div>
-      <div><b class="num">${pct(d.keep_observed["10y"])}</b><span>10년 뒤에도 디자이너 (노동패널)</span></div>
-      <div class="wide"><b class="num">${to60("designer")}</b><span>60세 정년까지 디자이너로 남는 비율 (게임 추정. 15년이 넘는 기간은 나이대별 5년 유지율을 이어 붙인 값)</span></div>
-    </div>
-    <div class="form-row start-go"><button class="btn" id="go-random">커리어 시작</button></div>
-    <p class="sublink"><button class="textlink" id="go-data">데이터와 출처 보기</button></p>
+    <div class="card rules-card">${rules.map(([k, v]) => `<div><b>${k}</b><span>${v}</span></div>`).join("")}</div>
+    <section class="stack">
+      <div class="eyebrow">시작 전에 알아둘 숫자</div>
+      <div class="facts">
+        <div><b class="num">${people(ROLE_W.designer)}명</b><span>한 해 디자이너로 첫 출근</span></div>
+        <div><b class="num">${pct(d.female_share)}</b><span>그중 여성</span></div>
+        <div><b class="num">${pct(d.first_size9["1~4"] + d.first_size9["5~9"] + d.first_size9["10~29"])}</b><span>첫 직장이 30명 미만</span></div>
+        <div><b class="num">${pct(d.keep_observed["10y"])}</b><span>10년 뒤에도 디자이너</span></div>
+      </div>
+    </section>
     ${vaultHtml()}
     <details class="manual" id="manual" ${S.manual ? "open" : ""}>
       <summary>성별 직접 고르기</summary>
@@ -3075,7 +3347,12 @@ function renderStart() {
       </div>
     </details>
     <p class="fine">시각·웹·제품 디자이너(KSCO 285)만 다룹니다. 패션·실내장식 디자이너는 뺐습니다. 월급은 세전 월평균이고 물가 보정 전입니다.</p>
+    <div class="bar">
+      <button class="btn" id="go-random">커리어 시작</button>
+      <div class="bar-sub"><button class="textlink plain" id="go-vault" type="button">기록실 · 엔딩 <span class="num">${nE}/${ENDINGS.length}</span></button><button class="textlink" id="go-data" type="button">데이터와 출처</button></div>
+    </div>
   </div></div>`;
+  $app.querySelector("#go-vault").onclick = () => { const v = $app.querySelector(".vault"); if (v) { v.open = true; v.scrollIntoView({ behavior: "smooth", block: "start" }); } };
   $app.querySelector("#go-random").onclick = () => {
     const role = pick(ROLE_W);
     startGame(role, rand() < R[role].female_share ? "female" : "male");
@@ -3119,39 +3396,51 @@ function renderReveal() {
   const q = (f) => won(dist[Math.floor(f * (dist.length - 1))]);
   // 사람 10명 그림: 왼쪽부터 나보다 많이 받는 사람을 칠한다. 문장도 늘 '상위 N%'로 써서 그림 방향(← 많이 받음)과 맞춘다. 상위 73%면 7.3명.
   const share10 = (1 - below) * 10;
-  const people10 = personRow(share10);
   const sizes = Object.entries(r.first_size9 || {});
   const sizeBar = sizes.map(([k, v]) => `<span class="${k === P.size9 ? "on" : ""}" style="flex:${v}" title="직원 ${k}명 ${pct(v, 1)}">${v >= .12 ? k : ""}</span>`).join("");
   const step = (cls, lab, n, w) => `<div class="step ${cls}"><span>${lab}</span><b class="num">${people(n)}명</b><div class="bar"><i style="width:${(w * 100).toFixed(1)}%"></i></div></div>`;
+  const pos = Math.max(1, Math.min(10, Math.floor((1 - below) * 10) + 1));
+  const row10 = Array.from({ length: 10 }, (_, i) => `<div class="p10 ${i === pos - 1 ? "me" : i < pos - 1 ? "up" : ""}">${ic("user-round", 28, 2)}<span>${i === pos - 1 ? "나" : ""}</span></div>`).join("");
   $app.innerHTML = `
-  <div class="scroll"><div class="start">
-    <div class="label">올해 첫 출근하는 디자이너 약 ${ENT_TOTAL.toLocaleString("ko-KR")}명 중 1명</div>
-    <h1 style="font-size:28px">${P.age}세 ${SEX[P.sex]} ${ROLE[P.role]}</h1>
-    <div class="bigstat">첫 직장은 <b>직원 ${P.size9}명</b> 규모의 ${esc(P.company)}. ${P.regular ? "정규직" : "계약직"}이고 첫 월급은 <b>${won(currentWage(P))}만 원</b>입니다.</div>
+  <div class="scroll"><div class="start reveal">
+    <div class="stack" style="gap:8px">
+      <div class="sub-eyebrow">올해 첫 출근하는 디자이너 <span class="num">${ENT_TOTAL.toLocaleString("ko-KR")}</span>명 중 1명</div>
+      <h1>${P.age}세 ${SEX[P.sex]} ${ROLE[P.role]}</h1>
+    </div>
     ${sceneHtml(P)}
-    <section style="display:flex;flex-direction:column;gap:10px">
-      <h2 style="font-size:17px">${SEX[P.sex]} 신입 디자이너 10명 중 나는</h2>
-      <div class="bigstat" style="font-size:15px">내 첫 월급은 <b>${topPct(below)}</b>. 10명 중 ${share10.toFixed(1)}명이 나보다 많이 받습니다.</div>
-      <div class="people10" role="img" aria-label="10명 중 ${share10.toFixed(1)}명이 나보다 많이 받음">${people10}
-        <div class="ends10"><span>← 많이 받음</span><span>적게 받음 →</span></div></div>
-      <p class="fine">상위 10% ${q(.9)}만 원 · 상위 50% ${q(.5)}만 원 · 상위 90% ${q(.1)}만 원. 첫 월급은 청년패널 신입 디자이너 첫 월급(n=112, 중앙 225만 원, 등급 B)에 회사 규모 배수와 개인차를 더해 정합니다. 이 줄은 같은 방식으로 ${dist.length.toLocaleString()}명을 뽑아 세운 것입니다.</p>
+    <div class="card kv">
+      <div><span>첫 직장</span><b>${esc(P.company)} · <span class="num">${P.size9}</span>명</b></div>
+      <div><span>고용 형태</span><b>${P.regular ? "정규직" : "계약직"}</b></div>
+      <div><span>첫 월급</span><b class="big">${won(currentWage(P))}만 원</b></div>
+    </div>
+    <section class="stack">
+      <div class="h17">${SEX[P.sex]} 신입 10명 중 나는 <em>${pos}번째</em></div>
+      <div class="row10" role="img" aria-label="첫 월급 순으로 10명 중 ${pos}번째">${row10}</div>
+      <div class="ends10"><span>많이 받음</span><span>적게 받음</span></div>
+      <p class="fine">상위 10% <span class="num">${q(.9)}</span>만 · 중앙 <span class="num">${q(.5)}</span>만 · 하위 10% <span class="num">${q(.1)}</span>만</p>
+      <details class="evd"><summary>${ic("file-text", 17)}근거</summary><p class="evidence">내 첫 월급은 ${topPct(below)}입니다. 첫 월급은 청년패널 신입 디자이너 첫 월급(n=112, 중앙 225만 원, 등급 B)에 회사 규모 배수와 개인차를 더해 정합니다. 위 줄은 같은 방식으로 ${dist.length.toLocaleString()}명을 뽑아 세운 것입니다.</p></details>
     </section>
-    <section class="steps">
-      ${step("l1", `올해 ${ROLE[P.role]}로 첫 출근`, ROLE_W[P.role], 1)}
-      ${step("l2", `그중 ${SEX[P.sex]} (${pct(sexShare)})`, sameSex, sexShare)}
-      ${step("", `그중 직원 ${P.size9}명 회사 (${pct(share, 1)})`, sameStart, sexShare * (share || 0))}
-    </section>
-    <section style="display:flex;flex-direction:column;gap:6px">
-      <div class="label">신입 디자이너의 첫 직장 규모 (직원 수)</div>
-      <div class="sizebar">${sizeBar}</div>
-      <p class="fine">${pct(r.first_size9["1~4"] + r.first_size9["5~9"] + r.first_size9["10~29"])}가 직원 30명 미만 회사에서 시작합니다.</p>
-    </section>
-    <p class="fine">한 해 인원은 청년패널 1993~1996년생 가중치로 추정했습니다(디자이너 표본 ${ENT.designer.n}명). 2024년까지 첫 일자리를 잡은 사람만 세어 실제보다 조금 적을 수 있습니다. 비율은 ${SRC.yp}(등급 B). 회사 이름은 규모에 맞춰 붙인 예시입니다.</p>
-    <h2 style="font-size:17px">같은 해 시작한 디자이너 동기 4명</h2>
-    <div class="tw"><table><thead><tr><th>이름</th><th>나이</th><th>첫 직장</th><th class="r">월급</th></tr></thead><tbody>
-      ${S.peers.map((x) => `<tr><td>${x.name} <span class="fine">${SEX[x.sex]}</span></td><td class="num">${x.age}</td><td>${esc(x.company)}<br><span class="fine">${x.size9 ? "직원 " + x.size9 + "명" : SIZE3[x.size]}</span></td><td class="r num">${won(currentWage(x))}</td></tr>`).join("")}
-    </tbody></table></div>
-    <div class="reveal-go">${goalHtml()}<button class="btn" id="go-play">첫 출근</button></div>
+    <details class="more"><summary>같은 해 출발선 더 보기</summary>
+      <section class="steps">
+        ${step("l1", `올해 ${ROLE[P.role]}로 첫 출근`, ROLE_W[P.role], 1)}
+        ${step("l2", `그중 ${SEX[P.sex]} (${pct(sexShare)})`, sameSex, sexShare)}
+        ${step("", `그중 직원 ${P.size9}명 회사 (${pct(share, 1)})`, sameStart, sexShare * (share || 0))}
+      </section>
+      <section style="display:flex;flex-direction:column;gap:6px">
+        <div class="eyebrow">신입 디자이너의 첫 직장 규모 (직원 수)</div>
+        <div class="sizebar">${sizeBar}</div>
+        <p class="fine">${pct(r.first_size9["1~4"] + r.first_size9["5~9"] + r.first_size9["10~29"])}가 직원 30명 미만 회사에서 시작합니다.</p>
+      </section>
+      <p class="fine">한 해 인원은 청년패널 1993~1996년생 가중치로 추정했습니다(디자이너 표본 ${ENT.designer.n}명). 2024년까지 첫 일자리를 잡은 사람만 세어 실제보다 조금 적을 수 있습니다. 비율은 ${SRC.yp}(등급 B). 회사 이름은 규모에 맞춰 붙인 예시입니다.</p>
+      <div class="eyebrow">같은 해 시작한 디자이너 동기 4명</div>
+      <div class="tw"><table><thead><tr><th>이름</th><th>나이</th><th>첫 직장</th><th class="r">월급</th></tr></thead><tbody>
+        ${S.peers.map((x) => `<tr><td>${x.name} <span class="fine">${SEX[x.sex]}</span></td><td class="num">${x.age}</td><td>${esc(x.company)}<br><span class="fine">${x.size9 ? "직원 " + x.size9 + "명" : SIZE3[x.size]}</span></td><td class="r num">${won(currentWage(x))}</td></tr>`).join("")}
+      </tbody></table></div>
+    </details>
+    <div class="bar">
+      <div class="stack" style="gap:6px"><div class="eyebrow">이번 판의 목표</div>${goalHtml()}</div>
+      <button class="btn" id="go-play">첫 출근</button>
+    </div>
   </div></div>`;
   $app.querySelector("#go-play").onclick = () => { S.screen = "play"; render(); };
   $app.querySelectorAll("[data-goal]").forEach((b) => b.onclick = () => { S.goal = b.dataset.goal; const gh = $app.querySelector("#goal-hint"); if (gh) gh.textContent = GOAL_HINT[S.goal]; $app.querySelectorAll("[data-goal]").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); });
@@ -3162,7 +3451,7 @@ function limitHtml(P) {
   if (P.end || (P.status !== "none" && P.status !== "away")) return "";
   const left = P.status === "none" ? BREAK_MAX - P.noneYears : AWAY_MAX - P.awayYears;
   const what = P.status === "none" ? "재취업" : "복귀";
-  return `<div class="limit">${left <= 1 ? `올해가 ${what} 마지막 기회` : `${left}년 안에 ${what} 못하면 종료`}</div>`;
+  return `<span class="badge warm limit">${left <= 1 ? `올해가 ${what} 마지막 기회` : `${left}년 안에 ${what} 못하면 종료`}</span>`;
 }
 function statusText(P) {
   if (P.end) return P.end.text;
@@ -3197,7 +3486,7 @@ function yearHtml(y) {
   const turn = y.lines.map((l) => TURN_TAG[l.kind]).filter(Boolean)[0];
   const hot = y.lines.some((l) => ["none", "leave_role", "end"].includes(l.kind));
   const chunk = (cls, label, ls) => ls.length ? `<section class="chunk ${cls}"><div class="ck">${label}</div>${ls.map(lineHtml).join("")}</section>` : "";
-  return `<article class="yr ${hot ? "hot" : ""}"><header class="yr-h"><b>${y.year}</b><span>${y.age}세</span>${(() => { const sv = S.player && S.player.sats[y.t], pv = S.player && S.player.sats[y.t - 1]; if (sv == null) return ""; const d = pv == null ? 0 : sv - pv; return `<span class="yr-sat" title="그해 만족도(1~5점)">만족도 ${sv.toFixed(1)}${Math.abs(d) >= .05 ? `<i class="${d > 0 ? "up" : "dn"}">${d > 0 ? "▲" : "▼"}${Math.abs(d).toFixed(1)}</i>` : ""}</span>`; })()}${turn ? `<em class="yr-tag">${turn}</em>` : ""}</header>
+  return `<article class="yr ${hot ? "hot" : ""}"><header class="yr-h"><b>${y.year}</b><span>${y.age}세</span>${(() => { const sv = S.player && S.player.sats[y.t], pv = S.player && S.player.sats[y.t - 1]; if (sv == null) return ""; const d = pv == null ? 0 : sv - pv; return `<span class="yr-sat" title="그해 만족도(1~5점)">만족도 ${sv.toFixed(1)}${Math.abs(d) >= .05 ? `<i class="${d > 0 ? "up" : "dn"}">${d > 0 ? "▲" : "▼"}${Math.abs(d).toFixed(1)}</i>` : ""}</span>`; })()}${turn ? `<span class="badge ${hot ? "danger" : "neutral"} yr-tag">${turn}</span>` : ""}</header>
     ${chunk("c-proj", "프로젝트", g.proj)}${chunk("c-card", "올해의 일", g.card)}${chunk("c-career", "커리어", g.career)}${chunk("c-money", "돈", g.money)}${chunk("c-peer", "동기 소식", g.peer)}</article>`;
 }
 /* 프로젝트·카드·안내 창. 자동 진행 중인데 자동 선택이 꺼져 있으면 창이 아래 조작 막대를 덮으므로, 창 맨 위에 '자동 선택 켜기'를 둔다 */
@@ -3221,44 +3510,44 @@ function renderPlay() {
   const fid = document.activeElement && document.activeElement.id;
   const P = S.player;
   const w = currentWage(P);
-  const feed = S.feed.map(yearHtml).join("");
-  const intro = !S.feed.length ? `<article class="yr"><header class="yr-h"><b>${START_YEAR}</b><span>${P.age}세</span></header><div class="chunk"><div class="line">${esc(P.company)}에 첫 출근했다. '1년 보내기'를 누르면 첫해가 시작됩니다. 대표 프로젝트는 2년에 한 번 맡고, 해가 지날 때마다 결과 아래에서 다음 해의 초점을 고를 수 있습니다.</div></div></article>` : "";
+  const feed = S.feed.slice().reverse().map(yearHtml).join("");
+  const intro = !S.feed.length ? `<article class="yr"><header class="yr-h"><b>${START_YEAR}</b><span>${P.age}세</span></header><div class="chunk"><div class="line">${esc(P.company)}에 첫 출근했다. 아래에서 올해의 초점을 고르고 '1년 보내기'를 누르면 한 해가 지나갑니다. 대표 프로젝트는 2년에 한 번 맡습니다.</div></div></article>` : "";
   fixFocus();
   const out = isOut(P);
-  const nf = S.ff && !S.card && !S.check && !P.end ? `<div class="nextfocus"><div class="q">돌아올 때까지 넘기는 중…</div><div class="fine">사건이 생기거나 디자이너로 돌아오면 멈춰요.</div><button class="btn ghost ff" id="ff-stop">멈추기</button></div>`
-    : S.feed.length && !S.card && !S.check && !P.end && !P.pause && !S.autoPick ? `<div class="nextfocus">
-      <div class="q">${out ? "디자이너로 돌아갈까?" : `${START_YEAR + P.t}년에는 어디에 힘을 쓸까?`}</div>
-      <div class="chips" role="group" aria-label="다음 해 초점">${Object.entries(FOCUS).filter(([k]) => focusKeys(P).includes(k)).map(([k, f]) => `<button id="focus-${k}" data-focus="${k}" aria-pressed="${S.focus === k}">${f.label}</button>`).join("")}</div>
-      <div class="fine">${esc(FOCUS[S.focus].hint)} 고르면 바로 한 해가 지나갑니다. '1년 보내기'는 '${FOCUS[S.focus].label}' 그대로.</div>
-      ${out ? `<button class="textlink ff" id="ff">돌아올 때까지 몇 년 넘기기</button>` : ""}
-    </div>` : "";
+  const last = P.sats.at(-1), avg = satAvg(P), happy = S.goal === "happy";
+  const clamp = (v) => Math.max(0, Math.min(100, v));
+  const mt = (k, v, p, low) => `<div class="meter ${low ? "low" : ""}"><div class="mk"><span>${k}</span><b>${v}</b></div><i style="--v:${clamp(p).toFixed(0)}%"></i></div>`;
+  const showFocus = !P.end && !P.pause && !S.ff;
+  const fq = S.speed ? (S.autoPick ? "자동 진행 · 선택도 알아서" : "자동 진행 · 선택은 직접") : out ? "디자이너로 돌아갈까?" : `${START_YEAR + P.t}년에는 어디에 힘을 쓸까?`;
+  const who = P.status === "away" ? `디자이너를 떠난 지 ${P.awayYears + 1}년째` : P.status === "none" ? `공백기 ${P.noneYears}년째` : `${P.t + 1}년차 ${RANKS[P.rank].name}`;
   $app.innerHTML = `
     <div class="idcard">
-      <div><div class="who">${P.status === "away" ? `디자이너를 떠난 지 ${P.awayYears + 1}년째` : P.status === "none" ? `공백기 ${P.noneYears}년째` : `${P.t + 1}년차 ${RANKS[P.rank].name}`}</div><div class="where">${[`${P.age}세 ${SEX[P.sex]}`, `${START_YEAR + P.t}년`, ...statusText(P).split(" · ")].map((x) => `<span>${x}</span>`).join(" · ")}</div>${limitHtml(P)}</div>
-      <div class="pay"><div class="label">월 (만 원)</div><b>${P.status === "none" ? "—" : won(w)}</b><div class="asset ${P.cash < 0 ? "neg" : ""}">자산 <b class="num">${manwon(P.cash)}</b></div>${P.best ? `<div class="best">최고 리뷰 <b>${P.best.toFixed(1)}</b></div>` : ""}</div>
-      <div class="meters">
-        <span class="meter ${P.energy < 25 ? "low" : ""}">에너지 <i style="--v:${P.energy}%"></i></span>
-        <span class="meter">실력 <i style="--v:${P.skill}%"></i></span>
-        <span class="meter rep">평판 <i style="--v:${P.rep}%"></i></span>
-        ${satMeter(P)}
-      </div>
+      <div class="id-top"><span class="who">${who}</span><span class="pay">${P.status === "none" ? "월급 없음" : `월 ${won(w)}만`}</span></div>
+      <div class="where">${P.age}세 · <span class="num">${START_YEAR + P.t}</span> · ${statusText(P)}</div>
+      ${limitHtml(P)}
+      <div class="meters">${mt("에너지", Math.round(P.energy), P.energy, P.energy < 25)}${mt("실력", Math.round(P.skill), P.skill)}${mt("평판", Math.round(P.rep), P.rep)}${mt("만족", last == null ? "—" : last.toFixed(1), last == null ? 0 : (last - 1) / 4 * 100)}</div>
+      <div class="id-foot"><span>자산 <b class="${P.cash < 0 ? "neg" : ""}">${manwon(P.cash)}</b></span>${P.best ? `<span>최고 리뷰 <b>${P.best.toFixed(1)}</b></span>` : ""}${avg != null ? `<span title="만족도: 노동패널 직무 만족 평균에 에너지와 월급 수준, 올해 고른 카드를 더한 값(1~5점)">평균 만족 <b class="${happy ? (avg >= HAPPY ? "ok" : "behind") : ""}">${avg.toFixed(2)}</b>${happy ? ` / 목표 <b>${HAPPY}</b>` : ""}</span>` : happy ? `<span>행복 목표 평균 만족 <b>${HAPPY}</b></span>` : ""}</div>
     </div>
     ${sceneHtml(P)}
-    <div class="scroll" id="feed"><div class="feed">${intro}${feed}${nf}</div></div>
+    <div class="scroll" id="feed"><div class="feed">${feed}${intro}</div></div>
     <div class="controls">
-      ${S.speed ? `<div class="focus-hint">${S.autoPick ? `자동 선택 중 · 올해 초점 '${FOCUS[S.focus].label}'` : `자동 진행 중 · 올해 초점 '${FOCUS[S.focus].label}'`}</div>` : ""}
+      ${S.ff ? `<div class="fq"><span class="q">돌아올 때까지 넘기는 중… 사건이 생기면 멈춰요</span><button class="textlink" id="ff-stop" type="button">멈추기</button></div>`
+        : showFocus ? `<div class="fq"><span class="q">${fq}</span>${out && !S.speed ? `<button class="textlink" id="ff" type="button">돌아올 때까지 넘기기</button>` : ""}</div>
+      <div class="focus" role="group" aria-label="올해의 초점">${Object.entries(FOCUS).filter(([k]) => focusKeys(P).includes(k)).map(([k, f]) => `<button id="focus-${k}" data-focus="${k}" aria-pressed="${S.focus === k}">${f.label}</button>`).join("")}</div>
+      <div class="focus-desc">${esc(FOCUS[S.focus].hint)}</div>` : ""}
       <div class="go">
         <button class="btn" id="go-year">1년 보내기</button>
-        <div class="seg" role="group" aria-label="자동 진행">${[0, 1, 2, 4].map((v) => `<button id="speed-${v}" data-speed="${v}" aria-pressed="${S.speed === v}">${v ? v + "×" : "Ⅱ"}</button>`).join("")}</div>
-        <button class="btn ghost icon" id="snd" aria-label="효과음" aria-pressed="${SFX.on}">${sndIcon()}</button>
+        <div class="seg" role="group" aria-label="자동 진행 속도 (2×·4×는 선택도 자동)">${[0, 1, 2, 4].map((v) => `<button id="speed-${v}" data-speed="${v}" aria-pressed="${S.speed === v}">${v ? v + "×" : "Ⅱ"}</button>`).join("")}</div>
+        <button class="btn icon" id="snd" aria-label="효과음" aria-pressed="${SFX.on}">${sndIcon()}</button>
       </div>
-      <label class="autopick"><input type="checkbox" id="auto-pick" ${S.autoPick ? "checked" : ""}> 자동 선택 <span class="fine">잠깐 보여 준 뒤 알아서 골라요</span></label>
     </div>
     ${sheetsHtml()}`;
-  const feedEl = $app.querySelector("#feed"); feedEl.scrollTop = feedEl.scrollHeight;
+  const feedEl = $app.querySelector("#feed"); feedEl.scrollTop = 0;
   sheetAfterRender(fid);
-  $app.querySelectorAll("[data-focus]").forEach((b) => b.onclick = () => { S.focus = b.dataset.focus; playYear(); render(); schedule(); });
-  $app.querySelectorAll("[data-speed]").forEach((b) => b.onclick = () => { ffStop(); setSpeed(+b.dataset.speed); });
+  // 초점은 고르기만 하고, '1년 보내기'로 한 해를 보낸다
+  $app.querySelectorAll("[data-focus]").forEach((b) => b.onclick = () => { S.focus = b.dataset.focus; render(); });
+  // 2×·4×는 선택도 자동(시안 1a: 자동 선택 체크박스를 속도에 흡수). 대화창 안에서 따로 끌 수 있다
+  $app.querySelectorAll("[data-speed]").forEach((b) => b.onclick = () => { ffStop(); const v = +b.dataset.speed; S.autoPick = v >= 2; setSpeed(v); });
   const ffb = $app.querySelector("#ff"); if (ffb) ffb.onclick = () => ffStart();
   const ffs = $app.querySelector("#ff-stop"); if (ffs) ffs.onclick = () => { ffStop(); render(); };
   const ap = $app.querySelector("#auto-pick"); if (ap) ap.onchange = () => setAutoPick(ap.checked);
@@ -3269,7 +3558,9 @@ function renderPlay() {
     if (S.autoPick) S.focus = autoFocus();
     playYear(); render(); schedule();
   };
-  $app.querySelectorAll("[data-choice]").forEach((b) => b.onclick = () => { chooseCard(+b.dataset.choice); schedule(); });
+  // 사건 카드: 누르면 고르기만 하고(자동 진행은 멈춤), '이렇게 한다'로 확정한다
+  $app.querySelectorAll("[data-choice]").forEach((b) => b.onclick = () => { const o = S.card; if (!o) return; if (o.auto && !o.auto.hold) { o.auto.hold = true; clearTimeout(timer); } o.sel = +b.dataset.choice; render(); });
+  const cok = $app.querySelector("#card-ok"); if (cok) cok.onclick = () => { const o = S.card; if (!o) return; const i = o.sel != null ? o.sel : o.pick; if (i == null) return; chooseCard(i); schedule(); };
   const hold = (o) => { if (o && o.auto && !o.auto.hold) { o.auto.hold = true; clearTimeout(timer); render(); } };
   const cs = $app.querySelector("#card-sheet");
   if (cs) cs.onclick = (e) => { if (!e.target.closest("[data-choice]")) hold(S.card); };
@@ -3290,58 +3581,97 @@ function renderPlay() {
   schedule();
   mountScene();
 }
+const ICONS = {
+  circle: '<circle cx="12" cy="12" r="10"/>',
+  "circle-check": '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  "file-text": '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+  lightbulb: '<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>',
+  wallet: '<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+  "battery-charging": '<path d="M15 7h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"/><path d="M6 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h1"/><path d="m11 7-3 5h4l-3 5"/><line x1="22" x2="22" y1="11" y2="13"/>',
+  "refresh-cw": '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+  "triangle-alert": '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  "rotate-ccw": '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+  share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/>',
+  "user-round": '<circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/>',
+  minus: '<path d="M5 12h14"/>',
+  plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+  briefcase: '<path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/>',
+  "trending-up": '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+  calendar: '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
+  compass: '<path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z"/><circle cx="12" cy="12" r="10"/>',
+};
+const ic = (name, size = 20, sw = 1.75) => `<svg class="ic" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ""}</svg>`;
 const sndIcon = () => `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/>${SFX.on ? '<path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>' : '<path d="m16 9 6 6M22 9l-6 6"/>'}</svg>`;
 
+const CAT_TONE = { love: "earth", family: "earth", friend: "earth", money: "warm", free: "warm", growth: "success", body: "danger", work: "accent", lead: "accent", company: "neutral", people: "neutral" };
+/* 선택지 힌트를 설명과 효과 태그로 나눈다: "가족과 가까운 친구만. 에너지 −5, 자산 −500만" → 설명 + [에너지 −5][자산 −500만] */
+function splitHint(h) {
+  const parts = String(h || "").split(/(?<=[.])\s+|,\s+/).map((x) => x.replace(/[.]$/, "").trim()).filter(Boolean);
+  const fx = [], d = [];
+  for (const x of parts) (/에너지|만족도|자산|실력|평판|직장 유지|쉼 ×|확률|×\s?\d|[+−-]\s?\d|반반|매년|점수/.test(x) && x.length <= 24 ? fx : d).push(x);
+  return { d: d.join(". "), fx };
+}
 function cardHtml() {
   const P = S.player, card = CARDS.find((c) => c.id === S.card.id);
-  const used = Object.keys(P.flags).filter((k) => k.startsWith("card_") && !CARDS.find((c) => "card_" + c.id === k && (c.trigger || c.force || c.roll))).length;
   const a0 = autoOn() ? autoArm(S.card, cardText(card)) : null, a = a0 && !a0.hold ? a0 : null;
   if (a && S.card.pick == null) S.card.pick = autoChoice();
+  const sel = a ? S.card.pick : S.card.sel;
+  const ev = citeOnly(tv(card.why, P, S), card.grade);
   return `<div class="sheet-wrap"><div class="sheet" id="card-sheet" role="dialog" aria-modal="true" aria-labelledby="card-title">
-    <div class="label"><span class="cat">${CAT[card.cat] || "사건"}</span> ${START_YEAR + P.t}년 · ${P.age}세${card.trigger ? " · 데이터로 일어난 일" : card.roll ? " · 통계 확률로 일어난 일" : ""}</div>
-    <h2 id="card-title">${esc(tv(card.title, P, S))}</h2><p>${esc(tv(card.body, P, S))}</p>
-    <div class="choices">${card.choices.map((c, i) => { const off = c.ok && !c.ok(P); return `<button class="choice${a && S.card.pick === i ? " auto" : ""}" id="choice-${i}" data-choice="${i}" ${off ? "disabled" : ""}><span>${esc(tv(c.label, P, S))}</span><small>${esc(tv(c.hint, P, S))}</small></button>`; }).join("")}</div>
+    <div class="sh-head">
+      <div class="sh-meta"><span class="badge ${CAT_TONE[card.cat] || "neutral"}">${CAT[card.cat] || "사건"}</span><span><span class="num">${START_YEAR + P.t}</span> · ${P.age}세${card.trigger ? " · 데이터로 일어난 일" : card.roll ? " · 통계 확률로 일어난 일" : ""}</span></div>
+      <h2 id="card-title">${esc(tv(card.title, P, S))}</h2>
+      <p class="sh-lead">${esc(tv(card.body, P, S))}</p>
+    </div>
+    <div class="choices" role="radiogroup" aria-labelledby="card-title">${card.choices.map((c, i) => { const off = c.ok && !c.ok(P), on = sel === i, h = splitHint(tv(c.hint, P, S)); return `<button class="choice${a && on ? " auto" : ""}" role="radio" aria-checked="${on}" id="choice-${i}" data-choice="${i}" ${off ? "disabled" : ""}><span class="ct"><span class="t">${esc(tv(c.label, P, S))}</span>${h.d ? `<span class="d">${esc(h.d)}</span>` : ""}${h.fx.length ? `<span class="fx">${h.fx.map((f) => `<span>${esc(f)}</span>`).join("")}</span>` : ""}</span>${ic(on ? "circle-check" : "circle", 20)}</button>`; }).join("")}</div>
     ${a ? autoBar(a, `잠시 후 '${esc(tv(card.choices[S.card.pick].label, P, S))}'(으)로 넘어가요`) : ""}
-    ${whyHtml(tv(card.why, P, S), card.grade, "", true)}
+    ${ev ? `<details class="evd"><summary>${ic("file-text", 17)}근거 보기</summary><p class="evidence">${esc(ev)}</p></details>` : ""}
+    <div class="form-row"><button class="btn" id="card-ok" ${sel == null ? "disabled" : ""}>이렇게 한다</button></div>
   </div></div>`;
 }
 
 /* ── 프로젝트 화면 ── */
 function insBadge(m, pr, k) {
   const v = m[`t:${pr.type}:${k}`], tp = m[`p:${pr.topic}`] === k;
-  return `${v ? `<span class="ins ${v}">${IMP[v]}</span>` : `<span class="ins unk">?</span>`}${tp ? `<span class="ins topic">+${TOPICS[pr.topic].name}</span>` : ""}`;
+  return `${v ? `<span class="badge ${v === "hi" ? "accent" : "neutral"}">${IMP[v]}</span>` : ""}${tp ? `<span class="badge accent">+${TOPICS[pr.topic].name}</span>` : ""}`;
 }
 function projPlanBody() {
   const P = S.player, pr = S.proj, m = loadIns(), B = CRUNCH[pr.crunch].B, left = B - sum(pr.alloc);
-  const th = helpHours(pr), TB = B + sum(th);
+  const th = helpHours(pr);
+  const blocks = []; pr.alloc.forEach((v, i) => { for (let j = 0; j < v; j++) blocks.push(AXC[AX[i]]); }); while (blocks.length < B) blocks.push("");
   return `
-    <div class="crunch" role="group" aria-label="일하는 강도"><span>강도</span><div class="seg">${Object.entries(CRUNCH).map(([k, c]) => `<button data-crunch="${k}" aria-pressed="${pr.crunch === k}">${c.label} <span class="num">${c.B}</span></button>`).join("")}</div>
-      <span class="fine">${pr.crunch === "crunch" ? "시간이 늘지만 에너지 −12" : pr.crunch === "off" ? "시간이 줄지만 에너지 +4" : "에너지 −2"}</span></div>
+    <div class="pgroup">
+      <div class="prow"><span>작업 강도</span><span class="r">에너지 <span class="num">${pr.crunch === "crunch" ? "−12" : pr.crunch === "off" ? "+4" : "−2"}</span></span></div>
+      <div class="seg full" role="group" aria-label="일하는 강도">${Object.entries(CRUNCH).map(([k, c]) => `<button data-crunch="${k}" aria-pressed="${pr.crunch === k}">${c.label} <span class="num">${c.B}</span></button>`).join("")}</div>
+    </div>
+    <div class="pgroup">
+      <div class="prow"><span>시간 나누기</span><span class="num ${left ? "warn" : "okc"}">${left > 0 ? `${left}칸 남음` : "모두 나눔"}</span></div>
+      <div class="blocks" aria-hidden="true">${blocks.map((c) => `<i${c ? ` style="background:${c}"` : ""}></i>`).join("")}</div>
+    </div>
     <div class="axrows">${AX.map((k, i) => `<div class="axrow">
-      <span class="axn"><i class="ax-dot" style="background:${AXC[k]}"></i>${AXN[k]} <span class="xp num" title="이 영역 경험">경험 ${Math.round(P.xp[k])}</span>${th[i] ? `<span class="teamh num">${teamHours(pr)[i] ? "팀" : "원칙"} +${th[i]}</span>` : ""}</span>
-      <span class="hintb">${insBadge(m, pr, k)}</span>
-      <div class="stepper"><button data-ax="${i}" data-d="-1" ${pr.alloc[i] <= 0 ? "disabled" : ""} aria-label="${AXN[k]} 줄이기">−</button><b class="num">${pr.alloc[i]}</b><button data-ax="${i}" data-d="1" ${left <= 0 ? "disabled" : ""} aria-label="${AXN[k]} 늘리기">+</button></div>
-      <div class="axbar"><i style="width:${(pr.alloc[i] / TB * 100).toFixed(0)}%;background:${AXC[k]}"></i>${th[i] ? `<i class="tm" style="width:${(th[i] / TB * 100).toFixed(0)}%;background:${AXC[k]}"></i>` : ""}</div></div>`).join("")}</div>
+      <i class="sq" style="background:${AXC[k]}"></i>
+      <div class="axn"><span class="n">${AXN[k]}</span><span class="x"><span>경험 <span class="num">${Math.round(P.xp[k])}</span></span>${th[i] ? `<span class="teamh">${teamHours(pr)[i] ? "팀" : "원칙"} +${th[i]}</span>` : ""}${insBadge(m, pr, k)}</span></div>
+      <span class="v num">${pr.alloc[i]}</span>
+      <div class="stepper"><button data-ax="${i}" data-d="-1" ${pr.alloc[i] <= 0 ? "disabled" : ""} aria-label="${AXN[k]} 줄이기">${ic("minus", 16, 2.4)}</button><span class="sep"></span><button data-ax="${i}" data-d="1" ${left <= 0 ? "disabled" : ""} aria-label="${AXN[k]} 늘리기">${ic("plus", 16, 2.4)}</button></div>
+    </div>`).join("")}</div>
     ${pr.team.length ? `<div class="team" role="group" aria-label="팀 배치"><div class="team-h"><b>팀</b><span class="fine">누르면 맡길 영역이 바뀌어요. 강점 영역에 두면 더 많이 돕고 의욕도 올라요.</span></div>
-      ${pr.team.map((mm, j) => `<div class="mem"><span class="mem-n">${esc(mm.name)}${pr.fresh.includes(mm) ? ' <span class="ins topic">새 팀원</span>' : ""}<span class="fine">${AXN[mm.ax]} 강점 · 숙련 ${Math.floor(mm.lvl)} · ${moodText(mm.mood)}</span></span>
-        <button class="mem-ax" data-mem="${j}" style="border-color:${AXC[AX[pr.assign[j]]]}" aria-label="${esc(mm.name)}에게 맡길 영역 바꾸기"><i class="ax-dot" style="background:${AXC[AX[pr.assign[j]]]}"></i>${AXN[AX[pr.assign[j]]]} <b class="num">+${memberH(mm, pr.assign[j])}</b></button></div>`).join("")}</div>` : ""}
-    <div class="left">${left > 0 ? `남은 시간 <b class="num">${left}</b> · 모두 나눠야 시작할 수 있어요` : `시간 <b class="num">${B}</b>을 모두 나눴어요`}</div>
-    <div class="form-row">
-      <button class="btn" id="proj-go" ${left ? "disabled" : ""}>작업 시작</button>
-      ${P.lastAlloc ? `<button class="btn ghost" id="proj-last">지난번 배분</button>` : ""}
+      ${pr.team.map((mm, j) => `<div class="mem"><span class="mem-n">${esc(mm.name)}${pr.fresh.includes(mm) ? ' <span class="badge accent">새 팀원</span>' : ""}<span class="fine">${AXN[mm.ax]} 강점 · 숙련 ${Math.floor(mm.lvl)} · ${moodText(mm.mood)}</span></span>
+        <button class="mem-ax" data-mem="${j}" aria-label="${esc(mm.name)}에게 맡길 영역 바꾸기"><i class="ax-dot" style="background:${AXC[AX[pr.assign[j]]]}"></i>${AXN[AX[pr.assign[j]]]} <b class="num">+${memberH(mm, pr.assign[j])}</b></button></div>`).join("")}</div>` : ""}
+    <div class="form-row p-actions">
+      ${P.lastAlloc ? `<button class="btn ghost" id="proj-last">지난번</button>` : ""}
       <button class="btn ghost" id="proj-guess">인사이트대로</button>
+      <button class="btn" id="proj-go" ${left ? "disabled" : ""}>작업 시작</button>
     </div>`;
 }
 function projHtml() {
   const P = S.player, pr = S.proj, T = PTYPES[pr.type];
-  const head = `<div class="label"><span class="cat">프로젝트</span> ${START_YEAR + P.t}년 · ${pr.where === "out" ? (P.status === "self" ? "프리랜서 의뢰" : "클라이언트 의뢰") : esc(P.company)} · ${esc(RANKS[P.rank].name)}</div>
-    <h2 id="proj-title">${esc(projName(pr))}</h2>`;
+  const head = `<div class="sh-head"><div class="sh-meta"><span class="badge accent">${pr.stage === "review" ? "리뷰 결과" : "프로젝트"}</span><span><span class="num">${START_YEAR + P.t}</span> · ${pr.where === "out" ? (P.status === "self" ? "프리랜서 의뢰" : "클라이언트 의뢰") : esc(P.company)} · ${esc(RANKS[P.rank].name)}</span></div>
+    <h2 id="proj-title">${esc(projName(pr))}</h2>${pr.stage === "plan" ? `<p class="brief">${esc(T.brief)}</p>` : ""}</div>`;
   let body = "";
   if (pr.stage === "plan") {
     const first = !P.projects.length && !Object.keys(loadIns()).length;
-    body = `<p class="brief">${esc(T.brief)}</p>
-      ${pr.team.length && !P.flags.teamCoach ? (`<p class="coach">${esc(RANKS[P.rank].name)}가 되어 팀원 ${pr.team.length}명이 생겼어요. 팀원을 영역에 배치하면 그 영역에 시간이 더해집니다. 야근이 잦거나 강점과 다른 일만 주면 지쳐서 떠날 수 있어요.</p>`) : ""}
-      ${first ? `<p class="coach">시간을 네 영역에 나눠 쓰세요. 프로젝트 유형과 업계마다 중요한 영역이 다르고, 리뷰어의 한마디가 힌트예요. 알아낸 것은 '인사이트'로 쌓여 다음 판에도 남습니다.</p>` : ""}
+    body = `${pr.team.length && !P.flags.teamCoach ? (`<div class="coach">${ic("lightbulb", 17)}<span>${esc(RANKS[P.rank].name)}가 되어 팀원 ${pr.team.length}명이 생겼어요. 팀원을 영역에 배치하면 그 영역에 시간이 더해집니다. 야근이 잦거나 강점과 다른 일만 주면 지쳐서 떠날 수 있어요.</span></div>`) : ""}
+      ${first ? `<div class="coach">${ic("lightbulb", 17)}<span>시간을 네 영역에 나눠 쓰세요. 리뷰어의 한마디가 힌트입니다. 알아낸 건 인사이트로 남아 다음 판에도 쓰입니다.</span></div>` : ""}
       <div id="proj-body">${projPlanBody()}</div>`;
   } else if (pr.stage === "make" || pr.stage === "event") {
     const [a0, b0] = pr.stage === "event" ? [.5, .5] : segOf(pr), dur = segDur(pr), all = makePts(pr), pts = all.slice(Math.floor(a0 * all.length), Math.floor(b0 * all.length));
@@ -3359,15 +3689,15 @@ function projHtml() {
   } else {
     const a = pr.avg, cls = (x) => x >= 8 ? "hi" : x <= 4 ? "lo" : "";
     body = `<div class="${pr.seen ? "static" : ""}" id="rev-box">
-      <div class="revroom"><canvas id="workc" class="workc" width="${WW}" height="${WH}" role="img" aria-label="회의실에서 리뷰어 ${pr.revs.length}명이 점수판을 들었다"></canvas></div>
-      <div class="revs">${pr.revs.map((r, i) => `<div class="rev" style="animation-delay:${i * 450}ms"><div class="rev-who">${esc(r.who)}${r.ax ? ` <span class="fine">· ${AXN[r.ax]}</span>` : ""}</div><div class="rev-score num ${cls(r.score)}">${r.score}</div><div class="rev-q">“${esc(r.quote)}”</div></div>`).join("")}</div>
-      <div class="avgbox" style="animation-delay:1900ms"><span class="fine">리뷰 평균</span><b class="num">${a.toFixed(1)}</b><span class="verdict ${cls(a)}">${verdict(a)}</span></div>
-      <div class="gains" style="animation-delay:2200ms">
+      <div class="rv-score"><span class="big num">${a.toFixed(1)}</span><span class="of num">/ 10</span><span class="badge ${a >= 8 ? "success" : a <= 4 ? "danger" : "warm"}">${verdict(a)}</span></div>
+      <div class="gains">
         <span>평판 ${pr.gain.rep >= 0 ? "+" : ""}${pr.gain.rep.toFixed(0)}</span>
         <span>실력 +${pr.gain.skill}</span>
         <span>에너지 ${pr.gain.energy >= 0 ? "+" : ""}${pr.gain.energy}</span>
         ${a >= 8 ? `<span class="odds up">올해·내년 다른 직업으로 떠날 확률 −${Math.round((1 - SCORE_HI.other_occupation) * 100)}%</span>` : a <= 4 ? `<span class="odds dn">올해·내년 다른 직업으로 떠날 확률 +${Math.round((SCORE_LO.other_occupation - 1) * 100)}%</span>` : ""}
       </div>
+      <div class="revroom" style="margin-top:14px"><canvas id="workc" class="workc" width="${WW}" height="${WH}" role="img" aria-label="회의실에서 리뷰어 ${pr.revs.length}명이 점수판을 들었다"></canvas></div>
+      <div class="revs">${pr.revs.map((r, i) => `<div class="rev" style="animation-delay:${i * 450}ms"><div class="rev-who">${esc(r.who)}${r.ax ? ` <span class="fine">· ${AXN[r.ax]}</span>` : ""}</div><div class="rev-score num ${cls(r.score)}">${r.score}</div><div class="rev-q">“${esc(r.quote)}”</div></div>`).join("")}</div>
       ${pr.promo ? `<div class="promo" style="animation-delay:2500ms"><b>승진</b> ${esc(pr.promo)}${josaRo(pr.promo).slice(pr.promo.length)} 올라섰다. 월급 +3%</div>` : ""}
       ${pr.evRes ? `<div class="evres" style="animation-delay:2600ms"><b>돌발 상황 · ${esc(pr.evRes.title)}</b> ${esc(pr.evRes.label)}${pr.evRes.ok === true ? " — 성공" : pr.evRes.ok === false ? " — 실패" : ""}</div>` : ""}
       ${pr.teamNotes.length ? `<div class="evres team-note" style="animation-delay:2650ms"><b>팀 소식</b>${pr.teamNotes.map((t) => `<span>${esc(t)}</span>`).join("")}</div>` : ""}
@@ -3417,32 +3747,36 @@ function rowFor(x, isMe) {
 /* 공백기·다른 직업·휴직·대학원에 들어갈 때 보여 주는 안내. 무엇이 일어났고, 이제 무엇이 달라지는지 */
 function noticeHtml() {
   const P = S.player, n = S.notice, roleName = ROLE[P.role];
-  const yr = `${START_YEAR + P.t - 1}년 · ${P.age - 1}세`;
-  let tag, title, lead, stat = "", rules;
+  const meta = `<span class="num">${START_YEAR + P.t - 1}</span> · ${P.age - 1}세`;
+  const R2 = (icon, tone, t, d) => ({ icon, tone, t, d });
+  let tone, tag, title, lead, key = null, note = "", rules;
   if (n.type === "none") {
-    tag = "공백기 시작"; title = n.what;
+    tone = "danger"; tag = "공백기 시작"; title = n.what;
     lead = `${QUIT_TEXT[n.q] || n.q} ${n.wasSelf ? "들어오던 일을 정리했고" : n.lost ? `${esc(n.co)}에서 더 일할 수 없게 됐고` : `${esc(n.co)}에 사표를 냈고`}, 다음 일자리는 아직 정하지 못했다.`;
-    stat = `같은 조건의 ${roleName} 중 한 해에 <b>${pct(n.rate, 1)}</b>가 다음 해에 일을 쉽니다(노동패널). ${n.lost ? "회사 사정으로 일자리를 잃은 경우입니다." : "해고가 아니라 스스로 그만둔 경우입니다."} 이유는 청년패널 퇴사 사유 분포에서 뽑았습니다.`;
-    rules = [`월급이 없습니다. 최소 생활비(월 약 ${won(spendOf(P, 0, 0))}만 원, 보통사람 금융생활 보고서의 같은 생애 단계 하위 20% 소비)로 자산이 해마다 약 ${manwon(spendOf(P, 0, 0) * 12)} 원 줄어듭니다. 쉬는 동안 에너지는 조금씩 찹니다.`,
-      `해마다 다시 일할 기회가 있습니다.${n.back ? ` 쉰 첫해에는 ${pct(n.back)}가 ${roleName}로 돌아갑니다.` : ""}`,
-      `올해의 초점이 '적극 지원·포트폴리오 정비·지금 생활에 집중'으로 바뀝니다.`,
-      `공백이 ${BREAK_MAX}년째 이어지면 게임이 끝납니다.`];
+    key = { n: pct(n.rate, 1), d: `같은 조건의 ${roleName}가 한 해에 ${n.lost ? "일자리를 잃고 " : "스스로 "}일을 쉬는 비율(노동패널)` };
+    note = `${n.lost ? "회사 사정으로 일자리를 잃은 경우입니다." : "해고가 아니라 스스로 그만둔 경우입니다."} 이유는 청년패널 퇴사 사유 분포에서 뽑았습니다.`;
+    rules = [R2("wallet", "", "월급이 없습니다", `최소 생활비 월 약 ${won(spendOf(P, 0, 0))}만 원 — 자산이 해마다 약 ${manwon(spendOf(P, 0, 0) * 12)} 원 줄어듭니다.`),
+      R2("battery-charging", "ok", "에너지가 조금씩 찹니다", "쉬는 동안 회복됩니다."),
+      R2("refresh-cw", "accent", "해마다 복귀 기회", n.back ? `쉰 첫해에는 ${pct(n.back)}가 ${roleName}로 돌아갑니다.` : "해마다 다시 일할 기회가 있습니다."),
+      R2("compass", "", "초점이 바뀝니다", "'적극 지원·포트폴리오 정비·지금 생활에 집중' 중에서 고릅니다."),
+      R2("triangle-alert", "danger", `공백 ${BREAK_MAX}년이면 게임 끝`, `공백이 ${BREAK_MAX}년째 이어지면 기록을 마칩니다.`)];
   } else if (n.type === "away") {
-    tag = "디자이너를 떠남"; title = `${josaRo(AWAY_NAME[n.dest])} 옮겼다`;
+    tone = "warm"; tag = "디자이너를 떠남"; title = `${josaRo(AWAY_NAME[n.dest])} 옮겼다`;
     lead = `${QUIT_TEXT[n.q] || n.q} ${n.co === "프리랜서" ? "프리랜서 일을 접고" : `${esc(n.co)}에서 나와`} ${josaRo(AWAY_NAME[n.dest])} 일하기로 했다.`;
-    stat = `같은 조건의 ${roleName} 중 올해 <b>${pct(n.rate, 1)}</b>가 다른 직업으로 옮깁니다(노동패널).`;
-    rules = [`${AWAY_NAME[n.dest]} 일을 하며 월급을 받습니다. 프로젝트와 회사 사건은 나오지 않습니다.`,
-      `해마다 디자이너로 돌아올 기회가 있습니다. 떠난 첫해에는 ${pct(RET.other_first.back, 1)}가 돌아옵니다.`,
-      `올해의 초점이 '적극 지원·포트폴리오 정비·지금 생활에 집중'으로 바뀝니다.`,
-      `${AWAY_MAX}년 안에 돌아오지 않으면 게임이 끝납니다.`];
+    key = { n: pct(n.rate, 1), d: `같은 조건의 ${roleName}가 올해 다른 직업으로 옮기는 비율(노동패널)` };
+    rules = [R2("briefcase", "", `${AWAY_NAME[n.dest]} 일로 월급을 받습니다`, "프로젝트와 회사 사건은 나오지 않습니다."),
+      R2("refresh-cw", "accent", "해마다 복귀 기회", `떠난 첫해에는 ${pct(RET.other_first.back, 1)}가 디자이너로 돌아옵니다.`),
+      R2("compass", "", "초점이 바뀝니다", "'적극 지원·포트폴리오 정비·지금 생활에 집중' 중에서 고릅니다."),
+      R2("triangle-alert", "danger", `${AWAY_MAX}년 안에 돌아와야 합니다`, "돌아오지 않으면 기록을 마칩니다.")];
   } else if (n.type === "leave") {
-    tag = "휴직"; title = n.care ? "1년 휴직하고 어머니 곁을 지킨다" : "1년 육아휴직을 쓴다";
+    tone = "accent"; tag = "휴직"; title = n.care ? "1년 휴직하고 어머니 곁을 지킨다" : "1년 육아휴직을 쓴다";
     lead = `${esc(n.co)}에 1년 휴직을 냈다. 그만둔 것이 아니라 자리를 비워 두는 것이다.`;
-    rules = [`이 1년은 회사 사건 없이 지나갑니다.`,
-      n.care ? `휴직하는 동안 월급은 없습니다.` : `월급 대신 육아휴직급여 월 약 ${won(n.pay)}만 원을 받습니다(2025년 상한 기준).`,
-      `휴직이 끝나면 ${josaRo(esc(n.co))} 복직합니다. 그 뒤로는 다시 노동패널 확률을 따릅니다.`];
+    rules = [R2("calendar", "", "회사 사건 없이 1년", "이 1년은 회사 사건 없이 지나갑니다."),
+      n.care ? R2("wallet", "", "월급이 없습니다", "가족돌봄휴직은 무급입니다.") : R2("wallet", "", `육아휴직급여 월 약 ${won(n.pay)}만 원`, "월급 대신 받습니다(2025년 상한 기준)."),
+      R2("refresh-cw", "accent", "휴직이 끝나면 복직", `${josaRo(esc(n.co))} 돌아갑니다. 그 뒤로는 다시 노동패널 확률을 따릅니다.`)];
   } else if (n.type === "work") {
     const co = `${esc(P.company)}(${SIZE3[P.size]})`;
+    tone = "success";
     tag = n.from === "away" ? "디자이너로 복귀" : n.from === "leave" ? "복직" : n.from === "school" ? "졸업 후 취업" : "재취업";
     title = n.from === "none" ? `공백 ${n.gap}년 만에 다시 출근한다` : n.from === "away" ? `${roleName}로 돌아왔다` : n.from === "self" ? "프리랜서를 접고 회사에 들어간다" : n.from === "leave" ? "휴직을 마치고 복직한다" : "석사를 마치고 회사에 들어간다";
     lead = n.from === "none" ? `쉬는 동안 지원을 이어 왔고, ${co}에 ${roleName}로 합격했다.`
@@ -3450,28 +3784,40 @@ function noticeHtml() {
       : n.from === "self" ? `들어오던 외주를 정리하고 ${co}에 들어갔다.`
       : n.from === "leave" ? `비워 두었던 ${esc(P.company)} 자리로 돌아간다.`
       : `학위를 받고 ${co}에 들어갔다.`;
-    if (n.rate) stat = n.from === "self" ? `프리랜서 ${roleName} 중 한 해에 <b>${pct(n.rate, 1)}</b>가 회사로 돌아갑니다(노동패널).` : `같은 처지의 사람 중 한 해에 <b>${pct(n.rate, 1)}</b>가 ${roleName}로 돌아갑니다(노동패널).`;
-    rules = [`월급이 다시 들어옵니다. 월 약 ${won(currentWage(P))}만 원${n.from === "school" ? "(졸업으로 6% 올랐습니다)" : ""}.`,
-      projDue(P) ? `회사 일이 다시 시작됩니다. 내년 초에 새 프로젝트를 맡고, 그 뒤로 2년마다 대표 프로젝트가 나옵니다.` : `회사 일이 다시 시작됩니다. 대표 프로젝트는 2년마다 나옵니다.`,
-      ...(n.from === "none" || n.from === "away" ? [`올해의 초점이 다시 '지금 일에 집중·실력 키우기·이직 준비' 같은 회사 생활 선택지로 바뀝니다.`] : []),
-      `다음 해부터 다시 노동패널의 이직·퇴사 확률을 따릅니다.`];
+    if (n.rate) key = { n: pct(n.rate, 1), d: n.from === "self" ? `프리랜서 ${roleName}가 한 해에 회사로 돌아가는 비율(노동패널)` : `같은 처지의 사람이 한 해에 ${roleName}로 돌아가는 비율(노동패널)` };
+    rules = [R2("wallet", "ok", "월급이 다시 들어옵니다", `월 약 ${won(currentWage(P))}만 원${n.from === "school" ? " (졸업으로 6% 올랐습니다)" : ""}.`),
+      R2("briefcase", "accent", "회사 일이 다시 시작됩니다", projDue(P) ? "내년 초에 새 프로젝트를 맡고, 그 뒤로 2년마다 대표 프로젝트가 나옵니다." : "대표 프로젝트는 2년마다 나옵니다."),
+      ...(n.from === "none" || n.from === "away" ? [R2("compass", "", "초점이 회사 생활로 돌아옵니다", "'지금 일에 집중·실력 키우기·이직 준비' 같은 선택지에서 고릅니다.")] : []),
+      R2("trending-up", "", "통계도 다시 시작", "다음 해부터 다시 노동패널의 이직·퇴사 확률을 따릅니다.")];
   } else {
-    tag = "학업 시작"; title = "대학원에 들어간다";
+    tone = "accent"; tag = "학업 시작"; title = "대학원에 들어간다";
     lead = `회사를 그만두고 전일제 석사 과정을 시작했다.`;
-    rules = [`${n.left || 2}년 동안 수업과 논문으로 지나갑니다. 월급과 회사 사건은 없습니다.`,
-      `졸업하면 새 회사에 들어가고, 월급이 6% 오릅니다.`];
+    rules = [R2("calendar", "", `${n.left || 2}년 동안 수업과 논문`, "월급과 회사 사건은 없습니다."),
+      R2("trending-up", "accent", "졸업하면 월급 +6%", "새 회사에 들어갑니다.")];
   }
   return `<div class="sheet-wrap"><div class="sheet notice" role="dialog" aria-modal="true" aria-labelledby="ntc-title">
-    <div class="label">${tag} · ${yr}</div>
-    <h2 id="ntc-title">${title}</h2>
-    <p>${lead}</p>
-    ${stat ? `<p class="fine">${stat}</p>` : ""}
-    <div class="rulebox"><div class="ck">이제 달라지는 것</div><ul>${rules.map((x) => `<li>${x}</li>`).join("")}</ul></div>
+    <div class="sh-head">
+      <div class="sh-meta"><span class="badge ${tone}">${tag}</span><span>${meta}</span></div>
+      <h2 id="ntc-title">${title}</h2>
+      <p class="sh-lead">${lead}</p>
+    </div>
+    ${key ? `<div class="keystat"><b>${key.n}</b><span>${key.d}</span></div>` : ""}
+    ${note ? `<p class="fine" style="margin-top:-8px">${note}</p>` : ""}
+    <div class="rules"><div class="rh">이제 달라지는 것</div>${rules.map((r) => `<div class="rule ${r.tone}">${ic(r.icon, 20)}<div><b>${r.t}</b><span>${r.d}</span></div></div>`).join("")}</div>
     <div class="form-row"><button class="btn" id="notice-ok">알겠어요</button></div>
     ${autoOn() && !autoArm(S.notice, 70).hold ? autoBar(S.notice.auto, "잠시 후 넘어가요") : ""}
   </div></div>`;
 }
 
+const AV_COLOR = { designer: "var(--fill-accent)", planner: "var(--ocre-500)", developer: "#5C7A4A", other: "var(--terre-500)", none: "var(--graphite-400)" };
+function peerRow(x, isMe) {
+  const w = currentWage(x), out = x.end || x.status === "none";
+  const role = x.status === "away" ? AWAY_NAME[x.awayKind] : ROLE[x.role];
+  const av = isMe ? "var(--fill-accent)" : out ? AV_COLOR.none : x.status === "away" ? AV_COLOR.other : AV_COLOR[x.role] || AV_COLOR.other;
+  return `<div class="peer ${isMe ? "me" : ""}"><span class="av" style="background:${av}">${isMe ? "나" : esc(x.name[0])}</span>
+    <div class="pi"><span class="pn">${isMe ? "나" : esc(x.name)}<small style="color:${x.status === "away" || x.role !== "designer" ? "var(--faint)" : "var(--accent)"}">${role}</small></span><span class="ps">${statusText(x)}</span></div>
+    <span class="pp">${out ? "—" : won(w)}</span></div>`;
+}
 function checkHtml() {
   const P = S.player, t = S.check.t;
   fixFocus();
@@ -3479,17 +3825,19 @@ function checkHtml() {
   const keep = mc.keep[t];
   const inRole = WORKING.includes(P.status) && P.role === P.origRole;
   const pr = inRole ? percentile(mc.wages[t], currentWage(P)) : null;
+  const avg = satAvg(P) || 0;
   return `<div class="sheet-wrap"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="chk-title">
-    <div class="label">${t}년차 체크포인트 · ${START_YEAR + t}년</div>
-    <h2 id="chk-title">${t}년이 지났다</h2>
-    <div class="bigstat">같은 해 일을 시작한 ${SEX[P.sex]} ${ROLE[P.origRole]} 중 <b>${pct(keep)}</b>가 아직 ${ROLE[P.origRole]}로 일한다.${pr !== null ? ` 그중 내 월급은 <b>${topPct(pr)}</b>다.` : ""}</div>
-    <p class="satline">지금까지 평균 만족도 <b class="num">${(satAvg(P) || 0).toFixed(2)}</b>${S.goal === "happy" ? ` · 행복 목표 ${HAPPY} ${satAvg(P) >= HAPPY ? "<b class=\"ok\">달성 중</b>" : `까지 <b class="num">${(HAPPY - satAvg(P)).toFixed(2)}</b> 모자람`}` : ""}</p>
-    <p class="fine">같은 조건 ${mc.N.toLocaleString()}명을 같은 확률표로 미리 굴린 결과입니다. 참고로 노동패널에서 30세 이하에 ${ROLE[P.origRole]}로 처음 관찰된 사람은 ${t >= 10 ? "10년" : t >= 5 ? "5년" : t >= 3 ? "3년" : "1년"} 뒤 ${pct(R[P.origRole].keep_young[t >= 10 ? "10y" : t >= 5 ? "5y" : t >= 3 ? "3y" : "1y"][0])}가 같은 직군이었습니다(남녀 합계).</p>
-    <div class="tw"><table><thead><tr><th>이름</th><th>직군</th><th>지금</th><th class="r">월급</th></tr></thead><tbody>
-      ${rowFor(P, true)}${S.peers.map((x) => rowFor(x, false)).join("")}
-    </tbody></table></div>
-    <div class="nextfocus" style="background:var(--sunk)">
-      <div class="q">${isOut(P) ? "디자이너로 돌아갈까?" : `${START_YEAR + P.t}년에는 어디에 힘을 쓸까?`}</div>
+    <div class="sh-head">
+      <div class="sh-meta"><span class="badge accent">${t}년차 체크포인트</span><span><span class="num">${START_YEAR + t}</span></span></div>
+      <h2 id="chk-title">${t}년이 지났다</h2>
+    </div>
+    <div class="keystat"><b>${pct(keep)}</b><span>같은 해 시작한 ${SEX[P.sex]} ${ROLE[P.origRole]} 중 아직 ${ROLE[P.origRole]}로 일하는 비율</span></div>
+    ${pr !== null ? `<div class="keystat" style="margin-top:-8px"><b>${topPct(pr)}</b><span>그중 내 월급 순위</span></div>` : ""}
+    <p class="satline">지금까지 평균 만족도 <b class="num">${avg.toFixed(2)}</b>${S.goal === "happy" ? ` · 행복 목표 ${HAPPY} ${avg >= HAPPY ? "<b class=\"ok\" style=\"color:var(--accent)\">달성 중</b>" : `까지 <b class="num">${(HAPPY - avg).toFixed(2)}</b> 모자람`}` : ""}</p>
+    <details class="evd"><summary>${ic("file-text", 17)}근거</summary><p class="evidence">같은 조건 ${mc.N.toLocaleString()}명을 같은 확률표로 미리 굴린 결과입니다. 참고로 노동패널에서 30세 이하에 ${ROLE[P.origRole]}로 처음 관찰된 사람은 ${t >= 10 ? "10년" : t >= 5 ? "5년" : t >= 3 ? "3년" : "1년"} 뒤 ${pct(R[P.origRole].keep_young[t >= 10 ? "10y" : t >= 5 ? "5y" : t >= 3 ? "3y" : "1y"][0])}가 같은 직군이었습니다(남녀 합계).</p></details>
+    <div class="rules"><div class="rh">동기들은 지금</div><div class="peers">${peerRow(P, true)}${S.peers.map((x) => peerRow(x, false)).join("")}</div></div>
+    <div class="stack" style="gap:8px">
+      <div class="prow"><span>${isOut(P) ? "디자이너로 돌아갈까?" : `${START_YEAR + P.t}년에는 어디에 힘을 쓸까?`}</span></div>
       <div class="chips" role="group" aria-label="다음 해 초점">${Object.entries(FOCUS).filter(([k]) => focusKeys(P).includes(k)).map(([k, f]) => `<button id="cfocus-${k}" data-cfocus="${k}" aria-pressed="${S.focus === k}">${f.label}</button>`).join("")}</div>
       <div class="fine" id="cfocus-hint">${esc(FOCUS[S.focus].hint)}</div>
     </div>
@@ -3579,9 +3927,9 @@ function endingsHtml(key, isNew) {
 const HAPPY = 3.6;
 const GOALS = { endure: { label: "정년까지 버티기" }, happy: { label: "행복하게 살기" } };
 function goalHtml() {
-  return `<div class="goal" role="group" aria-label="이번 판의 목표"><span>이번 판의 목표</span><div class="chips">${Object.entries(GOALS).map(([k, g]) => `<button data-goal="${k}" aria-pressed="${S.goal === k}">${g.label}</button>`).join("")}</div><div class="fine goal-hint" id="goal-hint">${GOAL_HINT[S.goal] || ""}</div></div>`;
+  return `<div class="seg full" role="group" aria-label="이번 판의 목표">${Object.entries(GOALS).map(([k, g]) => `<button data-goal="${k}" aria-pressed="${S.goal === k}">${g.label}</button>`).join("")}</div><div class="fine goal-hint" id="goal-hint">${GOAL_HINT[S.goal] || ""}</div>`;
 }
-const GOAL_HINT = { endure: "디자이너로 60세까지 일하면 달성.", happy: `해마다 매기는 만족도(1~5점)의 평균이 ${HAPPY} 이상이면 달성. 플레이 중 사원증에서 볼 수 있어요.` };
+const GOAL_HINT = { endure: "디자이너로 60세까지 일하면 달성.", happy: `해마다 매기는 만족도(1~5점)의 평균이 ${HAPPY} 이상이면 달성. 플레이 중 상태 카드에서 볼 수 있어요.` };
 const satAvg = (P) => P.sats.length ? P.sats.reduce((a, b) => a + b, 0) / P.sats.length : null;
 function satMeter(P) {
   const last = P.sats.at(-1), avg = satAvg(P), happy = S.goal === "happy";
@@ -3808,29 +4156,32 @@ function renderRecord() {
   const lastHtml = `<section class="last">
       <div class="label">마지막 장</div>
       ${epi.map((t) => `<p>${esc(t)}</p>`).join("")}
-      <div class="sign"><span>${endYear}년, 기록 마감</span><span class="stamp big">${STAMP[P.end.type]}</span></div>
+      <div class="sign"><span>${endYear}년, 기록 마감</span><span class="badge danger">${STAMP[P.end.type]}</span></div>
     </section>`;
+  const endM = loadEndings(), nE = ENDINGS.filter(([k]) => endM[k]).length;
+  const marryAt = P.life.find((e) => e.kind === "marry");
   $app.innerHTML = `<div class="scroll"><div class="record">
     <header>
-      <div class="label">커리어 기록부 · ${START_YEAR}–${endYear}</div>
+      <div class="eyebrow end">엔딩 · ${STAMP[P.end.type]}</div>
       <h1 class="rec-title">${esc(title)}</h1>
-      <p>${P.startAge}세 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작해 ${endAge(P)}세에 기록을 마쳤다. 디자이너로 일한 ${workYears(P)}년, 일자리 ${P.jobs.filter((j) => j.kind !== "school").length}곳. ${esc(P.end.text)}</p>
-      <span class="stamp">${STAMP[P.end.type]}</span>
-      <div class="goalres ${gr.ok ? "ok" : ""}">목표 '${GOALS[S.goal].label}' ${gr.ok ? "달성" : "실패"} · ${esc(gr.text)}</div>
+      <p class="rec-sum">${P.startAge}세에 시작해 ${endAge(P)}세에 기록을 마쳤다. 디자이너로 ${workYears(P)}년, 일자리 ${P.jobs.filter((j) => j.kind !== "school").length}곳. ${esc(P.end.text)} 목표 ‘${GOALS[S.goal].label}’ ${gr.ok ? "달성" : "실패"}${S.goal === "happy" ? ` (${esc(gr.text)})` : ""}.</p>
     </header>
     ${sceneHtml(P)}
-    <div class="form-row"><button class="btn" data-act="share">기록 공유</button><button class="btn ghost" data-act="again">다시 시작</button></div>
     <section class="odds">
-      <div class="odds-n"><b class="num">${rr.hit.toLocaleString()}</b><span>/ ${mc.N.toLocaleString()}명</span></div>
-      <p>같은 해 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작한 ${mc.N.toLocaleString()}명을 같은 확률로 굴리면, ${rr.what}은 ${rr.hit.toLocaleString()}명(${pct(rr.hit / mc.N, 1)})이었다.${rr.hit / mc.N < .05 ? " 드문 기록이다." : ""}</p>
+      <div class="odds-n"><b>${pct(rr.hit / mc.N, 1)}</b><span>${rr.hit.toLocaleString()} / ${mc.N.toLocaleString()}명</span></div>
+      <p>같은 조건 ${mc.N.toLocaleString()}명 중 ${rr.what}.${rr.hit / mc.N < .05 ? " 드문 기록이다." : ""}</p>
     </section>
     <div class="facts">
       <div><b class="num">${eok(earned)}</b><span>일해서 번 돈 (물가 보정 전)</span></div>
-      <div><b class="num ${P.cash < 0 ? "neg" : ""}">${manwon(P.cash)}</b><span>마지막 자산 (이자·물가 보정 전). 참고: 한국 가구 평균 순자산 4억 7,144만 원(2025)</span></div>
+      <div><b class="num ${P.cash < 0 ? "neg" : ""}">${manwon(P.cash)}</b><span>마지막 자산 · 가구 평균 순자산 4억 7,144만(2025)</span></div>
       <div><b class="num">${won(peak)}만</b><span>가장 많이 받은 월급</span></div>
-      <div><b class="num">${P.married || P.life.some((e) => e.kind === "marry") ? P.life.find((e) => e.kind === "marry").age + "세" : "—"}</b><span>결혼</span></div>
-      <div><b class="num">${P.kids.length}명</b><span>아이</span></div>
+      <div><b class="num">${marryAt ? marryAt.age + "세" : "—"}${P.kids.length ? ` · ${P.kids.length}명` : ""}</b><span>결혼${P.kids.length ? " · 아이" : ""}</span></div>
     </div>
+    <section class="stack" style="gap:8px">
+      <div class="bar-sub"><span class="eyebrow">엔딩 모음</span><span class="eyebrow num">${nE} / ${ENDINGS.length}</span></div>
+      <div class="slots" aria-label="엔딩 ${ENDINGS.length}개 중 ${nE}개 모음">${ENDINGS.map(([k]) => `<i class="${k === P.endSaved.key ? "me" : endM[k] ? "got" : ""}" title="${endM[k] ? esc(ENDINGS.find(([kk]) => kk === k)[1]) : "???"}"></i>`).join("")}</div>
+      ${(P.achNew || []).length ? `<div class="fine">업적 ${P.achNew.length}개 새로 얻음 · ${P.achNew.map((k) => esc(ACH.find(([kk]) => kk === k)[1])).join(", ")}</div>` : ""}
+    </section>
     ${portfolioHtml(P)}
     ${lastHtml}
     <section><h2>디자이너로 몇 년 일했나</h2>
@@ -3840,8 +4191,10 @@ function renderRecord() {
     <section><h2>내 선택이 바꾼 것</h2>
       <p style="font-size:14px">${P.projects.length ? `이번 판 프로젝트 리뷰 평균은 <b>${(P.projects.reduce((a, x) => a + x.avg, 0) / P.projects.length).toFixed(1)}점</b>이었습니다. ` : ""}프로젝트 점수와 해마다 고른 초점이 커리어를 얼마나 바꾸는지, 같은 조건으로 다시 굴려 봅니다.</p>
       <div id="cmp"><button class="btn ghost" id="cmp-go">다시 굴려 보기</button></div></section>
+    <details class="more"><summary>엔딩·업적 자세히</summary>
     ${endingsHtml(P.endSaved.key, P.endSaved.isNew)}
     ${(P.achNew || []).length ? `<section><h2>이번 판에 새로 얻은 업적 · ${P.achNew.length}개</h2><div class="achs">${P.achNew.map((k) => { const x = ACH.find(([kk]) => kk === k); return `<div class="got me"><b>${esc(x[1])}</b>${esc(x[2])}</div>`; }).join("")}</div></section>` : ""}
+    </details>
     <details class="more"><summary>자세한 기록 보기</summary>
     <section><h2>한 해 한 칸 · 만족도</h2>
       <div class="map">${cells}</div>
@@ -3857,11 +4210,9 @@ function renderRecord() {
     <section><h2>동기들의 지금</h2><div class="tw"><table><thead><tr><th>이름</th><th>직군</th><th>지금</th><th class="r">월급</th></tr></thead><tbody>${S.peers.map((x) => rowFor(x, false)).join("")}</tbody></table></div>
       <p class="fine" style="margin-top:6px">동기는 내가 기록을 마친 해까지만 진행했습니다. ${S.peers.filter((x) => x.married).length}명이 결혼했고, 아이는 모두 ${S.peers.reduce((s, x) => s + x.kids.length, 0)}명입니다.</p></section>
     </details>
-    <div class="form-row"><button class="btn" id="share">기록 공유</button><button class="btn ghost" id="save-img">이미지 저장</button><button class="btn ghost" id="copy">글로 복사</button></div>
-    <div class="form-row"><button class="btn" id="again">다시 시작</button></div>
-    <p class="sublink"><button class="textlink" id="data">데이터와 출처 보기</button></p>
-    <p class="fine">다시 시작하면 새 조건으로 처음부터 시작합니다.</p>
+    <div class="bar-sub" style="justify-content:flex-start;gap:16px"><span class="fine">다른 형식으로</span><button class="textlink" id="save-img" type="button">이미지 저장</button><button class="textlink" id="copy" type="button">글로 복사</button><button class="textlink" id="data" type="button">데이터와 출처</button></div>
     <p class="fine" id="copy-note" aria-live="polite"></p>
+    <div class="bar"><div class="bar-grid"><button class="btn ghost" id="again">${ic("rotate-ccw", 20)}다시 시작</button><button class="btn" id="share">${ic("share", 20)}기록 공유</button></div></div>
   </div></div>`;
   const again = () => { const g = S.goal; S = freshState(); S.goal = g; render(); };
   $app.querySelectorAll('#again,[data-act="again"]').forEach((b) => b.onclick = again);
