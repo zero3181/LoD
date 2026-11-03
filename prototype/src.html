@@ -704,7 +704,10 @@ function step(P, mods = {}) {
 function jobBump(role) { return role === "developer" ? 0.088 : role === "designer" ? 0.077 : 0.03; }
 function advanceAge(P) {
   P.t += 1; P.age += 1;
-  if (!P.end && P.age >= RETIRE_AGE) P.end = { type: "retire", text: `${RETIRE_AGE}세가 되어 기록을 마쳤다.` };
+  // 60세에 디자이너로 일하고 있을 때만 정년. 다른 직업이나 공백 중이면 그 상태로 끝난다
+  if (!P.end && P.age >= RETIRE_AGE) P.end = P.status === "away" ? { type: P.awayKind === "planner" ? "planner" : "other", age60: true, text: `${RETIRE_AGE}세, ${josaRo(AWAY_NAME[P.awayKind] || "다른 직업")} 일하던 중에 기록을 마쳤다.` }
+    : P.status === "none" ? { type: "break", age60: true, text: `${RETIRE_AGE}세, 일을 쉬던 중에 기록을 마쳤다.` }
+    : { type: "retire", text: `${RETIRE_AGE}세가 되어 기록을 마쳤다.` };
 }
 
 /* ── 같은 조건 1,500명 미리 굴리기 (체크포인트·검증용, 흐름대로) ── */
@@ -2658,8 +2661,8 @@ function finishYear(ctx) {
     for (const e of ev) peerLines.push({ kind: "peer", text: `${x.name} (${ROLE[x.origRole]}) — ${(PEER[e.kind] || (() => e.text))()}`, why: e.why, grade: e.grade });
   }
   advanceAge(P);
-  if (P.end && P.end.type === "retire") lines.push({ kind: "end", big: true, text: P.end.text, why: "노동패널 55세 이상 표본이 적어 60세에서 끝낸다(설계상 가정).", grade: "D" });
-  if (!P.end || P.end.type === "retire") {
+  if (P.end && (P.end.type === "retire" || P.end.age60)) lines.push({ kind: "end", big: true, text: P.end.text, why: "노동패널 55세 이상 표본이 적어 60세에서 끝낸다(설계상 가정).", grade: "D" });
+  if (!P.end || P.end.type === "retire" || P.end.age60) {
     P.wages.push(currentWage(P)); P.statuses.push(P.status); P.roles.push(P.role);
     P.sats.push(satisfaction(P, ctx));
   } else { P.wages.push(pre.wage); P.statuses.push(pre.status); P.roles.push(pre.role); P.sats.push(pre.sat); }
@@ -3399,7 +3402,7 @@ function careerSpot(P, mc) {
   const sorted = [...ys].sort((a, b) => a - b);
   const maxY = Math.max(...ys, me);
   const bins = Array(maxY + 1).fill(0); ys.forEach((y) => bins[y]++);
-  return { me, back: mc.ends.filter((e) => e.back).length, N, lt, eq, longer: N - lt - eq, below: (lt + eq / 2) / N, median: sorted[Math.floor(N / 2)], bins, maxY, retire: mc.ends.filter((e) => e.type === "retire").length };
+  return { me, back: mc.ends.filter((e) => e.back).length, N, lt, eq, longer: N - lt - eq, below: (lt + eq / 2) / N, median: sorted[Math.floor(N / 2)], bins, maxY, retire: mc.ends.filter((e) => e.type === "retire" && e.same).length };
 }
 function careerChart(P, sp) {
   const W = 320, H = 150, L = 8, Rr = 8, T = 22, B = 22;
