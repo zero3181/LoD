@@ -511,8 +511,11 @@ h1 { font-weight: 800; letter-spacing: -.02em; }
 .evd[open] summary { margin-bottom: 4px; }
 .evidence { font-size: 12.5px; line-height: 1.6; color: var(--muted); }
 /* 하단 고정 막대 (엄지 영역) */
-.bar { position: sticky; bottom: -20px; z-index: 3; margin: 4px -16px -20px; padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--bar-bg); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-top: .5px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
-.bar .btn { width: 100%; }
+/* 하단 막대가 있는 화면: 스크롤 영역을 화면 끝까지 넓혀 막대가 좌우로 넘치지 않게, 내용이 짧으면 막대를 바닥에 붙여 빈 스크롤이 생기지 않게 */
+.app > .scroll:has(.dock) { margin-inline: -16px; padding-inline: 16px; padding-bottom: 0; overflow-x: hidden; }
+.start:has(> .dock), .record:has(> .dock) { min-height: 100%; }
+.dock { position: sticky; bottom: 0; z-index: 3; margin: auto -16px 0; padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--bar-bg); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-top: .5px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+.dock .btn { width: 100%; }
 .bar-sub { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .bar-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 /* 시작 */
@@ -531,6 +534,11 @@ h1 { font-weight: 800; letter-spacing: -.02em; }
 .facts span { font-size: 13px; line-height: 18px; }
 .vault summary, details.manual summary, details.more > summary { font: 600 15px var(--font-body); color: var(--ink); padding: 6px 0; }
 .sub-eyebrow { font: 500 13px var(--font-body); color: var(--muted); }
+.start.reveal { gap: 14px; }
+.app > .scroll:has(> .reveal) { padding-top: 12px; }
+.reveal .kv > div { padding: 11px 16px; }
+.reveal .stack { gap: 10px; }
+.reveal .evd summary { min-height: 28px; }
 .h17 { font: 600 17px/22px var(--font-body); }
 .h17 em { font-style: normal; color: var(--accent); }
 .row10 { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; }
@@ -727,7 +735,7 @@ th, td { border-bottom: .5px solid var(--line); }
   .sheet-wrap { align-items: center; padding: 24px; }
   .sheet { border-radius: var(--radius-xl); max-height: 90vh; }
   .sheet::before { display: none; }
-  .bar { margin-inline: 0; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+  .dock { margin-inline: 0; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
 }
 /* 넓은 화면의 플레이: 왼쪽에 사원증·장면·조작, 오른쪽에 해마다의 기록. 폰 가로 화면도 같은 2단 */
 @media (min-width: 960px), (min-width: 640px) and (max-height: 560px) {
@@ -3484,7 +3492,7 @@ function renderStart() {
       </div>
     </details>
     <p class="fine">시각·웹·제품 디자이너(KSCO 285)만 다룹니다. 패션·실내장식 디자이너는 뺐습니다. 월급은 세전 월평균이고 물가 보정 전입니다.</p>
-    <div class="bar">
+    <div class="dock">
       <button class="btn" id="go-random">커리어 시작</button>
       <div class="bar-sub"><button class="textlink plain" id="go-vault" type="button">기록실 · 엔딩 <span class="num">${nE}/${ENDINGS.length}</span></button><button class="textlink" id="go-data" type="button">데이터와 출처</button></div>
     </div>
@@ -3574,7 +3582,7 @@ function renderReveal() {
         ${S.peers.map((x) => `<tr><td>${x.name} <span class="fine">${SEX[x.sex]}</span></td><td class="num">${x.age}</td><td>${esc(x.company)}<br><span class="fine">${x.size9 ? "직원 " + x.size9 + "명" : SIZE3[x.size]}</span></td><td class="r num">${won(currentWage(x))}</td></tr>`).join("")}
       </tbody></table></div>
     </details>
-    <div class="bar">
+    <div class="dock">
       <div class="stack" style="gap:6px"><div class="eyebrow">이번 판의 목표</div>${goalHtml()}</div>
       <button class="btn" id="go-play">첫 출근</button>
     </div>
@@ -4398,7 +4406,7 @@ function renderRecord() {
     </details>
     <div class="bar-sub" style="justify-content:flex-start;gap:16px"><span class="fine">다른 형식으로</span><button class="textlink" id="save-img" type="button">이미지 저장</button><button class="textlink" id="copy" type="button">글로 복사</button><button class="textlink" id="data" type="button">데이터와 출처</button></div>
     <p class="fine" id="copy-note" aria-live="polite"></p>
-    <div class="bar"><div class="bar-grid"><button class="btn ghost" id="again">${ic("rotate-ccw", 20)}다시 시작</button><button class="btn" id="share">${ic("share", 20)}기록 공유</button></div></div>
+    <div class="dock"><div class="bar-grid"><button class="btn ghost" id="again">${ic("rotate-ccw", 20)}다시 시작</button><button class="btn" id="share">${ic("share", 20)}기록 공유</button></div></div>
   </div></div>`;
   const again = () => { const g = S.goal; S = freshState(); S.goal = g; render(); };
   $app.querySelectorAll('#again,[data-act="again"]').forEach((b) => b.onclick = again);
