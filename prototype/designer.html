@@ -170,14 +170,34 @@ details.more[open] { display: flex; flex-direction: column; gap: 24px; }
 .meter.low i::after { background: var(--stamp); }
 
 /* ── 기록 피드 ── */
-.feed { display: flex; flex-direction: column; gap: 10px; }
-.yr { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px; }
-.yr .y { font-family: var(--font-data); font-size: 12px; color: var(--muted); padding-top: 3px; }
-.yr .lines { display: flex; flex-direction: column; gap: 6px; border-left: 1px solid var(--line); padding-left: 12px; min-width: 0; }
+.feed { display: flex; flex-direction: column; gap: 12px; }
+.yr { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.yr.hot { border-color: color-mix(in oklab, var(--stamp) 55%, var(--line)); }
+.yr-h { display: flex; align-items: baseline; gap: 8px; font-family: var(--font-data); font-size: 12px; color: var(--muted); }
+.yr-h b { font-size: 15px; color: var(--ink); font-weight: 600; }
+.yr-h .yr-tag { margin-left: auto; font-style: normal; font-family: var(--font-body, inherit); font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; color: var(--accent); background: color-mix(in oklab, var(--accent) 13%, transparent); }
+.yr.hot .yr-h .yr-tag { color: var(--stamp); background: color-mix(in oklab, var(--stamp) 13%, transparent); }
+.chunk { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.chunk + .chunk { border-top: 1px dashed var(--line); padding-top: 10px; }
+.ck { font-size: 11px; font-weight: 600; letter-spacing: .06em; color: var(--muted); }
 .line { font-size: 14px; }
 .line.big { font-weight: 600; }
-.line.peer { color: var(--muted); font-size: 13px; }
-.line.peer::before { content: "동기 · "; font-size: 11px; letter-spacing: .06em; }
+.c-peer .line { color: var(--muted); font-size: 13px; }
+.c-proj .line { font-size: 13px; color: var(--muted); }
+.pj { display: flex; flex-direction: column; gap: 3px; }
+.pj-top { display: flex; align-items: baseline; gap: 10px; justify-content: space-between; }
+.pj-name { font-weight: 600; font-size: 14px; min-width: 0; }
+.score { flex: none; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.score b { font-size: 16px; color: var(--ink); }
+.score.hi b { color: var(--accent); } .score.lo b { color: var(--stamp); }
+.pj .sub { font-size: 12.5px; color: var(--muted); }
+.pj .pj-promo { font-size: 13px; font-weight: 600; color: var(--accent); }
+.ev { display: flex; flex-direction: column; gap: 2px; }
+.ev-t { font-weight: 600; font-size: 14px; }
+.ev-c { font-size: 13px; color: var(--accent); }
+.ev-r { font-size: 13.5px; }
+.sheet.notice .rulebox { background: var(--sunk); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.sheet.notice ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
 .why { display: inline; }
 .why summary { display: inline; list-style: none; font-size: 11px; color: var(--accent); cursor: pointer; margin-left: 6px; white-space: nowrap; }
 .why summary::-webkit-details-marker { display: none; }
@@ -351,7 +371,6 @@ svg text.me { fill: var(--accent); font-weight: 700; font-size: 11px; }
 .newins { border: 1px dashed var(--accent); display: flex; flex-direction: column; gap: 2px; }
 .newins b { color: var(--accent); }
 .static .rev, .static .avgbox, .static .gains, .static .promo, .static .newins, .static .evres { animation: none; opacity: 1; }
-.line.proj { border-left: 3px solid var(--accent); padding-left: 8px; margin-left: -11px; }
 .meters .best { font-size: 12px; } .meters .best b { color: var(--accent); }
 .toasts { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 10px); left: 50%; transform: translateX(-50%); z-index: 60; display: flex; flex-direction: column; gap: 6px; width: min(calc(100vw - 32px), 420px); pointer-events: none; }
 .toast { background: var(--ink); color: var(--surface); border-radius: 10px; padding: 10px 14px; font-size: 14px; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,.25); animation: toastin .35s cubic-bezier(.2,1.3,.4,1), toastout .4s ease-in 3s forwards; }
@@ -550,6 +569,7 @@ function newPerson(role, sex, opts = {}) {
 }
 function currentWage(P) {
   if (P.status === "none" || P.status === "school") return 0;
+  if (P.status === "leave" && P.pause && P.pause.care) return 0;
   if (P.status === "leave") { const w = marketWage(P.role, P.sex, P.age, P.size) * P.p; return LEAVE_PAY(w); }
   if (P.status === "self") return interp(R[P.role].self_income_by_age || R[P.role].wage_by_age, P.age) * P.p * P.selfNoise;
   if (P.role === "planner") return interp(R.planner.wage_by_age, P.age) * P.p;
@@ -572,11 +592,12 @@ function comeback(P, out, text, why) {
 
 /* 올해 선택(초점·카드)이 확률을 얼마나 움직였는지 한 줄로 */
 const FX_LABEL = { same_job: "지금 회사에 남을", new_job_same_occupation: "다른 회사로 옮길", other_occupation: "디자인을 떠날", not_employed: "일을 쉬게 될", back: "디자이너로 돌아올", to_self: "프리랜서로 독립할" };
-function fxLine(w0, w1, extra) {
+/* only: 올해 실제로 일어난 일(이직·쉼·다른 직업)이면 그 일의 확률 변화만 보여 준다 */
+function fxLine(w0, w1, extra, only) {
   const n = (w) => { const s = Object.values(w).reduce((a, b) => a + b, 0); return Object.fromEntries(Object.entries(w).map(([k, v]) => [k, v / s])); };
   const a = n(w0), b = n(w1);
-  let best = extra && extra.a ? { ...extra, r: Math.abs(Math.log(extra.b / extra.a)) } : null;
-  for (const k in a) { if (!FX_LABEL[k] || !a[k]) continue; const r = Math.abs(Math.log(b[k] / a[k])); if (r > .03 && (!best || r > best.r)) best = { k, a: a[k], b: b[k], r }; }
+  let best = !only && extra && extra.a ? { ...extra, r: Math.abs(Math.log(extra.b / extra.a)) } : null;
+  for (const k in a) { if (!FX_LABEL[k] || !a[k] || (only && k !== only)) continue; const r = Math.abs(Math.log(b[k] / a[k])); if (r > .03 && (!best || r > best.r)) best = { k, a: a[k], b: b[k], r }; }
   if (!best || best.r <= .03) return null;
   return { kind: "fx", text: `올해 선택·성과로 ${FX_LABEL[best.k]} 가능성 ${pct(best.a, 1)} → ${pct(best.b, 1)}`, why: "초점·카드·프로젝트가 거는 배수는 게임 설계상 가정이다.", grade: "D" };
 }
@@ -645,8 +666,8 @@ function step(P, mods = {}) {
   };
   const w0 = { same_job: cell.same_job, new_job_same_occupation: cell.new_job_same_occupation, other_occupation: cell.other_occupation * mEff(P), not_employed: cell.not_employed * mEff(P) * (P.energy < 20 ? 1.5 : 1) };
   const ts = P.status === "wage" && mods.to_self ? { k: "to_self", a: selfRate(P), b: selfRate(P) * mods.to_self } : null;
-  const fxw = fxLine(w0, w, ts); if (fxw) out.push(fxw);
   const k = pick(w);
+  const fxw = fxLine(w0, w, ts, k === "same_job" ? null : k); if (fxw) out.push(fxw);
   const base = `${SRC.klips}: ${who}의 다음 해 상태 ${cell.n}건${cellNote} — 같은 직장 ${pct(cell.same_job, 1)}, 같은 직군 이직 ${pct(cell.new_job_same_occupation, 1)}, 다른 직업 ${pct(cell.other_occupation, 1)}, 쉼 ${pct(cell.not_employed, 1)}.`;
   const modNote = Object.keys(mods).length ? " 이번 해 선택이 이 비율에 배수를 걸었다(설계상 가정 D)." : "";
   const quitWhy = (skip = []) => {
@@ -694,9 +715,12 @@ function step(P, mods = {}) {
     const { q, note } = quitWhy();
     const dest = r.dest ? pick(r.dest) : "other";
     const destWhy = r.dest ? ` 다른 직업으로 옮긴 ${roleName} ${r.dest_n}명의 도착지: 개발자 ${pct(r.dest.developer || 0)}, 디자이너 ${pct(r.dest.designer || 0)}, 기획자 ${pct(r.dest.planner || 0)}, 그 밖 ${pct(r.dest.other)}.` : "";
+    const co = P.status === "self" ? "프리랜서" : P.company, rate = cell.other_occupation * mEff(P);
     goAway(P, dest, q);
-    out.push({ kind: "leave_role", big: true, text: `${QUIT_TEXT[q] || q} ${roleName} 일을 내려놓고 ${josaRo(AWAY_NAME[dest])} 옮겼다. 해마다 디자이너로 돌아갈 기회가 있지만, ${AWAY_MAX}년 안에 돌아오지 않으면 게임이 끝난다.`, why: base + note + destWhy + modNote, grade: "B" });
+    out.push({ kind: "leave_role", big: true, text: `${QUIT_TEXT[q] || q} ${roleName} 일을 내려놓고 ${josaRo(AWAY_NAME[dest])} 옮겼다.`, why: base + note + destWhy + modNote, grade: "B",
+      notice: { type: "away", q, dest, co, rate } });
   } else {
+    const wasSelf = P.status === "self", co = P.company;
     P.status = "none"; P.noneYears = 1; P.jobs.at(-1).to = P.t + 1;
     // 노동패널에는 쉬게 된 이유가 없다. 최근 2년 안에 아이가 태어났으면 육아로, 아니면 청년패널 퇴사 사유에서 뽑는다(창업 제외). 설계상 가정.
     const baby = P.kids.some((k) => P.t - k <= 1);
@@ -704,7 +728,10 @@ function step(P, mods = {}) {
     P.jobs.at(-1).reason = q;
     let why = base + modNote + " 노동패널에는 일을 쉬게 된 이유가 없어, 이유는 따로 붙였다." + note;
     if (P.sex === "female") why += " 참고: 2024년 경력단절여성의 사유는 육아 41.1%, 결혼 24.9%, 임신·출산 24.4% (KOSIS 지역별고용조사).";
-    out.push({ kind: "none", big: true, text: `${QUIT_TEXT[q] || q} 다음 일자리 없이 공백기가 시작됐다. 해마다 다시 일할 기회가 있지만, 공백이 ${BREAK_MAX}년째에 이르면 게임이 끝난다.`, why, grade: "C" });
+    const lost = q === "폐업·해고·사업종료" || q === "계약 만료";
+    const what = wasSelf ? "프리랜서 일을 접었다" : lost ? "일자리를 잃었다" : "회사를 그만뒀다";
+    out.push({ kind: "none", big: true, text: `${QUIT_TEXT[q] || q} ${what}. 다음 일자리는 아직 없다.`, why, grade: "C",
+      notice: { type: "none", q, what, lost, wasSelf, co, rate: cell.not_employed, back: r.reentry ? r.reentry.back : null } });
   }
   return out;
 }
@@ -767,7 +794,7 @@ const isOut = (P) => P.status === "away" || P.status === "none";
 function focusKeys(P) { return Object.keys(FOCUS).filter((k) => !!FOCUS[k].away === isOut(P)); }
 function fixFocus() { const P = S.player; if (P && !P.pause && !focusKeys(P).includes(S.focus)) S.focus = isOut(P) ? "live" : "flow"; }
 
-/* ── 프로젝트: 일하는 해마다 대표 프로젝트 하나 ──
+/* ── 프로젝트: 일하는 동안 2년에 하나씩 대표 프로젝트 ──
    네 영역에 시간을 나눠 쓴다. 유형과 업계마다 숨은 '맞는 배분'이 있고, 리뷰어의 말이 힌트다.
    알아낸 것은 인사이트로 이 브라우저에 남아 다음 판에도 쓴다.
    점수는 평판·직급·실력과, 그해 확률표에 거는 작은 배수로 이어진다. 확률표 자체는 바꾸지 않는다.
@@ -823,6 +850,7 @@ function spread(wts, B) {
 function rankOf(P) { let r = 0; RANKS.forEach((x, i) => { if (workYears(P) >= x.yrs && P.rep >= x.rep) r = i; }); return r; }
 const projName = (pr) => `${TOPICS[pr.topic].name} ‘${pr.code}’ ${PTYPES[pr.type].name}`;
 function projTarget(pr) { const w = PTYPES[pr.type].w.map((x, i) => x + (AX[i] === TOPICS[pr.topic].ax ? 2 : 0)), s = sum(w); return w.map((x) => x / s); }
+const projDue = (P) => { const last = P.projects.at(-1); return !last || P.t - last.t >= 2; };
 function newProject(P) {
   const where = isClientWork(P) ? "out" : "in";
   const done = new Set(P.projects.map((x) => x.type));
@@ -908,7 +936,7 @@ function projApply(P, pr, ctx) {
   pr.insights = discover(P, pr);
   pr.teamNotes = teamAfter(P, pr);
   pr.gain = { rep: P.rep - rep0, skill: Math.min(100, P.skill) - Math.min(100, sk0), energy: CRUNCH[pr.crunch].energy };
-  ctx.notes.push({ kind: "proj", big: true, text: `프로젝트 ${projName(pr)} — 리뷰 평균 ${a.toFixed(1)}점, ${verdict(a)}.${pr.evRes ? ` 돌발 상황 ‘${pr.evRes.title}’.` : ""}${pr.promo ? ` ${josaRo(pr.promo)} 승진했다.` : ""}`, why: "", grade: "D" });
+  ctx.notes.push({ kind: "proj", big: true, proj: { name: projName(pr), avg: a, verdict: verdict(a), ev: pr.evRes ? pr.evRes.title : null, promo: pr.promo || null }, text: `프로젝트 ${projName(pr)} — 리뷰 평균 ${a.toFixed(1)}점, ${verdict(a)}.${pr.evRes ? ` 돌발 상황 ‘${pr.evRes.title}’.` : ""}${pr.promo ? ` ${josaRo(pr.promo)} 승진했다.` : ""}`, why: "", grade: "D" });
   pr.teamNotes.forEach((t) => ctx.notes.push({ kind: "proj", text: t, why: "", grade: "D" }));
 }
 
@@ -1028,7 +1056,7 @@ const ACH = [
   ["score9", "포트폴리오 첫 장", "리뷰 평균 9점 이상", (P) => P.projects.some((x) => x.avg >= 9)],
   ["ten", "만점", "리뷰어에게 10점을 받았다", (P) => !!P.flags.ten],
   ["flop", "흑역사", "리뷰 평균 3점 이하", (P) => P.projects.some((x) => x.avg <= 3)],
-  ["streak", "믿고 맡기는 사람", "3년 연속 리뷰 평균 8점 이상", (P) => P.projects.some((x, i, a) => i >= 2 && a.slice(i - 2, i + 1).every((y) => y.avg >= 8) && a[i - 2].t === x.t - 2)],
+  ["streak", "믿고 맡기는 사람", "프로젝트 3번 연속 리뷰 평균 8점 이상", (P) => P.projects.some((x, i, a) => i >= 2 && a.slice(i - 2, i + 1).every((y) => y.avg >= 8) && a[i - 2].t >= x.t - 4)],
   ["crunch5", "야근의 아이콘", "한 판에 야근 프로젝트 5번", (P) => (P.flags.crunchN || 0) >= 5],
   ["types6", "뭐든 해 본 사람", "한 판에 프로젝트 유형 6가지", (P) => new Set(P.projects.map((x) => x.type)).size >= 6],
   ["rank2", "시니어", "시니어 디자이너가 됐다", (P) => P.rank >= 2],
@@ -1884,7 +1912,7 @@ const CARDS = [
   { id: "parent_cancer", cat: "family", when: (P) => P.age >= 38, w: () => .8, title: "어머니가 암 진단을 받으셨다", body: "건강검진 결과지를 들고 오신 날, 아무도 저녁을 먹지 못했다.",
     why: "보건복지부·국립암센터 2022년 국가암등록통계: 기대수명까지 살면 암에 걸릴 확률 남성 37.7%(79.9세까지), 여성 34.8%(85.6세까지). 여성은 유방암, 갑상선암 순으로 많다.", grade: "A",
     choices: [
-      { label: "항암 기간 동안 휴직한다", hint: "올해 휴직", ok: isWage, apply: (P, c) => { c.pause = { kind: "leave", left: 1 }; return "병원 대기실에서 시안 대신 보호자 서류를 채웠다."; } },
+      { label: "항암 기간 동안 휴직한다", hint: "올해 휴직, 그동안 월급 없음", ok: isWage, apply: (P, c) => { c.pause = { kind: "leave", care: true, left: 1 }; return "병원 대기실에서 시안 대신 보호자 서류를 채웠다."; } },
       { label: "형제들과 번갈아 돌본다", hint: "에너지 −12", apply: (P) => { P.energy -= 12; return "주말마다 KTX를 탔다."; } },
       { label: "간병인을 쓴다", hint: "−1,200만, 에너지 −4", apply: (P) => { P.bonus -= 1200; P.energy -= 4; return "매일 저녁 영상통화로 어머니 얼굴을 봤다."; } },
     ] },
@@ -2530,7 +2558,7 @@ function startGame(role, sex) {
     let name; do { name = choose(NAMES[sx]); } while (used.has(name)); used.add(name);
     return newPerson(r, sx, { name, age: Math.max(22, P.age + Math.round(normal())) });
   });
-  S.player = P; S.peers = peers; S.feed = []; S.card = null; S.check = null; S.proj = null; S.focus = "flow"; S.gameId = Date.now().toString(36) + Math.floor(rand() * 1e6).toString(36);
+  S.player = P; S.peers = peers; S.feed = []; S.card = null; S.check = null; S.notice = null; S.proj = null; S.focus = "flow"; S.gameId = Date.now().toString(36) + Math.floor(rand() * 1e6).toString(36);
   S.screen = "reveal";
   render();
 }
@@ -2549,7 +2577,7 @@ function satisfaction(P, ctx) {
 }
 
 function playYear() {
-  if (!S.player || S.player.end || S.card || S.check || S.proj) return;
+  if (!S.player || S.player.end || S.card || S.check || S.proj || S.notice) return;
   const P = S.player;
   fixFocus();
   if (!P.pause) (P.focusN ||= {})[S.focus] = ((P.focusN || {})[S.focus] || 0) + 1;
@@ -2557,8 +2585,16 @@ function playYear() {
   if (P.pause) { finishYear(ctx); return; } // 휴직·학업 중에는 사건이 없다
   // 떠나 있는 동안: 포트폴리오(최고 리뷰 점수)가 복귀 가능성에 배수를 건다(설계상 가정)
   if (isOut(P) && P.best) mul(ctx, "back", .75 + P.best / 20);
-  // 일하는 해에는 대표 프로젝트부터
-  if (isWork(P)) { S.proj = newProject(P); S.proj.focus = S.focus; S.proj.ctx = ctx; SFX.card(); render(); return; }
+  // 대표 프로젝트는 2년에 하나. 리뷰 점수는 다음 해까지 평판·확률표에 이어진다(설계상 가정)
+  if (isWork(P)) {
+    const last = P.projects.at(-1);
+    if (projDue(P)) { S.proj = newProject(P); S.proj.focus = S.focus; S.proj.ctx = ctx; SFX.card(); render(); return; }
+    if (last && P.t - last.t === 1) {
+      scoreFx(P, last.avg, ctx);
+      const promo = promote(P); if (promo) ctx.sat += .15;
+      ctx.notes.push({ kind: "proj", carry: true, proj: { name: last.name, avg: last.avg, verdict: verdict(last.avg), promo }, text: `지난해 프로젝트 ${last.name}(리뷰 ${last.avg.toFixed(1)}점)이 올해도 평판에 이어진다.${promo ? ` ${josaRo(promo)} 승진했다.` : ""}`, why: "", grade: "D" });
+    }
+  }
   yearCards(ctx);
 }
 /* 최근 두 판에서 본 일반 카드는 비중을 줄인다(판마다 덜 겹치게). 데이터로 굴리는 삶의 사건은 그대로 */
@@ -2604,7 +2640,7 @@ function chooseCard(i) {
   if (ch.ok && !ch.ok(P)) return;
   const title = tv(card.title, P, S);
   const label = tv(ch.label, P, S), result = ch.apply(P, ctx);
-  ctx.notes.push({ kind: "card", big: !!(card.trigger || card.roll), text: `${title} → ${label}. ${result}`, why: tv(card.why, P, S), grade: card.grade || "D" });
+  ctx.notes.push({ kind: "card", big: !!(card.trigger || card.roll), card: { title, label, result }, text: `${title} → ${label}. ${result}`, why: tv(card.why, P, S), grade: card.grade || "D" });
   P.picks.push({ t: P.t, age: P.age, cat: card.cat, title, label, result, life: !!card.trigger });
   if (card.id === "peer_wedding") S.peerWedding = null;
   S.card = null;
@@ -2621,13 +2657,14 @@ function startPause(P, pause) {
   }
 }
 function pauseLine(P) {
+  if (P.status === "leave" && P.pause.care) return { kind: "leave", big: true, text: "휴직하고 어머니의 항암 치료 곁을 지켰다. 그동안 월급은 없었다.", why: "가족돌봄휴직은 법으로 연 최대 90일, 무급이다(남녀고용평등법). 1년 휴직은 설계상 가정.", grade: "D" };
   return P.status === "leave"
     ? { kind: "leave", big: true, text: `육아휴직 중이다. 월급 대신 육아휴직급여 월 약 ${won(currentWage(P))}만 원.`, why: lifeWhy(P, "birth"), grade: "B" }
     : { kind: "school", text: "대학원 수업과 논문으로 한 해가 갔다.", why: "전일제 석사 2년은 설계상 가정.", grade: "D" };
 }
 function endPause(P) {
   const kind = P.pause.kind; P.pause = null;
-  if (kind === "leave") { P.status = "wage"; return { kind: "back", big: true, text: `${P.company}에 복직했다.`, why: "육아휴직 뒤 원래 직장으로 돌아간다고 두었다(설계상 가정). 다음 해부터는 다시 노동패널 확률을 따른다.", grade: "D" }; }
+  if (kind === "leave") { P.status = "wage"; return { kind: "back", big: true, text: `${P.company}에 복직했다.`, why: "휴직 뒤 원래 직장으로 돌아간다고 두었다(설계상 가정). 다음 해부터는 다시 노동패널 확률을 따른다.", grade: "D" }; }
   P.flags.degree = true; P.status = "wage";
   P.size = pick(G.size_move[P.size || "S"]); P.company = choose(COMPANY[P.role][P.size]); P.p *= 1.06;
   P.jobs.push({ company: P.company, size: P.size, role: P.role, from: P.t, to: null, kind: "wage", reason: "석사 졸업" });
@@ -2677,6 +2714,12 @@ function finishYear(ctx) {
     P.sats.push(satisfaction(P, ctx));
   } else { P.wages.push(pre.wage); P.statuses.push(pre.status); P.roles.push(pre.role); P.sats.push(pre.sat); }
   if (resume && !P.end) lines.push(endPause(P));
+  // 공백기·다른 직업·휴직·대학원에 들어가는 해에는 따로 안내한다
+  if (!P.end) {
+    const nl = lines.find((l) => l.notice);
+    if (nl) S.notice = nl.notice;
+    else if (ctx.pause) S.notice = { type: ctx.pause.kind, care: !!ctx.pause.care, co: P.company, pay: pre.wage, left: ctx.pause.left };
+  }
   S.feed.push({ t: yearT, year: START_YEAR + yearT, age: P.age - 1, lines: [...lines, ...peerLines.slice(0, 3)] });
   achCheck(P);
   if (lines.some((l) => l.kind === "comeback" || l.kind === "back")) SFX.up(); else if (lines.some((l) => l.kind === "end" || l.kind === "leave_role" || l.kind === "none")) SFX.bad();
@@ -2689,7 +2732,7 @@ function finishYear(ctx) {
 
 /* ── 자동 진행 ── */
 let timer = null;
-function setSpeed(v) { S.speed = v; for (const o of [S.card, S.check]) if (o && o.auto && !o.auto.hold) delete o.auto; schedule(); render(); }
+function setSpeed(v) { S.speed = v; for (const o of [S.card, S.check, S.notice]) if (o && o.auto && !o.auto.hold) delete o.auto; schedule(); render(); }
 /* 자동 선택: 카드 선택지와 올해의 초점을 무작위로 고른다. 에너지가 35 아래면 쉬기를 고른다. */
 function autoFocus() {
   const P = S.player;
@@ -2730,6 +2773,7 @@ function schedule() {
     if (pr.stage === "review") projTimer = setTimeout(() => { if (S.proj === pr) { projDone(); schedule(); } }, 3600 + (pr.teamNotes && pr.teamNotes.length ? 800 : 0));
     return;
   }
+  if (S.notice) { if (S.autoPick) { const a = autoArm(S.notice, 70); if (!a.hold) timer = setTimeout(() => { S.notice = null; render(); schedule(); }, autoLeft(a)); } return; }
   if (S.check) { if (S.autoPick) { const a = autoArm(S.check, 45); if (!a.hold) timer = setTimeout(() => { S.check = null; render(); schedule(); }, autoLeft(a)); } return; }
   if (S.card) {
     if (S.autoPick) {
@@ -2751,7 +2795,7 @@ function ffTick() {
   const P = S.player;
   if (!S.ff || S.screen !== "play") return;
   if (!P || P.end || !isOut(P)) { S.ff = false; render(); return; }
-  if (S.card || S.check || P.pause) return;
+  if (S.card || S.check || S.notice || P.pause) return;
   S.focus = "live"; playYear();
 }
 /* ── 프로젝트 진행: 배분 → 만드는 중 → 리뷰 ── */
@@ -2803,7 +2847,7 @@ function projDone() {
   S.proj = null; yearCards(pr.ctx);
 }
 function autoCrunch(P) { return P.energy < 40 ? "off" : P.energy > 75 ? pick({ norm: 2, crunch: 1 }) : "norm"; }
-function setAutoPick(v) { S.autoPick = v; if (v && !S.speed) S.speed = 1; for (const o of [S.card, S.check]) if (o) delete o.auto; render(); schedule(); }
+function setAutoPick(v) { S.autoPick = v; if (v && !S.speed) S.speed = 1; for (const o of [S.card, S.check, S.notice]) if (o) delete o.auto; render(); schedule(); }
 
 /* ── 그리기 ── */
 const $app = document.getElementById("app");
@@ -2882,7 +2926,7 @@ function renderStart() {
     </div>
     <div class="scene-wrap showcase"><canvas id="scene" class="scene" data-show="1" width="${SW}" height="${SH}" aria-hidden="true"></canvas></div>
     <ol class="howto">
-      <li><b>프로젝트</b> 일하는 해마다 대표 프로젝트를 맡아 시간을 나누고 리뷰를 받습니다. 만드는 도중 돌발 상황이 끼어들기도 합니다.</li>
+      <li><b>프로젝트</b> 2년에 한 번 대표 프로젝트를 맡아 시간을 나누고 리뷰를 받습니다. 만드는 도중 돌발 상황이 끼어들기도 합니다.</li>
       <li><b>팀</b> 리드 디자이너가 되면 팀원이 생깁니다. 영역에 배치해 키우세요. 지치면 떠납니다.</li>
       <li><b>성장</b> 잘하면 평판이 오르고 승진하며, 디자이너로 오래 남을 가능성이 커집니다.</li>
       <li><b>현실</b> 그래도 이직·전향·공백은 실제 통계의 확률대로 찾아옵니다.</li>
@@ -2931,10 +2975,11 @@ function firstWageDist(role, sex) {
 let personRowN = 0;
 function personRow(n, fromRight = false) {
   const uid = "pr" + (++personRowN);
-  const body = "M12 1.5a5.5 5.5 0 1 1 0 11a5.5 5.5 0 1 1 0-11ZM3 44V24.5C3 18.7 7 15 12 15s9 3.7 9 9.5V44Z";
+  // 화장실 표지판처럼: 머리, 몸통, 몸에서 살짝 떨어진 두 팔, 두 다리
+  const body = `<circle cx="12" cy="5" r="4.6"/><rect x="6.4" y="11.4" width="11.2" height="16.6" rx="2.6"/><rect x="1.6" y="11.8" width="3.6" height="15.2" rx="1.8"/><rect x="18.8" y="11.8" width="3.6" height="15.2" rx="1.8"/><rect x="6.4" y="25" width="5" height="20.5" rx="2"/><rect x="12.6" y="25" width="5" height="20.5" rx="2"/>`;
   return `<svg viewBox="0 0 ${10 * 26} 46" width="100%" aria-hidden="true">${Array.from({ length: 10 }, (_, i) => {
     const f = Math.max(0, Math.min(1, n - (fromRight ? 9 - i : i))), x = i * 26 + 1;
-    return `<g transform="translate(${x} 0)"><path d="${body}" fill="var(--line)"/>${f > 0 ? `<clipPath id="${uid}c${i}"><rect x="${fromRight ? (24 * (1 - f)).toFixed(1) : 0}" y="0" width="${(24 * f).toFixed(1)}" height="46"/></clipPath><path d="${body}" fill="var(--accent)" clip-path="url(#${uid}c${i})"/>` : ""}</g>`;
+    return `<g transform="translate(${x} 0)"><g fill="var(--line)">${body}</g>${f > 0 ? `<clipPath id="${uid}c${i}"><rect x="${fromRight ? (24 * (1 - f)).toFixed(1) : 0}" y="0" width="${(24 * f).toFixed(1)}" height="46"/></clipPath><g fill="var(--accent)" clip-path="url(#${uid}c${i})">${body}</g>` : ""}</g>`;
   }).join("")}</svg>`;
 }
 function renderReveal() {
@@ -3003,14 +3048,34 @@ function statusText(P) {
   return `${esc(P.company)} · ${SIZE3[P.size]}`;
 }
 
+/* 기록 피드: 한 해를 카드 한 장으로, 안에서는 프로젝트 · 올해의 일 · 커리어 · 동기 소식으로 묶는다 */
+const TURN_TAG = { none: "공백기 시작", leave_role: "디자이너를 떠남", self: "프리랜서 독립", move: "이직", back: "복귀", comeback: "디자이너로 복귀", end: "기록 끝", leave: "휴직", school: "대학원" };
+function lineHtml(l) {
+  const w = whyHtml(l.why, l.grade);
+  if (l.proj) {
+    const p = l.proj;
+    return `<div class="pj"><div class="pj-top"><span class="pj-name">${l.carry ? "지난해 " : ""}${esc(p.name)}</span><span class="score ${p.avg >= 8 ? "hi" : p.avg <= 4 ? "lo" : ""}"><b class="num">${p.avg.toFixed(1)}</b> ${esc(p.verdict)}</span></div>
+      ${l.carry ? `<div class="sub">올해는 대표 프로젝트가 없다. 지난해 리뷰가 올해도 평판과 이직 가능성에 이어진다.</div>` : ""}${p.ev ? `<div class="sub">돌발 상황 ‘${esc(p.ev)}’</div>` : ""}${p.promo ? `<div class="pj-promo">${esc(josaRo(p.promo))} 승진했다</div>` : ""}</div>`;
+  }
+  if (l.card) return `<div class="ev"><div class="ev-t">${esc(l.card.title)}</div><div class="ev-c">→ ${esc(l.card.label)}</div><div class="ev-r">${esc(l.card.result)}${w}</div></div>`;
+  return `<div class="line ${l.big ? "big" : ""} ${l.kind === "fx" ? "fx" : ""}">${esc(l.text)}${w}</div>`;
+}
+function yearHtml(y) {
+  const g = { proj: [], card: [], career: [], peer: [] };
+  for (const l of y.lines) (l.kind === "proj" ? g.proj : l.kind === "card" ? g.card : l.kind === "peer" ? g.peer : g.career).push(l);
+  // 커리어 묶음은 결과(이직·공백 등)를 먼저, 확률 변화는 그 아래 작은 글씨로
+  g.career.sort((a, b) => (a.kind === "fx") - (b.kind === "fx"));
+  const turn = y.lines.map((l) => TURN_TAG[l.kind]).filter(Boolean)[0];
+  const hot = y.lines.some((l) => ["none", "leave_role", "end"].includes(l.kind));
+  const chunk = (cls, label, ls) => ls.length ? `<section class="chunk ${cls}"><div class="ck">${label}</div>${ls.map(lineHtml).join("")}</section>` : "";
+  return `<article class="yr ${hot ? "hot" : ""}"><header class="yr-h"><b>${y.year}</b><span>${y.age}세</span>${turn ? `<em class="yr-tag">${turn}</em>` : ""}</header>
+    ${chunk("c-proj", "프로젝트", g.proj)}${chunk("c-card", "올해의 일", g.card)}${chunk("c-career", "커리어", g.career)}${chunk("c-peer", "동기 소식", g.peer)}</article>`;
+}
 function renderPlay() {
   const P = S.player;
   const w = currentWage(P);
-  const feed = S.feed.map((y) => `
-    <div class="yr"><div class="y">${y.year}<br>${y.age}세</div><div class="lines">
-      ${y.lines.map((l) => `<div class="line ${l.big ? "big" : ""} ${l.kind === "peer" || l.kind === "fx" || l.kind === "proj" ? l.kind : ""}">${esc(l.text)}${whyHtml(l.why, l.grade)}</div>`).join("")}
-    </div></div>`).join("");
-  const intro = !S.feed.length ? `<div class="yr"><div class="y">${START_YEAR}<br>${P.age}세</div><div class="lines"><div class="line">${esc(P.company)}에 첫 출근했다. '1년 보내기'를 누르면 첫해가 시작됩니다. 일하는 해마다 대표 프로젝트를 하나 맡고, 해가 지날 때마다 결과 아래에서 다음 해의 초점을 고를 수 있습니다.</div></div></div>` : "";
+  const feed = S.feed.map(yearHtml).join("");
+  const intro = !S.feed.length ? `<article class="yr"><header class="yr-h"><b>${START_YEAR}</b><span>${P.age}세</span></header><div class="chunk"><div class="line">${esc(P.company)}에 첫 출근했다. '1년 보내기'를 누르면 첫해가 시작됩니다. 대표 프로젝트는 2년에 한 번 맡고, 해가 지날 때마다 결과 아래에서 다음 해의 초점을 고를 수 있습니다.</div></div></article>` : "";
   fixFocus();
   const out = isOut(P);
   const nf = S.ff && !S.card && !S.check && !P.end ? `<div class="nextfocus"><div class="q">돌아올 때까지 넘기는 중…</div><div class="fine">사건이 생기거나 디자이너로 돌아오면 멈춰요.</div><button class="btn ghost ff" id="ff-stop">멈추기</button></div>`
@@ -3042,7 +3107,7 @@ function renderPlay() {
       </div>
       <label class="autopick"><input type="checkbox" id="auto-pick" ${S.autoPick ? "checked" : ""}> 자동 선택 <span class="fine">잠깐 보여 준 뒤 알아서 골라요</span></label>
     </div>
-    ${S.proj ? projHtml() : ""}${S.card ? cardHtml() : ""}${S.check ? checkHtml() : ""}`;
+    ${S.proj ? projHtml() : ""}${S.card ? cardHtml() : ""}${S.notice ? noticeHtml() : S.check ? checkHtml() : ""}`;
   const feedEl = $app.querySelector("#feed"); feedEl.scrollTop = feedEl.scrollHeight;
   $app.querySelectorAll("[data-focus]").forEach((b) => b.onclick = () => { S.focus = b.dataset.focus; playYear(); render(); schedule(); });
   $app.querySelectorAll("[data-speed]").forEach((b) => b.onclick = () => { ffStop(); setSpeed(+b.dataset.speed); });
@@ -3059,7 +3124,8 @@ function renderPlay() {
   const hold = (o) => { if (o && o.auto && !o.auto.hold) { o.auto.hold = true; clearTimeout(timer); render(); } };
   const cs = $app.querySelector("#card-sheet");
   if (cs) cs.onclick = (e) => { if (!e.target.closest("[data-choice]")) hold(S.card); };
-  const ah = $app.querySelector("#auto-hold"); if (ah) ah.onclick = (e) => { e.stopPropagation(); hold(S.card || S.check); };
+  const ah = $app.querySelector("#auto-hold"); if (ah) ah.onclick = (e) => { e.stopPropagation(); hold(S.card || S.notice || S.check); };
+  const nok = $app.querySelector("#notice-ok"); if (nok) nok.onclick = () => { S.notice = null; clearTimeout(timer); render(); schedule(); if (S.ff) ffTick(); };
   const mi = $app.querySelector("#mood"); if (mi && S.check) { mi.onfocus = (() => { if (S.check.auto && !S.check.auto.hold) { S.check.auto.hold = true; clearTimeout(timer); const ab = $app.querySelector(".autobar"); ab?.nextElementSibling?.remove(); ab?.remove(); } }); }
   const m = $app.querySelector("#mood-save");
   // 체크포인트의 초점 칩: 고르기만 하고(입력한 한 줄은 그대로), '계속'을 누르면 그 초점으로 다음 해가 지나간다
@@ -3151,7 +3217,7 @@ function projHtml() {
         <span>평판 ${pr.gain.rep >= 0 ? "+" : ""}${pr.gain.rep.toFixed(0)}</span>
         <span>실력 +${pr.gain.skill}</span>
         <span>에너지 ${pr.gain.energy >= 0 ? "+" : ""}${pr.gain.energy}</span>
-        ${a >= 8 ? `<span class="odds up">올해 다른 직업으로 떠날 확률 −${Math.round((1 - SCORE_HI.other_occupation) * 100)}%</span>` : a <= 4 ? `<span class="odds dn">올해 다른 직업으로 떠날 확률 +${Math.round((SCORE_LO.other_occupation - 1) * 100)}%</span>` : ""}
+        ${a >= 8 ? `<span class="odds up">올해·내년 다른 직업으로 떠날 확률 −${Math.round((1 - SCORE_HI.other_occupation) * 100)}%</span>` : a <= 4 ? `<span class="odds dn">올해·내년 다른 직업으로 떠날 확률 +${Math.round((SCORE_LO.other_occupation - 1) * 100)}%</span>` : ""}
       </div>
       ${pr.promo ? `<div class="promo" style="animation-delay:2500ms"><b>승진</b> ${esc(pr.promo)}${josaRo(pr.promo).slice(pr.promo.length)} 올라섰다. 월급 +3%</div>` : ""}
       ${pr.evRes ? `<div class="evres" style="animation-delay:2600ms"><b>돌발 상황 · ${esc(pr.evRes.title)}</b> ${esc(pr.evRes.label)}${pr.evRes.ok === true ? " — 성공" : pr.evRes.ok === false ? " — 실패" : ""}</div>` : ""}
@@ -3197,6 +3263,50 @@ function bindProj() {
 function rowFor(x, isMe) {
   const w = currentWage(x);
   return `<tr class="${isMe ? "me" : ""}"><td>${isMe ? "나" : x.name}</td><td><span class="tag ${x.status === "away" ? "other" : x.role}">${x.status === "away" ? AWAY_NAME[x.awayKind] : ROLE[x.role]}</span>${x.role !== x.origRole ? `<br><span class="fine">${ROLE[x.origRole]}에서 전향</span>` : ""}</td><td>${statusText(x)}</td><td class="r num">${x.end || x.status === "none" ? "—" : won(w)}</td></tr>`;
+}
+
+/* 공백기·다른 직업·휴직·대학원에 들어갈 때 보여 주는 안내. 무엇이 일어났고, 이제 무엇이 달라지는지 */
+function noticeHtml() {
+  const P = S.player, n = S.notice, roleName = ROLE[P.role];
+  const yr = `${START_YEAR + P.t - 1}년 · ${P.age - 1}세`;
+  let tag, title, lead, stat = "", rules;
+  if (n.type === "none") {
+    tag = "공백기 시작"; title = n.what;
+    lead = `${QUIT_TEXT[n.q] || n.q} ${n.wasSelf ? "들어오던 일을 정리했고" : n.lost ? `${esc(n.co)}에서 더 일할 수 없게 됐고` : `${esc(n.co)}에 사표를 냈고`}, 다음 일자리는 아직 정하지 못했다.`;
+    stat = `같은 조건의 ${roleName} 중 한 해에 <b>${pct(n.rate, 1)}</b>가 다음 해에 일을 쉽니다(노동패널). ${n.lost ? "회사 사정으로 일자리를 잃은 경우입니다." : "해고가 아니라 스스로 그만둔 경우입니다."} 이유는 청년패널 퇴사 사유 분포에서 뽑았습니다.`;
+    rules = [`월급이 없습니다. 쉬는 동안 에너지가 조금씩 찹니다.`,
+      `해마다 다시 일할 기회가 있습니다.${n.back ? ` 쉰 첫해에는 ${pct(n.back)}가 ${roleName}로 돌아갑니다.` : ""}`,
+      `올해의 초점이 '적극 지원·포트폴리오 정비·지금 생활에 집중'으로 바뀝니다.`,
+      `공백이 ${BREAK_MAX}년째 이어지면 게임이 끝납니다.`];
+  } else if (n.type === "away") {
+    tag = "디자이너를 떠남"; title = `${josaRo(AWAY_NAME[n.dest])} 옮겼다`;
+    lead = `${QUIT_TEXT[n.q] || n.q} ${n.co === "프리랜서" ? "프리랜서 일을 접고" : `${esc(n.co)}에서 나와`} ${josaRo(AWAY_NAME[n.dest])} 일하기로 했다.`;
+    stat = `같은 조건의 ${roleName} 중 올해 <b>${pct(n.rate, 1)}</b>가 다른 직업으로 옮깁니다(노동패널).`;
+    rules = [`${AWAY_NAME[n.dest]} 일을 하며 월급을 받습니다. 프로젝트와 회사 사건은 나오지 않습니다.`,
+      `해마다 디자이너로 돌아올 기회가 있습니다. 떠난 첫해에는 ${pct(RET.other_first.back, 1)}가 돌아옵니다.`,
+      `올해의 초점이 '적극 지원·포트폴리오 정비·지금 생활에 집중'으로 바뀝니다.`,
+      `${AWAY_MAX}년 안에 돌아오지 않으면 게임이 끝납니다.`];
+  } else if (n.type === "leave") {
+    tag = "휴직"; title = n.care ? "1년 휴직하고 어머니 곁을 지킨다" : "1년 육아휴직을 쓴다";
+    lead = `${esc(n.co)}에 1년 휴직을 냈다. 그만둔 것이 아니라 자리를 비워 두는 것이다.`;
+    rules = [`이 1년은 회사 사건 없이 지나갑니다.`,
+      n.care ? `휴직하는 동안 월급은 없습니다.` : `월급 대신 육아휴직급여 월 약 ${won(n.pay)}만 원을 받습니다(2025년 상한 기준).`,
+      `휴직이 끝나면 ${josaRo(esc(n.co))} 복직합니다. 그 뒤로는 다시 노동패널 확률을 따릅니다.`];
+  } else {
+    tag = "학업 시작"; title = "대학원에 들어간다";
+    lead = `회사를 그만두고 전일제 석사 과정을 시작했다.`;
+    rules = [`${n.left || 2}년 동안 수업과 논문으로 지나갑니다. 월급과 회사 사건은 없습니다.`,
+      `졸업하면 새 회사에 들어가고, 월급이 6% 오릅니다.`];
+  }
+  return `<div class="sheet-wrap"><div class="sheet notice" role="dialog" aria-modal="true" aria-labelledby="ntc-title">
+    <div class="label">${tag} · ${yr}</div>
+    <h2 id="ntc-title">${title}</h2>
+    <p>${lead}</p>
+    ${stat ? `<p class="fine">${stat}</p>` : ""}
+    <div class="rulebox"><div class="ck">이제 달라지는 것</div><ul>${rules.map((x) => `<li>${x}</li>`).join("")}</ul></div>
+    <div class="form-row"><button class="btn" id="notice-ok">알겠어요</button></div>
+    ${autoOn() && !autoArm(S.notice, 70).hold ? autoBar(S.notice.auto, "잠시 후 넘어가요") : ""}
+  </div></div>`;
 }
 
 function checkHtml() {
@@ -3335,16 +3445,19 @@ function focusCompare(role, sex, N = 3000) {
     return { k, median: ys[Math.floor(N / 2)], retire: ret / N, sat: satSum / satN, N };
   });
 }
-/* 프로젝트를 다르게 했다면: 같은 조건 N명씩, 해마다 리뷰 평균을 한 값 근처로 고정하고 굴린다(초점은 흐름대로, 사건 카드 없음) */
+/* 프로젝트를 다르게 했다면: 같은 조건 N명씩, 2년마다 맡는 프로젝트의 리뷰 평균을 한 값 근처로 고정하고 굴린다(초점은 흐름대로, 사건 카드 없음) */
 function projCompare(role, sex, mine, N = 2000) {
   const levels = [...new Set([4.5, 6, Math.round(mine * 2) / 2, 8.5])].sort((a, b) => a - b);
   return levels.map((lv) => {
     const ys = []; let lead = 0, ret = 0;
     for (let i = 0; i < N; i++) {
-      const P = newPerson(role, sex); let dy = 0;
+      const P = newPerson(role, sex); let dy = 0, last = null;
       for (let t = 1; t <= 41 && !P.end; t++) {
         const ctx = { mods: {}, sat: 0 };
-        if (isWork(P)) { scoreFx(P, Math.max(1, Math.min(10, lv + .8 * normal())), ctx); }
+        if (isWork(P)) {
+          if (!last || P.t - last.t >= 2) last = { t: P.t, a: Math.max(1, Math.min(10, lv + .8 * normal())) };
+          if (P.t - last.t <= 1) scoreFx(P, last.a, ctx);
+        }
         step(P, ctx.mods);
         advanceAge(P); P.statuses.push(P.status);
         if (isWork(P)) promote(P);
@@ -3358,11 +3471,11 @@ function projCompare(role, sex, mine, N = 2000) {
 }
 function projCmpHtml(P, rows) {
   const lo = rows[0], hi = rows.at(-1);
-  return `<div class="tw"><table><thead><tr><th>해마다 리뷰 평균</th><th class="r">디자이너로 일한 해<br><span class="fine">평균</span></th><th class="r">리드 이상</th><th class="r">정년까지</th></tr></thead><tbody>
+  return `<div class="tw"><table><thead><tr><th>프로젝트 리뷰 평균</th><th class="r">디자이너로 일한 해<br><span class="fine">평균</span></th><th class="r">리드 이상</th><th class="r">정년까지</th></tr></thead><tbody>
     ${rows.map((x) => `<tr class="${x.me ? "me" : ""}"><td>${x.lv.toFixed(1)}점 · ${verdict(x.lv)}${x.me ? `<br><span class="fine">내 평균 근처</span>` : ""}</td><td class="r num">${x.mean.toFixed(1)}년</td><td class="r num">${pct(x.lead, 1)}</td><td class="r num">${pct(x.retire, 1)}</td></tr>`).join("")}
     </tbody></table></div>
     <p style="font-size:14px;margin-top:8px">리뷰 평균이 ${lo.lv.toFixed(1)}점일 때와 ${hi.lv.toFixed(1)}점일 때, 디자이너로 일한 해는 평균 <b>${(hi.mean - lo.mean).toFixed(1)}년</b>, 리드 이상까지 오른 비율은 <b>${Math.round((hi.lead - lo.lead) * 100)}%p</b> 차이가 납니다.</p>
-    <p class="fine" style="margin-top:6px">같은 조건 ${lo.N.toLocaleString()}명씩, 일하는 해마다 리뷰 평균을 표의 값 근처(±0.8)로 두고 굴린 값입니다. 초점은 '흐름대로', 사건 카드는 없습니다. 점수가 평판·월급·이탈 확률로 이어지는 크기는 설계상 가정이고, 확률표는 노동패널입니다.</p>`;
+    <p class="fine" style="margin-top:6px">같은 조건 ${lo.N.toLocaleString()}명씩, 2년마다 맡는 프로젝트의 리뷰 평균을 표의 값 근처(±0.8)로 두고 굴린 값입니다. 초점은 '흐름대로', 사건 카드는 없습니다. 점수가 평판·월급·이탈 확률로 이어지는 크기는 설계상 가정이고, 확률표는 노동패널입니다.</p>`;
 }
 function cmpHtml(P, rows) {
   const fav = Object.entries(P.focusN || {}).filter(([k]) => !FOCUS[k].away).sort((a, b) => b[1] - a[1])[0];
@@ -3508,7 +3621,7 @@ function renderRecord() {
     const st = P.statuses[i], none = st === "none", pause = st === "leave" || st === "school";
     const sw = P.switchedAt && i + 1 === P.switchedAt;
     const roleVar = P.roles[i] === "developer" ? "var(--dev)" : "var(--des)";
-    const tip = `${START_YEAR + i}년 · ${P.startAge + i}세 · 만족도 ${s.toFixed(1)}${pause ? (st === "leave" ? " · 육아휴직" : " · 대학원") : ""}${lifeAt[i] ? " · " + lifeAt[i].join(", ") : ""}`;
+    const tip = `${START_YEAR + i}년 · ${P.startAge + i}세 · 만족도 ${s.toFixed(1)}${pause ? (st === "leave" ? " · 휴직" : " · 대학원") : ""}${lifeAt[i] ? " · " + lifeAt[i].join(", ") : ""}`;
     return `<span class="cell ${none ? "none" : ""} ${pause ? "pause" : ""} ${sw ? "switch" : ""}" title="${tip}" style="${none ? "" : `background:color-mix(in oklab, ${roleVar} ${Math.round(12 + (s - 1) / 4 * 80)}%, var(--surface))`}">${lifeAt[i] ? '<i class="mk"></i>' : ""}</span>`;
   }).join("");
   const rr = rarity(P, mc);
@@ -3671,8 +3784,8 @@ function renderData() {
       <p class="fine" style="margin-top:6px">출산은 결혼 다음 해부터 첫째 연 30%(3년까지), 12%(6년까지), 이후 3%, 둘째는 첫째 다음 해부터 4년간 연 13%로 두었습니다. 통계청 2024년 출생통계의 첫째 33.1세·둘째 34.4세에 맞춘 값이고, 게임 속 여성은 첫째 32.9세, 둘째 34.5세, 1인당 아이 0.94명입니다. 2024년 합계출산율 0.75명보다는 조금 많습니다(등급 C). 이혼·별거는 노동패널 기혼자의 연간 비율 ${pct(G.life.divorce.female["35~44"], 2)}~${pct(G.life.divorce.male["~34"], 2)}를 그대로 씁니다. 육아휴직을 쓸지는 플레이어가 고르고, 카드에 2023년 실제 사용률(엄마 84.5%, 아빠 16.1%)을 보여 줍니다.</p></section>
     <section><h2>설계상 가정 (D)</h2><ul class="sources" style="list-style:disc">
       <li>한 턴은 1년입니다. PRD의 반기 턴은 연간 자료를 그대로 쓰기 위해 1년으로 바꿨습니다.</li>
-      <li>프로젝트: 프로젝트 유형 ${Object.keys(PTYPES).length}종과 업계 ${Object.keys(TOPICS).length}종의 '맞는 배분', 리뷰 점수 공식, 직급 조건(일한 햇수·평판), 승진 때 월급 +3%. 리뷰 평균이 8점 이상이면 그해 다른 직업으로 옮길 확률 ×0.75·쉬게 될 확률 ×0.85, 4점 이하면 ×1.3·×1.2. 평판은 이직 확률에 ×0.9~1.3, 떠나 있는 동안 최고 리뷰 점수는 복귀 확률에 ×0.8~1.25를 겁니다. 점수에 따른 월급 변화는 해마다 ±2% 안쪽입니다. 확률표 자체는 노동패널 그대로입니다.</li>
-      <li>돌발 상황과 팀: 돌발 상황 ${PEV.length}종의 발생 확률(일하는 해의 약 55%, 첫 프로젝트 제외), 선택지별 효과, 경험에 따른 성공 확률(25~92%). 리드 2명·디렉터 3명의 팀 규모, 팀원의 기여 시간·성장·의욕·이탈 규칙.</li>
+      <li>프로젝트: 프로젝트 유형 ${Object.keys(PTYPES).length}종과 업계 ${Object.keys(TOPICS).length}종의 '맞는 배분', 리뷰 점수 공식, 직급 조건(일한 햇수·평판), 승진 때 월급 +3%. 대표 프로젝트는 일하는 동안 2년에 하나이고, 리뷰 점수는 그해와 다음 해 두 번 반영됩니다. 리뷰 평균이 8점 이상이면 그해 다른 직업으로 옮길 확률 ×0.75·쉬게 될 확률 ×0.85, 4점 이하면 ×1.3·×1.2. 평판은 이직 확률에 ×0.9~1.3, 떠나 있는 동안 최고 리뷰 점수는 복귀 확률에 ×0.8~1.25를 겁니다. 점수에 따른 월급 변화는 해마다 ±2% 안쪽입니다. 확률표 자체는 노동패널 그대로입니다.</li>
+      <li>돌발 상황과 팀: 돌발 상황 ${PEV.length}종의 발생 확률(프로젝트의 약 55%, 첫 프로젝트 제외), 선택지별 효과, 경험에 따른 성공 확률(25~92%). 리드 2명·디렉터 3명의 팀 규모, 팀원의 기여 시간·성장·의욕·이탈 규칙.</li>
       <li>올해의 초점이 거는 확률 배수(쉬거나 다른 직업으로 일하는 동안의 적극 지원 ×2, 포트폴리오 정비 ×1.4 포함), 일하는 동안 일·회사·성장 카드를 1.6배 자주 뽑는 비중, 이번 판 목표의 행복 기준(평균 만족도 ${HAPPY}), 사건 카드 ${CARD_N}종의 내용과 효과, 에너지·실력·만족도 계산. 사건은 한 판에서 한 번씩만 나옵니다. 근거 통계가 있는 카드는 '왜?'에 출처와 함께 등급 C로 표시했습니다.</li>
       <li>육아휴직 뒤 원래 직장 복귀, 석사 뒤 월급 +3~6%, 부수입·지출 카드의 금액.</li>
       <li>60세 종료, 공백 ${BREAK_MAX}년째 종료, 다른 직업 ${AWAY_MAX}년 종료, 쉬게 된 이유(노동패널에 없어 청년패널 퇴사 사유나 최근 출산으로 붙임), 회사 이름 예시.</li>
