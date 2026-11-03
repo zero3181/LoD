@@ -189,6 +189,11 @@ details.more[open] { display: flex; flex-direction: column; gap: 24px; }
 .yr.hot { border-color: color-mix(in oklab, var(--stamp) 55%, var(--line)); }
 .yr-h { display: flex; align-items: baseline; gap: 8px; font-family: var(--font-data); font-size: 12px; color: var(--muted); }
 .yr-h b { font-size: 15px; color: var(--ink); font-weight: 600; }
+.yr-sat { font-size: 11.5px; } .yr-sat i { font-style: normal; margin-left: 3px; } .yr-sat .up { color: var(--accent); } .yr-sat .dn { color: var(--stamp); }
+.meter.sat small { font-size: 11px; } .meter.sat b { color: var(--ink); font-weight: 600; }
+.meter.sat.ok b { color: var(--accent); } .meter.sat.behind small b { color: var(--stamp); }
+.satline { font-size: 14px; } .satline .ok { color: var(--accent); }
+.goal-hint { flex-basis: 100%; }
 .yr-h .yr-tag { margin-left: auto; font-style: normal; font-family: var(--font-body, inherit); font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; color: var(--accent); background: color-mix(in oklab, var(--accent) 13%, transparent); }
 .yr.hot .yr-h .yr-tag { color: var(--stamp); background: color-mix(in oklab, var(--stamp) 13%, transparent); }
 .chunk { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
@@ -3136,7 +3141,7 @@ function renderReveal() {
     <div class="reveal-go">${goalHtml()}<button class="btn" id="go-play">첫 출근</button></div>
   </div></div>`;
   $app.querySelector("#go-play").onclick = () => { S.screen = "play"; render(); };
-  $app.querySelectorAll("[data-goal]").forEach((b) => b.onclick = () => { S.goal = b.dataset.goal; $app.querySelectorAll("[data-goal]").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); });
+  $app.querySelectorAll("[data-goal]").forEach((b) => b.onclick = () => { S.goal = b.dataset.goal; const gh = $app.querySelector("#goal-hint"); if (gh) gh.textContent = GOAL_HINT[S.goal]; $app.querySelectorAll("[data-goal]").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); });
   mountScene();
 }
 
@@ -3179,7 +3184,7 @@ function yearHtml(y) {
   const turn = y.lines.map((l) => TURN_TAG[l.kind]).filter(Boolean)[0];
   const hot = y.lines.some((l) => ["none", "leave_role", "end"].includes(l.kind));
   const chunk = (cls, label, ls) => ls.length ? `<section class="chunk ${cls}"><div class="ck">${label}</div>${ls.map(lineHtml).join("")}</section>` : "";
-  return `<article class="yr ${hot ? "hot" : ""}"><header class="yr-h"><b>${y.year}</b><span>${y.age}세</span>${turn ? `<em class="yr-tag">${turn}</em>` : ""}</header>
+  return `<article class="yr ${hot ? "hot" : ""}"><header class="yr-h"><b>${y.year}</b><span>${y.age}세</span>${(() => { const sv = S.player && S.player.sats[y.t], pv = S.player && S.player.sats[y.t - 1]; if (sv == null) return ""; const d = pv == null ? 0 : sv - pv; return `<span class="yr-sat" title="그해 만족도(1~5점)">만족도 ${sv.toFixed(1)}${Math.abs(d) >= .05 ? `<i class="${d > 0 ? "up" : "dn"}">${d > 0 ? "▲" : "▼"}${Math.abs(d).toFixed(1)}</i>` : ""}</span>`; })()}${turn ? `<em class="yr-tag">${turn}</em>` : ""}</header>
     ${chunk("c-proj", "프로젝트", g.proj)}${chunk("c-card", "올해의 일", g.card)}${chunk("c-career", "커리어", g.career)}${chunk("c-money", "돈", g.money)}${chunk("c-peer", "동기 소식", g.peer)}</article>`;
 }
 /* 프로젝트·카드·안내 창. 자동 진행 중인데 자동 선택이 꺼져 있으면 창이 아래 조작 막대를 덮으므로, 창 맨 위에 '자동 선택 켜기'를 둔다 */
@@ -3222,6 +3227,7 @@ function renderPlay() {
         <span class="meter ${P.energy < 25 ? "low" : ""}">에너지 <i style="--v:${P.energy}%"></i></span>
         <span class="meter">실력 <i style="--v:${P.skill}%"></i></span>
         <span class="meter rep">평판 <i style="--v:${P.rep}%"></i></span>
+        ${satMeter(P)}
         ${(() => { const b = P.best; return b ? `<span class="best">최고 리뷰 <b class="num">${b.toFixed(1)}</b></span>` : ""; })()}
       </div>
     </div>
@@ -3465,6 +3471,7 @@ function checkHtml() {
     <div class="label">${t}년차 체크포인트 · ${START_YEAR + t}년</div>
     <h2 id="chk-title">${t}년이 지났다</h2>
     <div class="bigstat">같은 해 일을 시작한 ${SEX[P.sex]} ${ROLE[P.origRole]} 중 <b>${pct(keep)}</b>가 아직 ${ROLE[P.origRole]}로 일한다.${pr !== null ? ` 그중 내 월급은 <b>${topPct(pr)}</b>다.` : ""}</div>
+    <p class="satline">지금까지 평균 만족도 <b class="num">${(satAvg(P) || 0).toFixed(2)}</b>${S.goal === "happy" ? ` · 행복 목표 ${HAPPY} ${satAvg(P) >= HAPPY ? "<b class=\"ok\">달성 중</b>" : `까지 <b class="num">${(HAPPY - satAvg(P)).toFixed(2)}</b> 모자람`}` : ""}</p>
     <p class="fine">같은 조건 ${mc.N.toLocaleString()}명을 같은 확률표로 미리 굴린 결과입니다. 참고로 노동패널에서 30세 이하에 ${ROLE[P.origRole]}로 처음 관찰된 사람은 ${t >= 10 ? "10년" : t >= 5 ? "5년" : t >= 3 ? "3년" : "1년"} 뒤 ${pct(R[P.origRole].keep_young[t >= 10 ? "10y" : t >= 5 ? "5y" : t >= 3 ? "3y" : "1y"][0])}가 같은 직군이었습니다(남녀 합계).</p>
     <div class="tw"><table><thead><tr><th>이름</th><th>직군</th><th>지금</th><th class="r">월급</th></tr></thead><tbody>
       ${rowFor(P, true)}${S.peers.map((x) => rowFor(x, false)).join("")}
@@ -3560,10 +3567,19 @@ function endingsHtml(key, isNew) {
 const HAPPY = 3.6;
 const GOALS = { endure: { label: "정년까지 버티기" }, happy: { label: "행복하게 살기" } };
 function goalHtml() {
-  return `<div class="goal" role="group" aria-label="이번 판의 목표"><span>이번 판의 목표</span><div class="chips">${Object.entries(GOALS).map(([k, g]) => `<button data-goal="${k}" aria-pressed="${S.goal === k}">${g.label}</button>`).join("")}</div></div>`;
+  return `<div class="goal" role="group" aria-label="이번 판의 목표"><span>이번 판의 목표</span><div class="chips">${Object.entries(GOALS).map(([k, g]) => `<button data-goal="${k}" aria-pressed="${S.goal === k}">${g.label}</button>`).join("")}</div><div class="fine goal-hint" id="goal-hint">${GOAL_HINT[S.goal] || ""}</div></div>`;
+}
+const GOAL_HINT = { endure: "디자이너로 60세까지 일하면 달성.", happy: `해마다 매기는 만족도(1~5점)의 평균이 ${HAPPY} 이상이면 달성. 플레이 중 사원증에서 볼 수 있어요.` };
+const satAvg = (P) => P.sats.length ? P.sats.reduce((a, b) => a + b, 0) / P.sats.length : null;
+function satMeter(P) {
+  const last = P.sats.at(-1), avg = satAvg(P), happy = S.goal === "happy";
+  const tip = "만족도: 노동패널 직무 만족 평균에 에너지와 월급 수준, 올해 고른 카드를 더한 값(1~5점).";
+  if (last == null) return `<span class="meter sat" title="${tip}">만족도 <i style="--v:0%"></i> <b class="num">—</b>${happy ? ` <small>목표 평균 ${HAPPY}</small>` : ""}</span>`;
+  const ok = avg >= HAPPY;
+  return `<span class="meter sat ${happy ? (ok ? "ok" : "behind") : ""}" title="${tip}">만족도 <i style="--v:${((last - 1) / 4 * 100).toFixed(0)}%"></i> <b class="num">${last.toFixed(1)}</b> <small>평균 <b class="num">${avg.toFixed(2)}</b>${happy ? ` / 목표 ${HAPPY}` : ""}</small></span>`;
 }
 function goalResult(P) {
-  const avg = P.sats.reduce((a, b) => a + b, 0) / Math.max(1, P.sats.length);
+  const avg = satAvg(P) || 0;
   if (S.goal === "happy") return { ok: avg >= HAPPY, text: `평균 만족도 ${avg.toFixed(2)} (기준 ${HAPPY})` };
   const ok = P.end.type === "retire" && P.role === P.origRole && !isOut(P);
   return { ok, text: ok ? "디자이너로 60세까지 일했다" : `디자이너로 ${workYears(P)}년 일했다` };
