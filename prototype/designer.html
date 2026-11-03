@@ -62,7 +62,7 @@
 }
 html, body { height: 100%; }
 body {
-  word-break: keep-all; overflow-wrap: anywhere;
+  margin: 0; word-break: keep-all; overflow-wrap: anywhere;
   background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6; letter-spacing: -0.01em; font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
 }
@@ -177,9 +177,9 @@ details.more[open] { display: flex; flex-direction: column; gap: 24px; }
 .idcard .limit { display: inline-block; margin-top: 6px; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; color: var(--plan); background: color-mix(in srgb, var(--plan) 12%, transparent); }
 .idcard .pay { text-align: right; }
 .idcard .pay b { font-family: var(--font-data); font-size: 22px; font-weight: 500; }
-.meters { grid-column: 1 / -1; display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
-.meter { display: flex; align-items: center; gap: 6px; }
-.meter i { display: block; width: 64px; height: 6px; background: var(--sunk); border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+.meters { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px 12px; font-size: 12px; color: var(--muted); margin-top: 4px; }
+.meter { display: flex; flex-direction: column; gap: 3px; min-width: 0; white-space: nowrap; }
+.meter i { display: block; width: 100%; height: 6px; background: var(--sunk); border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
 .meter i::after { content: ""; display: block; height: 100%; width: var(--v); background: var(--accent); }
 .meter.low i::after { background: var(--stamp); }
 
@@ -243,7 +243,9 @@ details.more[open] { display: flex; flex-direction: column; gap: 24px; }
 .autopick { display: flex; align-items: center; gap: 8px; font-size: 13px; min-height: 36px; cursor: pointer; flex-wrap: wrap; }
 .autopick input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
 .autopick .fine { font-size: 11.5px; }
-.go .btn:first-child { flex: 1; }
+.go .btn:first-child { flex: 1; white-space: nowrap; padding-inline: 12px; }
+.career-svg { display: block; max-width: 520px; }
+@media (max-width: 374px) { .go .seg button { padding-inline: 9px; } }
 
 /* ── 카드 (이벤트·체크포인트) ── */
 .sheet-wrap { position: fixed; inset: 0; background: color-mix(in oklab, var(--ink) 40%, transparent); display: flex; align-items: flex-end; justify-content: center; z-index: 20; }
@@ -403,7 +405,11 @@ svg text.me { fill: var(--accent); font-weight: 700; font-size: 11px; }
 .newins { border: 1px dashed var(--accent); display: flex; flex-direction: column; gap: 2px; }
 .newins b { color: var(--accent); }
 .static .rev, .static .avgbox, .static .gains, .static .promo, .static .newins, .static .evres { animation: none; opacity: 1; }
-.meters .best { font-size: 12px; } .meters .best b { color: var(--accent); }
+.idcard .pay .best { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; } .idcard .pay .best b { color: var(--accent); font-family: var(--font-data); }
+.start-go { position: sticky; bottom: 0; z-index: 3; background: var(--bg); padding: 12px 0 calc(12px + env(safe-area-inset-bottom, 0px)); margin-block: -12px; border-top: 1px solid var(--line); }
+.start-go .btn { flex: 1; max-width: 360px; }
+.facts > div:last-child:nth-child(odd):not(.wide) { grid-column: 1 / -1; }
+@media (min-width: 720px) { .facts > div:last-child:nth-child(odd):not(.wide) { grid-column: auto; } .facts > div:last-child:nth-child(4n+1):not(.wide) { grid-column: 1 / -1; } .facts > div:last-child:nth-child(4n+2):not(.wide) { grid-column: 2 / -1; } .facts > div:last-child:nth-child(4n+3):not(.wide) { grid-column: 3 / -1; } }
 .toasts { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 10px); left: 50%; transform: translateX(-50%); z-index: 60; display: flex; flex-direction: column; gap: 6px; width: min(calc(100vw - 32px), 420px); pointer-events: none; }
 .toast { background: var(--ink); color: var(--surface); border-radius: 10px; padding: 10px 14px; font-size: 14px; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,.25); animation: toastin .35s cubic-bezier(.2,1.3,.4,1), toastout .4s ease-in 3s forwards; }
 .toast b { display: block; font-size: 11px; letter-spacing: .08em; opacity: .7; font-weight: 600; }
@@ -446,8 +452,8 @@ dialog.confirm .form-row { justify-content: flex-end; margin-top: 14px; gap: 8px
   .sheet-wrap { align-items: center; padding: 24px; }
   .sheet { border-radius: 10px; max-height: 90vh; }
 }
-/* 넓은 화면의 플레이: 왼쪽에 사원증·장면·조작, 오른쪽에 해마다의 기록 */
-@media (min-width: 960px) {
+/* 넓은 화면의 플레이: 왼쪽에 사원증·장면·조작, 오른쪽에 해마다의 기록. 폰 가로 화면도 같은 2단 */
+@media (min-width: 960px), (min-width: 640px) and (max-height: 560px) {
   .app[data-screen="play"] {
     max-width: 1120px; display: grid; gap: 0 28px;
     grid-template-columns: minmax(360px, 440px) minmax(0, 1fr);
@@ -458,6 +464,13 @@ dialog.confirm .form-row { justify-content: flex-end; margin-top: 14px; gap: 8px
   .app[data-screen="play"] > .scene-wrap .scene { width: 100%; }
   .app[data-screen="play"] > #feed { grid-area: feed; padding-top: 12px; }
   .app[data-screen="play"] > .controls { grid-area: ctl; align-self: start; border-top: 0; margin-top: 12px; }
+}
+@media (min-width: 640px) and (max-height: 560px) and (max-width: 959px) {
+  .app[data-screen="play"] { grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); gap: 0 16px; overflow: hidden; }
+  .app[data-screen="play"] > .scene-wrap { display: none; }
+  .app[data-screen="play"] > .idcard { margin-top: 8px; }
+  .app[data-screen="play"] > #feed { padding-top: 8px; min-height: 0; }
+  .app[data-screen="play"] > .controls { margin-top: 8px; padding-top: 0; }
 }
 </style>
 
@@ -3051,7 +3064,7 @@ function renderStart() {
       <div><b class="num">${pct(d.keep_observed["10y"])}</b><span>10년 뒤에도 디자이너 (노동패널)</span></div>
       <div class="wide"><b class="num">${to60("designer")}</b><span>60세 정년까지 디자이너로 남는 비율 (게임 추정. 15년이 넘는 기간은 나이대별 5년 유지율을 이어 붙인 값)</span></div>
     </div>
-    <div class="form-row"><button class="btn" id="go-random">커리어 시작</button></div>
+    <div class="form-row start-go"><button class="btn" id="go-random">커리어 시작</button></div>
     <p class="sublink"><button class="textlink" id="go-data">데이터와 출처 보기</button></p>
     ${vaultHtml()}
     <details class="manual" id="manual" ${S.manual ? "open" : ""}>
@@ -3148,8 +3161,8 @@ function renderReveal() {
 function limitHtml(P) {
   if (P.end || (P.status !== "none" && P.status !== "away")) return "";
   const left = P.status === "none" ? BREAK_MAX - P.noneYears : AWAY_MAX - P.awayYears;
-  const what = P.status === "none" ? "다시 일하지" : "디자이너로 돌아오지";
-  return `<div class="limit">${left <= 1 ? "올해" : `${left}년 안에`} ${what} 못하면 게임 종료</div>`;
+  const what = P.status === "none" ? "재취업" : "복귀";
+  return `<div class="limit">${left <= 1 ? `올해가 ${what} 마지막 기회` : `${left}년 안에 ${what} 못하면 종료`}</div>`;
 }
 function statusText(P) {
   if (P.end) return P.end.text;
@@ -3222,13 +3235,12 @@ function renderPlay() {
   $app.innerHTML = `
     <div class="idcard">
       <div><div class="who">${P.status === "away" ? `디자이너를 떠난 지 ${P.awayYears + 1}년째` : P.status === "none" ? `공백기 ${P.noneYears}년째` : `${P.t + 1}년차 ${RANKS[P.rank].name}`}</div><div class="where">${[`${P.age}세 ${SEX[P.sex]}`, `${START_YEAR + P.t}년`, ...statusText(P).split(" · ")].map((x) => `<span>${x}</span>`).join(" · ")}</div>${limitHtml(P)}</div>
-      <div class="pay"><div class="label">월 (만 원)</div><b>${P.status === "none" ? "—" : won(w)}</b><div class="asset ${P.cash < 0 ? "neg" : ""}">자산 <b class="num">${manwon(P.cash)}</b></div></div>
+      <div class="pay"><div class="label">월 (만 원)</div><b>${P.status === "none" ? "—" : won(w)}</b><div class="asset ${P.cash < 0 ? "neg" : ""}">자산 <b class="num">${manwon(P.cash)}</b></div>${P.best ? `<div class="best">최고 리뷰 <b>${P.best.toFixed(1)}</b></div>` : ""}</div>
       <div class="meters">
         <span class="meter ${P.energy < 25 ? "low" : ""}">에너지 <i style="--v:${P.energy}%"></i></span>
         <span class="meter">실력 <i style="--v:${P.skill}%"></i></span>
         <span class="meter rep">평판 <i style="--v:${P.rep}%"></i></span>
         ${satMeter(P)}
-        ${(() => { const b = P.best; return b ? `<span class="best">최고 리뷰 <b class="num">${b.toFixed(1)}</b></span>` : ""; })()}
       </div>
     </div>
     ${sceneHtml(P)}
@@ -3574,9 +3586,9 @@ const satAvg = (P) => P.sats.length ? P.sats.reduce((a, b) => a + b, 0) / P.sats
 function satMeter(P) {
   const last = P.sats.at(-1), avg = satAvg(P), happy = S.goal === "happy";
   const tip = "만족도: 노동패널 직무 만족 평균에 에너지와 월급 수준, 올해 고른 카드를 더한 값(1~5점).";
-  if (last == null) return `<span class="meter sat" title="${tip}">만족도 <i style="--v:0%"></i> <b class="num">—</b>${happy ? ` <small>목표 평균 ${HAPPY}</small>` : ""}</span>`;
+  if (last == null) return `<span class="meter sat" title="${tip}"><span>만족도 <b class="num">—</b></span><i style="--v:0%"></i>${happy ? `<small>목표 평균 ${HAPPY}</small>` : ""}</span>`;
   const ok = avg >= HAPPY;
-  return `<span class="meter sat ${happy ? (ok ? "ok" : "behind") : ""}" title="${tip}">만족도 <i style="--v:${((last - 1) / 4 * 100).toFixed(0)}%"></i> <b class="num">${last.toFixed(1)}</b> <small>평균 <b class="num">${avg.toFixed(2)}</b>${happy ? ` / 목표 ${HAPPY}` : ""}</small></span>`;
+  return `<span class="meter sat ${happy ? (ok ? "ok" : "behind") : ""}" title="${tip}"><span>만족도 <b class="num">${last.toFixed(1)}</b></span><i style="--v:${((last - 1) / 4 * 100).toFixed(0)}%"></i><small>평균 <b class="num">${avg.toFixed(2)}</b>${happy ? `/${HAPPY}` : ""}</small></span>`;
 }
 function goalResult(P) {
   const avg = satAvg(P) || 0;
@@ -3715,9 +3727,9 @@ function careerChart(P, sp) {
   const bars = sp.bins.map((v, i) => { if (!v && i !== sp.me) return ""; const me = i === sp.me; return `<rect x="${(L + i * bw + .5).toFixed(1)}" y="${y(v).toFixed(1)}" width="${Math.max(1, bw - 1).toFixed(1)}" height="${(H - B - y(v)).toFixed(1)}" rx="1" fill="${me ? "var(--accent)" : "color-mix(in oklab, var(--muted) 35%, var(--surface))"}"/>`; }).join("");
   const mx = L + (sp.me + .5) * bw, medx = L + (sp.median + .5) * bw;
   let ticks = ""; for (let t = 0; t < n; t += 5) ticks += `<text x="${(L + (t + .5) * bw).toFixed(1)}" y="${H - 6}" text-anchor="middle">${t}년</text>`;
-  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="디자이너로 일한 햇수 분포와 내 위치">
+  return `<svg class="career-svg" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="디자이너로 일한 햇수 분포와 내 위치">
     <line x1="${medx.toFixed(1)}" x2="${medx.toFixed(1)}" y1="${T - 4}" y2="${H - B}" stroke="var(--muted)" stroke-dasharray="3 3"/>
-    <text x="${(medx + 4).toFixed(1)}" y="${T + 6}">중간 ${sp.median}년</text>
+    ${sp.me > sp.median && mx - medx < 44 ? `<text x="${(medx - 4).toFixed(1)}" y="${T + 6}" text-anchor="end">중간 ${sp.median}년</text>` : `<text x="${(medx + 4).toFixed(1)}" y="${T + 6}">중간 ${sp.median}년</text>`}
     ${bars}${ticks}
     <line x1="${mx.toFixed(1)}" x2="${mx.toFixed(1)}" y1="${T - 12}" y2="${y(sp.bins[sp.me]) - 2}" stroke="var(--accent)" stroke-width="1.5"/>
     <text class="me" x="${mx.toFixed(1)}" y="${T - 14}" text-anchor="${mx > W - 40 ? "end" : mx < 40 ? "start" : "middle"}">나 ${sp.me}년</text></svg>`;
