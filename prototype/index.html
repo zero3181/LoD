@@ -76,6 +76,8 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px 
 .sublink { margin: 12px 0 0; }
 .textlink { background: none; border: 0; padding: 4px 0; font: inherit; font-size: 14px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .textlink:hover { color: var(--ink); }
+.auto-offer { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12.5px; color: var(--muted); padding: 6px 10px; margin-bottom: -4px; border-radius: 6px; background: var(--sunk); border: 1px solid var(--line); }
+.auto-offer .textlink { font-size: 13px; color: var(--accent); font-weight: 600; padding: 2px 0; }
 .scroll { flex: 1; overflow-y: auto; min-height: 0; padding-block: 20px; }
 
 /* ── 시작 화면 ── */
@@ -2934,7 +2936,19 @@ function whyHtml(why, grade, label = "근거", open = false) {
   return `<details class="why"><summary>${label}</summary><div class="whybody">${esc(t)}</div></details>`;
 }
 
+/* 빠른 자동 진행 중에는 화면이 자주 다시 그려져, 누르는 사이 버튼·체크박스가 바뀌면 클릭이 사라진다.
+   누르고 있는 동안에는 다시 그리기를 미뤘다가 손을 떼고 클릭이 처리된 뒤에 그린다. */
+let uiHold = false, uiPending = false, uiT = null;
+function uiRelease() { if (!uiHold) return; uiHold = false; clearTimeout(uiT); if (uiPending) { uiPending = false; render(); } }
+document.addEventListener("pointerdown", (e) => {
+  if (!$app.contains(e.target) || !e.target.closest("button, label, input, summary, a, [role=button]")) return;
+  uiHold = true; clearTimeout(uiT); uiT = setTimeout(uiRelease, 1500);
+}, true);
+document.addEventListener("click", () => setTimeout(uiRelease, 0), true);
+document.addEventListener("pointerup", () => setTimeout(uiRelease, 80), true);
+document.addEventListener("pointercancel", uiRelease, true);
 function render() {
+  if (uiHold && S.screen === "play") { uiPending = true; return; }
   const role = S.player ? S.player.role : S.pickRole;
   $app.dataset.role = S.screen === "start" ? "designer" : role;
   $app.dataset.screen = S.screen;
@@ -3144,6 +3158,15 @@ function yearHtml(y) {
   return `<article class="yr ${hot ? "hot" : ""}"><header class="yr-h"><b>${y.year}</b><span>${y.age}세</span>${turn ? `<em class="yr-tag">${turn}</em>` : ""}</header>
     ${chunk("c-proj", "프로젝트", g.proj)}${chunk("c-card", "올해의 일", g.card)}${chunk("c-career", "커리어", g.career)}${chunk("c-money", "돈", g.money)}${chunk("c-peer", "동기 소식", g.peer)}</article>`;
 }
+/* 프로젝트·카드·안내 창. 자동 진행 중인데 자동 선택이 꺼져 있으면 창이 아래 조작 막대를 덮으므로, 창 맨 위에 '자동 선택 켜기'를 둔다 */
+function sheetsHtml() {
+  const ov = `${S.proj ? projHtml() : ""}${S.card ? cardHtml() : ""}${S.notice ? noticeHtml() : S.check ? checkHtml() : ""}`;
+  if (!ov || !S.speed) return ov;
+  const bar = S.autoPick
+    ? `<div class="auto-offer"><span>자동 선택 중 · 알아서 고르고 넘어가요</span><button type="button" class="textlink" data-autopick="0">자동 선택 끄기</button></div>`
+    : `<div class="auto-offer"><span>자동 진행 중 · 선택은 직접</span><button type="button" class="textlink" data-autopick="1">자동 선택 켜기</button></div>`;
+  return ov.replace(/(<div class="sheet(?: [^"]*)?"[^>]*>)/, `$1${bar}`);
+}
 function renderPlay() {
   const P = S.player;
   const w = currentWage(P);
@@ -3180,13 +3203,14 @@ function renderPlay() {
       </div>
       <label class="autopick"><input type="checkbox" id="auto-pick" ${S.autoPick ? "checked" : ""}> 자동 선택 <span class="fine">잠깐 보여 준 뒤 알아서 골라요</span></label>
     </div>
-    ${S.proj ? projHtml() : ""}${S.card ? cardHtml() : ""}${S.notice ? noticeHtml() : S.check ? checkHtml() : ""}`;
+    ${sheetsHtml()}`;
   const feedEl = $app.querySelector("#feed"); feedEl.scrollTop = feedEl.scrollHeight;
   $app.querySelectorAll("[data-focus]").forEach((b) => b.onclick = () => { S.focus = b.dataset.focus; playYear(); render(); schedule(); });
   $app.querySelectorAll("[data-speed]").forEach((b) => b.onclick = () => { ffStop(); setSpeed(+b.dataset.speed); });
   const ffb = $app.querySelector("#ff"); if (ffb) ffb.onclick = () => ffStart();
   const ffs = $app.querySelector("#ff-stop"); if (ffs) ffs.onclick = () => { ffStop(); render(); };
   const ap = $app.querySelector("#auto-pick"); if (ap) ap.onchange = () => setAutoPick(ap.checked);
+  $app.querySelectorAll("[data-autopick]").forEach((b) => b.onclick = (e) => { e.stopPropagation(); setAutoPick(b.dataset.autopick === "1"); });
   $app.querySelector("#go-year").onclick = () => {
     ffStop();
     if (S.player.pause) { playYear(); return; }
