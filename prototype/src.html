@@ -341,6 +341,10 @@ svg text.me { fill: var(--accent); font-weight: 700; font-size: 11px; }
 .verdict.hi { color: var(--accent); } .verdict.lo { color: var(--stamp); }
 .gains { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12.5px; margin-top: 10px; opacity: 0; animation: stampin .3s ease-out forwards; }
 .gains span { background: var(--sunk); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
+.cmp-h { font-size: 14px; margin: 14px 0 6px; }
+.cmp-h:first-child { margin-top: 10px; }
+.gains .odds.up { border-color: color-mix(in oklab, var(--accent) 45%, var(--line)); color: var(--accent); font-weight: 600; }
+.gains .odds.dn { border-color: color-mix(in oklab, #d4572a 45%, var(--line)); color: #c2471c; font-weight: 600; }
 .promo, .newins { margin-top: 10px; border-radius: 8px; padding: 10px 12px; font-size: 14px; opacity: 0; animation: stampin .4s ease-out forwards; }
 .promo { background: var(--accent); color: var(--surface); font-weight: 600; }
 .promo b, .newins b { display: block; font-size: 11px; letter-spacing: .08em; opacity: .8; }
@@ -853,15 +857,28 @@ function discover(P, pr) {
   saveIns(m);
   return out;
 }
-function projApply(P, pr, ctx) {
-  const a = pr.avg, d = a - 6, rep0 = P.rep, sk0 = P.skill;
+/* 리뷰 평균이 그해 평판·월급·확률표 배수로 이어지는 규칙. 결과 화면의 비교 시뮬레이션도 이 함수를 쓴다(설계상 가정 D) */
+const SCORE_HI = { other_occupation: .75, not_employed: .85 }, SCORE_LO = { other_occupation: 1.3, not_employed: 1.2 };
+function scoreFx(P, a, ctx) {
+  const d = a - 6;
   P.rep = Math.max(0, Math.min(100, P.rep + (a - 5) * 2.5 + 1.5));
   if (P.status === "wage") P.p *= Math.exp(d * .004);
   else P.selfNoise = Math.max(.4, Math.min(2.2, P.selfNoise * Math.exp(d * .03)));
   ctx.sat += d * .06;
-  if (a >= 8) { mul(ctx, "other_occupation", .75); mul(ctx, "not_employed", .85); ctx.mods.bonus = (ctx.mods.bonus || 0) + .02; }
-  else if (a <= 4) { mul(ctx, "other_occupation", 1.3); mul(ctx, "not_employed", 1.2); }
+  const fx = a >= 8 ? SCORE_HI : a <= 4 ? SCORE_LO : null;
+  if (fx) for (const k in fx) mul(ctx, k, fx[k]);
+  if (a >= 8) ctx.mods.bonus = (ctx.mods.bonus || 0) + .02;
   mul(ctx, "new_job_same_occupation", .9 + P.rep / 250); // 평판이 높으면 제안이 늘어난다
+}
+function promote(P) {
+  const r1 = Math.max(P.rank, rankOf(P));
+  if (r1 <= P.rank) return null;
+  P.rank = r1; if (P.status === "wage") P.p *= 1.03;
+  return RANKS[r1].name;
+}
+function projApply(P, pr, ctx) {
+  const a = pr.avg, rep0 = P.rep, sk0 = P.skill;
+  scoreFx(P, a, ctx);
   pr.alloc.forEach((x, i) => { P.xp[AX[i]] = Math.min(100, P.xp[AX[i]] + x * (pr.focus === "grow" ? 1.7 : 1.1)); });
   P.skill += a >= 7 ? 2 : 1;
   P.energy = Math.max(0, Math.min(100, P.energy + CRUNCH[pr.crunch].energy));
@@ -870,8 +887,8 @@ function projApply(P, pr, ctx) {
   P.projects.push({ t: P.t, name: projName(pr), type: pr.type, topic: pr.topic, avg: a, crunch: pr.crunch });
   P.best = Math.max(P.best || 0, a);
   P.lastAlloc = { alloc: [...pr.alloc], crunch: pr.crunch };
-  const r1 = Math.max(P.rank, rankOf(P));
-  if (r1 > P.rank) { P.rank = r1; if (P.status === "wage") P.p *= 1.03; ctx.sat += .15; pr.promo = RANKS[r1].name; }
+  const promo = promote(P);
+  if (promo) { ctx.sat += .15; pr.promo = promo; }
   pr.insights = discover(P, pr);
   pr.teamNotes = teamAfter(P, pr);
   pr.gain = { rep: P.rep - rep0, skill: Math.min(100, P.skill) - Math.min(100, sk0), energy: CRUNCH[pr.crunch].energy };
@@ -2491,7 +2508,7 @@ function startGame(role, sex) {
     let name; do { name = choose(NAMES[sx]); } while (used.has(name)); used.add(name);
     return newPerson(r, sx, { name, age: Math.max(22, P.age + Math.round(normal())) });
   });
-  S.player = P; S.peers = peers; S.feed = []; S.card = null; S.check = null; S.proj = null; S.focus = "flow";
+  S.player = P; S.peers = peers; S.feed = []; S.card = null; S.check = null; S.proj = null; S.focus = "flow"; S.gameId = Date.now().toString(36) + Math.floor(rand() * 1e6).toString(36);
   S.screen = "reveal";
   render();
 }
@@ -2522,6 +2539,17 @@ function playYear() {
   if (isWork(P)) { S.proj = newProject(P); S.proj.focus = S.focus; S.proj.ctx = ctx; SFX.card(); render(); return; }
   yearCards(ctx);
 }
+/* 최근 두 판에서 본 일반 카드는 비중을 줄인다(판마다 덜 겹치게). 데이터로 굴리는 삶의 사건은 그대로 */
+const RECENT_STORE = "lod-recent-v1", RECENT_W = .3;
+function loadRecent() { try { const v = JSON.parse(localStorage.getItem(RECENT_STORE) || "[]"); return Array.isArray(v) ? v : []; } catch (e) { return []; } }
+function noteSeen(id) {
+  if (!S.gameId) return;
+  const g = loadRecent(); let cur = g.find((x) => x.g === S.gameId);
+  if (!cur) { cur = { g: S.gameId, c: [] }; g.push(cur); }
+  if (!cur.c.includes(id)) cur.c.push(id);
+  try { localStorage.setItem(RECENT_STORE, JSON.stringify(g.slice(-3))); } catch (e) {}
+}
+function recentSet() { return new Set(loadRecent().filter((x) => x.g !== S.gameId).slice(-2).flatMap((x) => x.c)); }
 function yearCards(ctx) {
   const P = S.player;
   // 1) 강제 카드 2) 데이터로 굴린 삶의 사건 3) 아직 안 나온 사건 하나 (디자이너 전용판은 판이 짧아 해마다 하나씩)
@@ -2541,9 +2569,10 @@ function yearCards(ctx) {
     // 다른 직업으로 일하는 동안에는 디자이너 일·회사 카드 대신 삶 카드와 복귀 카드만
     const awayOk = (c) => P.status !== "away" || (c.away || (["body", "love", "family", "friend", "money"].includes(c.cat) && c.id !== "meetup"));
     const pool = CARDS.filter((c) => !c.force && !c.trigger && !c.roll && !c.lead && !P.flags["card_" + c.id] && awayOk(c) && c.when(P, S));
-    if (pool.length) card = CARDS.find((c) => c.id === pick(Object.fromEntries(pool.map((c) => [c.id, (c.w ? c.w(P, S) : 1) * (WORK_CATS.includes(c.cat) && WORKING.includes(P.status) ? WORK_BOOST : 1)]))));
+    const seen = recentSet();
+    if (pool.length) card = CARDS.find((c) => c.id === pick(Object.fromEntries(pool.map((c) => [c.id, (c.w ? c.w(P, S) : 1) * (WORK_CATS.includes(c.cat) && WORKING.includes(P.status) ? WORK_BOOST : 1) * (seen.has(c.id) ? RECENT_W : 1)]))));
   }
-  if (card) { if (!card.repeat) P.flags["card_" + card.id] = true; S.card = { id: card.id, ctx }; SFX.card(); render(); return; }
+  if (card) { if (!card.repeat) P.flags["card_" + card.id] = true; if (!card.trigger) noteSeen(card.id); S.card = { id: card.id, ctx }; SFX.card(); render(); return; }
   finishYear(ctx);
 }
 
@@ -3073,7 +3102,7 @@ function projHtml() {
         <span>평판 ${pr.gain.rep >= 0 ? "+" : ""}${pr.gain.rep.toFixed(0)}</span>
         <span>실력 +${pr.gain.skill}</span>
         <span>에너지 ${pr.gain.energy >= 0 ? "+" : ""}${pr.gain.energy}</span>
-        ${a >= 8 ? "<span>올해 디자인을 떠날 가능성 ↓</span>" : a <= 4 ? "<span>올해 디자인을 떠날 가능성 ↑</span>" : ""}
+        ${a >= 8 ? `<span class="odds up">올해 다른 직업으로 떠날 확률 −${Math.round((1 - SCORE_HI.other_occupation) * 100)}%</span>` : a <= 4 ? `<span class="odds dn">올해 다른 직업으로 떠날 확률 +${Math.round((SCORE_LO.other_occupation - 1) * 100)}%</span>` : ""}
       </div>
       ${pr.promo ? `<div class="promo" style="animation-delay:2500ms"><b>승진</b> ${esc(pr.promo)}${josaRo(pr.promo).slice(pr.promo.length)} 올라섰다. 월급 +3%</div>` : ""}
       ${pr.evRes ? `<div class="evres" style="animation-delay:2600ms"><b>돌발 상황 · ${esc(pr.evRes.title)}</b> ${esc(pr.evRes.label)}${pr.evRes.ok === true ? " — 성공" : pr.evRes.ok === false ? " — 실패" : ""}</div>` : ""}
@@ -3257,13 +3286,42 @@ function focusCompare(role, sex, N = 3000) {
     return { k, median: ys[Math.floor(N / 2)], retire: ret / N, sat: satSum / satN, N };
   });
 }
+/* 프로젝트를 다르게 했다면: 같은 조건 N명씩, 해마다 리뷰 평균을 한 값 근처로 고정하고 굴린다(초점은 흐름대로, 사건 카드 없음) */
+function projCompare(role, sex, mine, N = 2000) {
+  const levels = [...new Set([4.5, 6, Math.round(mine * 2) / 2, 8.5])].sort((a, b) => a - b);
+  return levels.map((lv) => {
+    const ys = []; let lead = 0, ret = 0;
+    for (let i = 0; i < N; i++) {
+      const P = newPerson(role, sex); let dy = 0;
+      for (let t = 1; t <= 41 && !P.end; t++) {
+        const ctx = { mods: {}, sat: 0 };
+        if (isWork(P)) { scoreFx(P, Math.max(1, Math.min(10, lv + .8 * normal())), ctx); }
+        step(P, ctx.mods);
+        advanceAge(P); P.statuses.push(P.status);
+        if (isWork(P)) promote(P);
+        if (WORKING.includes(P.status) && (!P.end || P.end.type === "retire")) dy++;
+      }
+      ys.push(dy); if (P.rank >= 3) lead++; if (P.end && P.end.type === "retire" && P.role === role && !isOut(P)) ret++;
+    }
+    ys.sort((a, b) => a - b);
+    return { lv, me: lv === Math.round(mine * 2) / 2, median: ys[Math.floor(N / 2)], mean: ys.reduce((a, b) => a + b, 0) / N, lead: lead / N, retire: ret / N, N };
+  });
+}
+function projCmpHtml(P, rows) {
+  const lo = rows[0], hi = rows.at(-1);
+  return `<div class="tw"><table><thead><tr><th>해마다 리뷰 평균</th><th class="r">디자이너로 일한 해<br><span class="fine">평균</span></th><th class="r">리드 이상</th><th class="r">정년까지</th></tr></thead><tbody>
+    ${rows.map((x) => `<tr class="${x.me ? "me" : ""}"><td>${x.lv.toFixed(1)}점 · ${verdict(x.lv)}${x.me ? `<br><span class="fine">내 평균 근처</span>` : ""}</td><td class="r num">${x.mean.toFixed(1)}년</td><td class="r num">${pct(x.lead, 1)}</td><td class="r num">${pct(x.retire, 1)}</td></tr>`).join("")}
+    </tbody></table></div>
+    <p style="font-size:14px;margin-top:8px">리뷰 평균이 ${lo.lv.toFixed(1)}점일 때와 ${hi.lv.toFixed(1)}점일 때, 디자이너로 일한 해는 평균 <b>${(hi.mean - lo.mean).toFixed(1)}년</b>, 리드 이상까지 오른 비율은 <b>${Math.round((hi.lead - lo.lead) * 100)}%p</b> 차이가 납니다.</p>
+    <p class="fine" style="margin-top:6px">같은 조건 ${lo.N.toLocaleString()}명씩, 일하는 해마다 리뷰 평균을 표의 값 근처(±0.8)로 두고 굴린 값입니다. 초점은 '흐름대로', 사건 카드는 없습니다. 점수가 평판·월급·이탈 확률로 이어지는 크기는 설계상 가정이고, 확률표는 노동패널입니다.</p>`;
+}
 function cmpHtml(P, rows) {
   const fav = Object.entries(P.focusN || {}).filter(([k]) => !FOCUS[k].away).sort((a, b) => b[1] - a[1])[0];
   const best = (f) => Math.max(...rows.map(f));
   return `<div class="tw"><table><thead><tr><th>초점</th><th class="r">디자이너로 일한 해<br><span class="fine">중간값</span></th><th class="r">정년까지</th><th class="r">평균 만족도</th></tr></thead><tbody>
     ${rows.map((x) => `<tr class="${fav && fav[0] === x.k ? "me" : ""}"><td>${FOCUS[x.k].label}${fav && fav[0] === x.k ? `<br><span class="fine">내가 가장 많이 고름</span>` : ""}</td><td class="r num">${x.median === best((r) => r.median) ? "<b>" + x.median + "년</b>" : x.median + "년"}</td><td class="r num">${x.retire === best((r) => r.retire) ? "<b>" + pct(x.retire, 1) + "</b>" : pct(x.retire, 1)}</td><td class="r num">${x.sat === best((r) => r.sat) ? "<b>" + x.sat.toFixed(2) + "</b>" : x.sat.toFixed(2)}</td></tr>`).join("")}
     </tbody></table></div>
-    <p class="fine" style="margin-top:6px">같은 조건 ${rows[0].N}명씩 초점 하나만 고정하고, 사건 카드 없이 굴린 값입니다. 쉬거나 다른 직업으로 일하는 해에는 '지금 생활에 집중'으로 둡니다. 초점의 배수는 설계상 가정이고, 확률표는 노동패널입니다.</p>`;
+    <p class="fine" style="margin-top:6px">같은 조건 ${rows[0].N.toLocaleString()}명씩 초점 하나만 고정하고, 사건 카드 없이 굴린 값입니다. 쉬거나 다른 직업으로 일하는 해에는 '지금 생활에 집중'으로 둡니다. 초점의 배수는 설계상 가정이고, 확률표는 노동패널입니다.</p>`;
 }
 function rarity(P, mc) {
   const me = P.end.type;
@@ -3443,9 +3501,9 @@ function renderRecord() {
       ${careerChart(P, sp)}
       <p style="font-size:14px;margin-top:6px">${careerLine(P, sp)}</p>
       <p class="fine" style="margin-top:4px">같은 엔진으로 ${sp.N.toLocaleString()}명을 굴린 결과입니다(초점은 '흐름대로'). 다른 직업으로 옮긴 해와 쉰 해는 빼고 셉니다. 떠났다가 돌아온 사람은 ${sp.back}명(${pct(sp.back / sp.N, 1)}), 60세 정년까지 간 사람은 ${sp.retire}명(${pct(sp.retire / sp.N, 1)})입니다.</p></section>
-    <section><h2>다른 초점이었다면</h2>
-      <p style="font-size:14px">해마다 고른 초점이 결과를 얼마나 바꾸는지, 같은 조건으로 다시 굴려 봅니다.</p>
-      <div id="cmp"><button class="btn ghost" id="cmp-go">초점별로 다시 굴려 보기</button></div></section>
+    <section><h2>내 선택이 바꾼 것</h2>
+      <p style="font-size:14px">${P.projects.length ? `이번 판 프로젝트 리뷰 평균은 <b>${(P.projects.reduce((a, x) => a + x.avg, 0) / P.projects.length).toFixed(1)}점</b>이었습니다. ` : ""}프로젝트 점수와 해마다 고른 초점이 커리어를 얼마나 바꾸는지, 같은 조건으로 다시 굴려 봅니다.</p>
+      <div id="cmp"><button class="btn ghost" id="cmp-go">다시 굴려 보기</button></div></section>
     ${endingsHtml(P.endSaved.key, P.endSaved.isNew)}
     ${(P.achNew || []).length ? `<section><h2>이번 판에 새로 얻은 업적 · ${P.achNew.length}개</h2><div class="achs">${P.achNew.map((k) => { const x = ACH.find(([kk]) => kk === k); return `<div class="got me"><b>${esc(x[1])}</b>${esc(x[2])}</div>`; }).join("")}</div></section>` : ""}
     <details class="more"><summary>자세한 기록 보기</summary>
@@ -3472,7 +3530,10 @@ function renderRecord() {
   const again = () => { const g = S.goal; S = freshState(); S.goal = g; render(); };
   $app.querySelectorAll('#again,[data-act="again"]').forEach((b) => b.onclick = again);
   const cg = $app.querySelector("#cmp-go");
-  if (cg) cg.onclick = () => { cg.disabled = true; cg.textContent = "굴리는 중…"; setTimeout(() => { $app.querySelector("#cmp").innerHTML = cmpHtml(P, focusCompare(P.origRole, P.sex)); }, 30); };
+  if (cg) cg.onclick = () => { cg.disabled = true; cg.textContent = "굴리는 중…"; setTimeout(() => {
+    const mine = P.projects.length ? P.projects.reduce((a, x) => a + x.avg, 0) / P.projects.length : 6;
+    $app.querySelector("#cmp").innerHTML = `<h3 class="cmp-h">프로젝트를 다르게 했다면</h3>${projCmpHtml(P, projCompare(P.origRole, P.sex, mine, 5000))}<h3 class="cmp-h">초점을 다르게 했다면</h3>${cmpHtml(P, focusCompare(P.origRole, P.sex, 2000))}`;
+  }, 30); };
   mountScene();
   $app.querySelector("#data").onclick = () => { S.screen = "data"; S.back = "record"; render(); };
   const note = (t) => { $app.querySelector("#copy-note").textContent = t; };
