@@ -915,7 +915,7 @@ function newPerson(role, sex, opts = {}) {
     name: opts.name || choose(NAMES[sex]),
     wages: [], sats: [], statuses: [], roles: [], jobs: [{ company, size, size9, role, from: 0, to: null, kind: "wage" }],
     moods: {}, flags: {}, switchedAt: null,
-    married: false, marriedAt: null, kids: [], life: [], dating: 1, study: null, pause: null, bonus: 0, cash: 0, bonusSeen: 0, picks: [],
+    married: false, marriedAt: null, kids: [], life: [], dating: 1, study: null, pause: null, bonus: 0, cash: 0, bonusSeen: 0, home: null, recur: [], picks: [],
     rep: 10, rank: 0, xp: { res: 8, ux: 8, vis: 12, com: 6 }, projects: [], best: 0, lastAlloc: null,
   };
 }
@@ -946,7 +946,7 @@ const SPEND_G = {
   g8: { name: "50대 기혼 · 학업 마친 자녀", floor: 156, inc: [260, 442, 567, 766, 1278], sav: [.215, .208, .231, .230, .193], debt: [.188, .120, .113, .065, .067] },
 };
 /* 자산으로 남는 비중 = 저축/투자 + 부채상환의 절반(원금 상환은 집 지분으로 남는다고 본 가정). 예비자금과 나머지는 쓰는 돈으로 본다 */
-for (const g of Object.values(SPEND_G)) g.pts = g.inc.map((x, i) => [x, 1 - g.sav[i] - g.debt[i] / 2]);
+for (const g of Object.values(SPEND_G)) { g.pts = g.inc.map((x, i) => [x, 1 - g.sav[i] - g.debt[i] / 2]); g.ptsOwn = g.inc.map((x, i) => [x, 1 - g.sav[i] - g.debt[i]]); }
 /* 같은 보고서: 최근 1년 경조사 참석 평균 횟수. 한 번에 NH농협은행 축의금 이체 평균 11만 7천 원(2025)을 낸다고 두었다 */
 const GIFT_N = (age) => age < 30 ? 2.2 : age < 40 ? 3.1 : age < 50 ? 3.6 : 5.8;
 function spendGroup(P) {
@@ -972,8 +972,50 @@ function takeHome(P, w) {
 /* 내 몫 생활비(월): 생애 단계의 소비 비중 × 실수령. 기혼은 배우자도 나만큼 번다고 보고 가구 소득(×2)으로 비중을 찾고, 최저선은 절반이 내 몫(설계상 가정) */
 function spendOf(P, th, gross) {
   const g = SPEND_G[spendGroup(P)], hh = P.married ? 2 : 1;
-  return Math.max(g.floor / hh, shareAt(g.pts, (gross || 0) * hh) * th) + (P.flags.pet != null ? MONEY.pet : 0);
+  return Math.max(g.floor / hh, shareAt(P.home ? g.ptsOwn : g.pts, (gross || 0) * hh) * th) + (P.flags.pet != null ? MONEY.pet : 0);
 }
+/* ── 큰돈: 집 · 자녀 · 부모 · 차 ──
+   집값 = 가구 연소득 × PIR(국토교통부 2024년도 주거실태조사, 자가 가구 중위수: 수도권 8.7배, 전국 6.3배, 도 지역 4.0배).
+   대출 = 집값의 70%, 최대 6억(금융위원회 2025.6.27 가계부채 관리 강화 방안: 수도권·규제지역 생애최초 LTV 70%, 주택구입 주담대 6억 상한).
+   금리 연 3.96%, 현금이 모자라면 신용대출 연 5.31%(한국은행 2025년 9월 금융기관 가중평균금리, 예금은행 신규취급액).
+   취득세 1%(6억 이하)~3%(9억 초과)와 지방교육세 10%(지방세법), 중개보수 상한 0.4~0.7%(공인중개사법 시행규칙, 2021.10.19 시행).
+   집값 변동: 해마다 지표누리 '주택매매가격 동향'(한국부동산원 전국주택가격동향조사, 2012년까지 KB)에 연간 전국 변동률이 나온 14개 연도 중 하나를 뽑는다.
+   DSR 40%(금융위원회 차주 단위 DSR, 은행권). 30년 원금 균등 상환, 이사·입주 비용 300만 원, 신용대출 한도 가구 연소득 이내, 기혼은 반씩 부담, 집 있는 사람은 생활비의 부채상환 몫 대신 주담대 원리금을 낸다고 본 것은 설계상 가정. */
+const HOME = { pir: { metro: 8.7, all: 6.3, prov: 4.0 }, ltv: .7, cap: 60000, dsr: .4, rate: .0396, credit: .0531, years: 30, move: 300,
+  hpi: [3.1, 3.1, 1.9, 6.9, 0, .31, 3.51, .7, 1.48, 1.10, -.36, 5.36, 9.9, -4.68] }; // 2007 2008 2010 2011 2012 2013 2015~2022
+const hhIncome = (P) => currentWage(P) * 12 * (P.married ? 2 : 1); // 기혼은 배우자도 나만큼 번다(생활비와 같은 가정)
+const acqTax = (v) => v * (v <= 60000 ? .01 : v <= 90000 ? (v * 2 / 30000 - 3) / 100 : .03) * 1.1;
+const brokerFee = (v) => v * (v <= 90000 ? .004 : v <= 120000 ? .005 : v <= 150000 ? .006 : .007);
+/* 기혼은 집·자녀·차에 드는 돈을 배우자와 반씩 낸다(생활비의 '내 몫'과 같은 가정) */
+const myShare = (P) => P.married ? .5 : 1;
+const shareTxt = (P, amt) => P.married ? `${manwon(amt)}(둘이 나눠 내 몫 ${manwon(amt / 2)})` : manwon(amt);
+/* 가구 기준 견적. 대출은 LTV·6억 상한·DSR 40% 안에서, 계약금과 세금은 모은 돈 + 신용대출(가구 연소득 이내)로 낼 수 있을 만큼만. 넘으면 집값을 낮춘다 */
+function homeQuote(P, pir, disc = 1) {
+  const inc = hhIncome(P), sh = myShare(P), own = Math.max(0, P.cash) / sh;
+  const loanMax = Math.min(HOME.cap, inc * HOME.dsr / (HOME.rate + 1 / HOME.years));
+  let price = inc * pir * disc, loan, cost, down, shrunk = false;
+  for (let i = 0; i < 60; i++) {
+    loan = Math.min(price * HOME.ltv, loanMax); down = price - loan; cost = acqTax(price) + brokerFee(price) + HOME.move;
+    if (down + cost <= own + inc) break;
+    price *= .95; shrunk = true;
+  }
+  const r = (x) => Math.round(x / 100) * 100;
+  return { price: r(price), loan: r(loan), down: r(price) - r(loan), cost: Math.round(cost), sh, shrunk, credit: Math.max(0, Math.round((down + cost - own) * sh)) };
+}
+function quoteHint(q, P) {
+  return `${q.shrunk ? "모은 돈에 맞춰 낮춘 " : ""}집값 ${manwon(q.price)}${q.sh < 1 ? "(둘이 반씩)" : ""}, 주담대 ${manwon(q.loan)}(연 3.96% · 30년). 내 몫 계약금 ${manwon(q.down * q.sh)}${q.credit > 0 ? `(모자란 ${manwon(q.credit)}은 신용대출 연 5.31%)` : ""}, 세금·중개·이사 −${manwon(q.cost * q.sh)}`;
+}
+function buyHome(P, c, q, sat, value = q.price) {
+  const sh = q.sh;
+  P.cash -= q.down * sh; P.bonus -= Math.round(q.cost * sh);
+  P.home = { value: value * sh, price: q.price * sh, loan: q.loan * sh, loan0: q.loan * sh, rate: HOME.rate, at: P.age };
+  P.flags.house = P.age; c.sat += sat; mul(c, "same_job", 1.2); mul(c, "not_employed", .7);
+}
+const homeEq = (P) => P.home ? P.home.value - P.home.loan : 0;
+const netWorth = (P) => P.cash + homeEq(P);
+const addRecur = (P, what, amt, years, shared = true) => (P.recur ||= []).push({ what, amt: Math.round(amt * (shared ? myShare(P) : 1)), left: years });
+const kidAt = (P, lo, hi) => P.kids.find((k) => P.t - k >= lo && P.t - k <= hi);
+
 /* 자산 표기: 1억 2,300만 / −340만 */
 function manwon(v, sign = false) {
   const a = Math.round(Math.abs(v)), sg = v < 0 ? "−" : sign && v > 0 ? "+" : "";
@@ -2526,11 +2568,75 @@ const CARDS = [
       { label: "회사 근처로 간다", hint: "에너지 +6, 월세 차이 자산 −300만", apply: (P) => { P.energy += 6; P.bonus -= 300; return "출근 시간이 20분이 됐다. 월세는 아프다."; } },
       { label: "싼 곳으로 간다", hint: "에너지 −4", apply: (P) => { P.energy -= 4; return "환승 두 번. 대신 적금은 지켰다."; } },
     ] },
-  { id: "house", cat: "money", when: (P) => P.age >= 35 && !P.flags.house, w: (P) => P.married ? 1.2 : .5, title: "청약에 당첨됐다", body: "계약금 10%를 한 달 안에 내야 한다.",
-    why: "국토교통부 주거실태조사(2018년 기준): 최근 4년 안에 생애 첫 집을 마련한 가구주의 평균 나이 43.3세. 효과는 설계상 가정.", grade: "C",
+  { id: "home_buy", cat: "money", force: (P) => !P.home && !P.flags.card_home_buy && isWork(P) && currentWage(P) > 0 && (P.married ? P.age >= 33 && P.t - P.marriedAt >= 2 : P.age >= 40),
+    title: "집을 살까", body: (P) => `${P.married ? "둘이" : "혼자"} 버는 돈이 1년에 ${manwon(hhIncome(P))} 원. 모아 둔 돈은 ${manwon(Math.max(0, P.cash))} 원. 부동산 앱을 하루에 열 번씩 연다.`,
+    why: "국토교통부 2024년도 주거실태조사(2025.11 발표): 자가 가구의 연소득 대비 집값(PIR, 중위수) 수도권 8.7배, 전국 6.3배. 가구주가 된 뒤 생애 첫 집까지 평균 7.9년. 집값 = 가구 연소득 × PIR. 대출은 집값의 70%, 최대 6억 원(금융위원회 2025.6.27 가계부채 관리 강화 방안: 수도권·규제지역 생애최초 LTV 70%, 주택구입 주담대 6억 상한). 금리 연 3.96%(한국은행 2025년 9월 예금은행 주담대 신규취급액). 취득세 1~3%와 지방교육세(지방세법), 중개보수 상한 0.4~0.7%(공인중개사법 시행규칙, 2021.10.19 시행). 은행권 DSR 40%(금융위원회). 이사·입주 비용 300만 원, 30년 원금 균등 상환, 신용대출 한도 가구 연소득 이내, 기혼은 배우자와 반씩 낸다는 것은 설계상 가정.", grade: "B",
     choices: [
-      { label: "대출을 받아 계약한다", hint: "만족도 +, 지금 직장 유지 ×1.2, 쉼 ×0.7. 현금이 집으로 바뀔 뿐 자산은 그대로", apply: (P, c) => { P.flags.house = P.age; c.sat += .3; mul(c, "same_job", 1.2); mul(c, "not_employed", .7); return "대출 만기는 30년. 이제 쉽게 그만둘 수 없다."; } },
+      { label: "수도권에 산다", hint: (P) => quoteHint(homeQuote(P, HOME.pir.metro), P) + ". 만족도 +, 지금 직장 유지 ×1.2", apply: (P, c) => { const q = homeQuote(P, HOME.pir.metro); buyHome(P, c, q, .3); return `${manwon(q.price)} 원짜리 24평. 내 몫 계약금 ${manwon(q.down * q.sh)} 원이 현금에서 집으로 옮겨 갔다. 잔금 치르는 날 대출 만기일을 달력에 적었다.`; } },
+      { label: "외곽으로 간다", hint: (P) => quoteHint(homeQuote(P, HOME.pir.all), P) + ". 출퇴근이 길어진다(에너지 −6)", apply: (P, c) => { const q = homeQuote(P, HOME.pir.all); buyHome(P, c, q, .2); P.energy -= 6; return `${manwon(q.price)} 원. 내 몫 계약금 ${manwon(q.down * q.sh)} 원이 집으로 옮겨 갔다. 광역버스 첫차를 타기 시작했다.`; } },
+      { label: "아직은 전세로 산다", hint: "목돈은 그대로. 집값이 오르면 아쉽고 내리면 다행이다", apply: (P, c) => { c.sat -= .05; return "청약 통장 납입액을 올렸다."; } },
+    ] },
+  { id: "house", cat: "money", when: (P) => P.age >= 30 && !P.home && isWork(P) && currentWage(P) > 0, w: (P) => P.married ? 2.5 : 1, title: "청약에 당첨됐다", body: "계약금 10%를 한 달 안에 내야 한다. 분양가는 주변 시세보다 조금 낮다.",
+    why: "국토교통부 주거실태조사: 생애 첫 집을 마련한 가구주의 평균 나이 43.3세(2018년 기준), 가구주가 된 뒤 생애 첫 집까지 평균 7.9년(2024년도 조사). 시세 = 가구 연소득 × 수도권 PIR 8.7배(2024년도 조사), 분양가는 시세의 85%(설계상 가정). 대출·세금 근거는 '집을 살까' 카드와 같다.", grade: "C",
+    choices: [
+      { label: "대출을 받아 계약한다", hint: (P) => quoteHint(homeQuote(P, HOME.pir.metro, .85), P) + ". 시세와의 차이만큼 자산 +, 만족도 +", apply: (P, c) => { const q = homeQuote(P, HOME.pir.metro, .85); buyHome(P, c, q, .35, Math.round(q.price / .85)); return `분양가 ${manwon(q.price)} 원, 내 몫 계약금 ${manwon(q.down * q.sh)} 원. 대출 만기는 30년. 이제 쉽게 그만둘 수 없다.`; } },
       { label: "포기한다", hint: "변화 없음", apply: () => "당첨 문자를 캡처해 뒀다." },
+    ] },
+  { id: "home_rate", cat: "money", when: (P) => !!P.home && P.home.loan > 3000, due: () => .12, title: "대출 금리가 올랐다", body: (P) => `은행 문자: 변동금리가 연 ${(P.home.rate * 100).toFixed(2)}%에서 ${((P.home.rate + .005) * 100).toFixed(2)}%로 바뀐다.`,
+    why: "한국은행 금융기관 가중평균금리: 예금은행 주담대(신규취급액) 2025년 1월 4.27% → 5월 3.87% → 9월 3.96%. 한 해 안에서도 0.4%p 오르내린다. 0.5%p 인상, 중도상환수수료 1.2%는 설계상 가정.", grade: "C",
+    choices: [
+      { label: "그냥 버틴다", hint: (P) => `해마다 이자 약 −${won(P.home.loan * .005)}만 더`, apply: (P) => { P.home.rate += .005; P.energy -= 2; return "가계부 앱에 '이자' 항목을 새로 만들었다."; } },
+      { label: "모은 돈으로 일부 갚는다", ok: (P) => P.cash >= 2000, hint: (P) => P.cash >= 2000 ? `현금 ${manwon(Math.min(P.cash / 2, P.home.loan))}으로 원금을 갚는다. 자산은 그대로, 이자는 준다` : "현금 2,000만 원 이상 필요", apply: (P) => { const r = Math.round(Math.min(P.cash / 2, P.home.loan)); P.cash -= r; P.home.loan -= r; P.home.loan0 = Math.max(P.home.loan, P.home.loan0 - r); P.home.rate += .005; return "통장이 가벼워졌다. 이상하게 마음은 편했다."; } },
+      { label: "고정금리로 갈아탄다", hint: (P) => `중도상환수수료 −${won(P.home.loan * .012)}만`, apply: (P) => { P.bonus -= Math.round(P.home.loan * .012); P.energy -= 3; return "은행 세 곳을 돌았다. 서류는 다 똑같았다."; } },
+    ] },
+  { id: "home_repair", cat: "money", when: (P) => !!P.home && P.age - P.home.at >= 3, due: () => .1, title: "아랫집에서 물이 샌다고 한다", body: "욕실 방수층이 깨졌다. 아랫집 천장 도배까지 해 줘야 한다.",
+    why: "수리 비용과 보험 처리 확률은 설계상 가정.", grade: "D",
+    choices: [
+      { label: "바로 고친다", hint: (P) => `−${shareTxt(P, 400)}, 에너지 −3`, apply: (P) => { P.bonus -= 400 * myShare(P); P.energy -= 3; return "욕실을 뜯은 김에 타일도 바꿨다."; } },
+      { label: "보험 처리를 알아본다", hint: (P) => `60%: −${shareTxt(P, 100)}, 아니면 −${shareTxt(P, 400)}. 에너지 −6`, apply: (P) => { P.energy -= 6; if (rand() < .6) { P.bonus -= 100 * myShare(P); return "일상생활배상책임 특약이 있었다. 자기부담금만 냈다."; } P.bonus -= 400 * myShare(P); return "약관에 '노후로 인한 누수 제외'가 있었다."; } },
+    ] },
+  { id: "kid_college", cat: "family", repeat: true, force: (P) => P.kids.some((k) => P.t - k >= 19 && P.t - k <= 20 && !P.flags["col" + k]),
+    title: "아이가 대학에 붙었다", body: "합격 문자 다음 날 등록금 고지서가 왔다. 4년이다.",
+    why: "교육부·한국대학교육협의회 대학정보공시(2025.4): 4년제 대학 연평균 등록금 710만 6,500원, 사립 800만 2,400원, 국공립 423만 8,900원. 입학금·생활비·기숙사비는 넣지 않았다. 얼마를 대 줄지는 설계상 가정.", grade: "B",
+    choices: [
+      { label: "4년 다 대 준다", hint: (P) => `4년 동안 해마다 −${shareTxt(P, 800)}(사립 평균)`, apply: (P, c) => { P.flags["col" + kidAt(P, 19, 20)] = 1; addRecur(P, "대학 등록금", 800, 4); c.sat += .1; return "고지서를 냉장고에 붙여 뒀다."; } },
+      { label: "반은 학자금 대출로", hint: (P) => `4년 동안 해마다 −${shareTxt(P, 400)}`, apply: (P) => { P.flags["col" + kidAt(P, 19, 20)] = 1; addRecur(P, "대학 등록금 절반", 400, 4); return "아이는 졸업하면 갚겠다고 했다."; } },
+      { label: "알아서 하라고 한다", hint: "만족도 −", apply: (P, c) => { P.flags["col" + kidAt(P, 19, 20)] = 1; c.sat -= .2; return "아이는 장학금과 아르바이트로 버텼다. 가끔 미안했다."; } },
+    ] },
+  { id: "kid_academy", cat: "family", when: (P) => kidAt(P, 13, 15) != null, due: () => .5, title: "학원을 하나 더 보낼까", body: "반 아이들 절반이 수학 학원을 두 군데 다닌다고 한다.",
+    why: "교육부·통계청 2024년 초중고 사교육비 조사(2025.3): 고등학생 1인당 월평균 사교육비 52만 원, 사교육을 받는 학생만 보면 77만 2천 원. 평균만큼은 이미 생활비(신한은행 보고서의 자녀 나이별 소비 비중)에 들어 있다고 보고, 더 보내면 그 차이(월 약 25만 원)를 따로 뺐다.", grade: "B",
+    choices: [
+      { label: "더 보낸다", hint: (P) => `고등학교 졸업까지 ${19 - (P.t - kidAt(P, 13, 15))}년 동안 해마다 −${shareTxt(P, 300)}`, apply: (P) => { addRecur(P, "학원비", 300, 19 - (P.t - kidAt(P, 13, 15))); return "학원 차량 시간표가 냉장고에 붙었다."; } },
+      { label: "지금대로 둔다", hint: "변화 없음", apply: () => "아이는 인강을 들었다. 성적은 그대로였다." },
+      { label: "아이에게 물어본다", hint: "에너지 −2, 만족도 +", apply: (P, c) => { P.energy -= 2; c.sat += .1; return "\"학원 말고 그 돈으로 노트북 사 주면 안 돼?\""; } },
+    ] },
+  { id: "kid_wedding", cat: "family", when: (P) => kidAt(P, 27, 99) != null, due: () => .35, title: "아이가 결혼한다고 한다", body: "\"집은 둘이 알아서 할게.\" 그래도 전셋값 이야기가 자꾸 나온다.",
+    why: "듀오 2026 결혼비용 보고서(최근 2년 안에 결혼한 1,000명, 언론 보도): 총 결혼비용 평균 3억 8,113만 원, 그중 신혼집 3억 2,201만 원(84.5%). 혼인·출산 증여재산공제는 최대 1억 5,000만 원. 부모가 보태는 금액은 설계상 가정.", grade: "C",
+    choices: [
+      { label: "전세 보증금을 보탠다", hint: (P) => `−${shareTxt(P, 5000)}, 만족도 +`, apply: (P, c) => { P.bonus -= 5000 * myShare(P); c.sat += .2; return "증여 신고서를 처음 써 봤다."; } },
+      { label: "예식 비용만 낸다", hint: (P) => `−${shareTxt(P, 1000)}`, apply: (P, c) => { P.bonus -= 1000 * myShare(P); c.sat += .1; return "식장 맨 앞줄에 앉았다."; } },
+      { label: "마음만 보낸다", hint: "변화 없음", apply: () => "\"괜찮아, 엄마 아빠 노후나 챙겨.\" 고마워서 더 미안했다." },
+    ] },
+  { id: "parents_care", cat: "family", when: (P) => P.age >= 45, due: () => .1, title: "어머니가 장기요양 등급을 받으셨다", body: "혼자서는 식사도 어려우시다. 형제들과 요양원 이야기를 처음 꺼냈다.",
+    why: "2025년 장기요양 수가(보건복지부, 언론 보도): 노인요양시설 1등급 하루 9만 450원, 본인부담 20%면 한 달 약 54만 원. 식비 등 비급여는 따로 낸다. 비급여 월 40만 원, 형제와 반씩 나눔, 3년은 설계상 가정.", grade: "C",
+    choices: [
+      { label: "요양원에 모시고 형제와 나눈다", hint: "3년 동안 해마다 −564만, 에너지 −3", apply: (P) => { addRecur(P, "요양원 비용", 564, 3, false); P.energy -= 3; return "주말마다 면회를 갔다. 어머니는 가끔 내 이름을 헷갈리셨다."; } },
+      { label: "비용을 내가 다 낸다", hint: "3년 동안 해마다 −1,128만, 만족도 +", apply: (P, c) => { addRecur(P, "요양원 비용", 1128, 3, false); c.sat += .1; return "동생은 미안하다며 매주 반찬을 보냈다."; } },
+      { label: "집에서 모신다", hint: "에너지 −15, 올해 쉼 확률 ×3, 만족도 −", apply: (P, c) => { P.energy -= 15; mul(c, "not_employed", 3); c.sat -= .2; return "밤에 세 번씩 깼다. 동생이 주말을 맡았다."; } },
+    ] },
+  { id: "car_buy", cat: "money", when: (P) => P.age >= 28 && P.age <= 50 && P.flags.car == null && isWork(P), due: (P) => P.kids.length ? .25 : .08, title: "차를 살까",
+    body: (P) => P.kids.length ? "카시트에 유모차까지. 택시 기사님이 한숨을 쉬었다." : "주말마다 차를 빌리다 보니 1년에 백만 원이 넘었다.",
+    why: "한국자동차산업협회 2021년 신차 등록 분석(2022.4 발표): 평균 신차 판매가격 4,420만 원(전년 3,949만 원). 5년 할부(이자 제외), 중고차 1,500만 원, 10년 뒤 교체는 설계상 가정.", grade: "C",
+    choices: [
+      { label: "새 차를 5년 할부로", hint: (P) => `5년 동안 해마다 −${shareTxt(P, 884)}, 에너지 +3, 만족도 +`, apply: (P, c) => { P.flags.car = P.t; addRecur(P, "자동차 할부", 884, 5); P.energy += 3; c.sat += .1; return "출고 날 비닐을 한 달 동안 안 뗐다."; } },
+      { label: "중고차를 산다", hint: (P) => `−${shareTxt(P, 1500)}, 에너지 +2`, apply: (P) => { P.flags.car = P.t; P.bonus -= 1500 * myShare(P); P.energy += 2; return "주행거리 9만 km. 엔진 소리가 정직했다."; } },
+      { label: "대중교통으로 버틴다", hint: "에너지 −3", apply: (P) => { P.energy -= 3; return "카셰어링 앱 등급이 골드가 됐다."; } },
+    ] },
+  { id: "car_replace", cat: "money", when: (P) => P.flags.car != null && P.t - P.flags.car >= 10 && P.age <= 58, due: () => .3, title: "차가 자꾸 서비스센터에 간다", body: "수리 견적이 차값의 절반이 나왔다. 정비사가 '이제 보내 주세요'라고 했다.",
+    why: "한국자동차산업협회 2021년 신차 등록 분석(2022.4 발표): 평균 신차 판매가격 4,420만 원. 수리비와 교체 시점은 설계상 가정.", grade: "C",
+    choices: [
+      { label: "새 차를 5년 할부로", hint: (P) => `5년 동안 해마다 −${shareTxt(P, 884)}, 만족도 +`, apply: (P, c) => { P.flags.car = P.t; addRecur(P, "자동차 할부", 884, 5); c.sat += .1; return "옛 차 트렁크에서 아이 장난감이 나왔다."; } },
+      { label: "고쳐서 더 탄다", hint: (P) => `−${shareTxt(P, 300)}`, apply: (P) => { P.flags.car = P.t - 6; P.bonus -= 300 * myShare(P); return "계기판 주행거리가 20만 km를 넘었다."; } },
     ] },
   { id: "pet", role: "designer", cat: "family", when: (P) => P.flags.pet == null, w: () => .5, title: "보호소에서 눈이 마주쳤다", body: "두 살 된 고양이. 이름은 아직 없다.",
     why: "농림축산식품부 2025 반려동물 양육현황조사: 반려동물을 기르는 가구 29.2%. 효과는 설계상 가정.", grade: "C",
@@ -3066,7 +3172,7 @@ const CARDS = [
       { label: "지금 팀과 남는다", hint: "팀원 의욕 ↑ · 만족도 +", apply: (P, c) => { teamOf(P).forEach((m) => { m.mood = Math.min(100, m.mood + 12); }); c.sat += .2; return "팀원들은 그 제안이 있었다는 걸 1년 뒤에 알았다."; } },
     ] },
 ];
-const cardN = (role) => CARDS.filter((c) => !c.trigger && !c.force && !c.roll && !c.lead && (!c.role || c.role === role)).length;
+const cardN = (role) => CARDS.filter((c) => !c.trigger && !c.force && !c.roll && !c.due && !c.lead && (!c.role || c.role === role)).length;
 const CARD_N = cardN("designer");
 const tv = (v, ...a) => typeof v === "function" ? v(...a) : v;
 
@@ -3672,6 +3778,8 @@ function yearCards(ctx) {
   }
   // 통계의 연간 발생률로 굴리는 사건 (교통사고, 우울증 진료 등)
   if (!card) card = CARDS.find((c) => c.roll && rOk(c) && !P.flags["card_" + c.id] && (!c.when || c.when(P, S)) && rand() < c.roll(P));
+  // 큰돈(집·자녀·부모·차): 그 시기에 해마다 정해진 확률(설계상 가정)로
+  if (!card) card = CARDS.find((c) => c.due && rOk(c) && !P.flags["card_" + c.id] && c.when(P, S) && rand() < c.due(P));
   // 리드 이상: 절반 확률로 리더 카드부터
   if (!card && leadOk(P) && rand() < .5) {
     const lp = CARDS.filter((c) => c.lead && rOk(c) && !P.flags["card_" + c.id] && c.when(P, S));
@@ -3680,7 +3788,7 @@ function yearCards(ctx) {
   if (!card) {
     // 다른 직업으로 일하는 동안에는 디자이너 일·회사 카드 대신 삶 카드와 복귀 카드만
     const awayOk = (c) => P.status !== "away" || (c.away || (["body", "love", "family", "friend", "money"].includes(c.cat) && c.id !== "meetup"));
-    const pool = CARDS.filter((c) => !c.force && !c.trigger && !c.roll && !c.lead && rOk(c) && !P.flags["card_" + c.id] && awayOk(c) && c.when(P, S));
+    const pool = CARDS.filter((c) => !c.force && !c.trigger && !c.roll && !c.due && !c.lead && rOk(c) && !P.flags["card_" + c.id] && awayOk(c) && c.when(P, S));
     const seen = recentSet();
     if (pool.length) card = CARDS.find((c) => c.id === pick(Object.fromEntries(pool.map((c) => [c.id, (c.w ? c.w(P, S) : 1) * (WORK_CATS.includes(c.cat) && WORKING.includes(P.status) ? WORK_BOOST : 1) * (seen.has(c.id) ? RECENT_W : 1)]))));
   }
@@ -3752,10 +3860,16 @@ function finishYear(ctx) {
     const th = takeHome({ ...P, status: pre.status }, pre.wage), sp = spendOf(P, th, pre.wage), grp = SPEND_G[spendGroup(P)];
     const gift = Math.round(GIFT_N(P.age) * MONEY.gift);
     const dB = P.bonus - P.bonusSeen; P.bonusSeen = P.bonus;
-    const net = Math.round((th - sp) * 12 - gift + dB);
+    const h = P.home; let hl = null;
+    if (h) { const intr = h.loan * h.rate, prin = Math.min(h.loan, h.loan0 / HOME.years), g = choose(HOME.hpi), dv = h.value * g / 100; h.loan -= prin; h.value += dv; hl = { intr: Math.round(intr), prin: Math.round(prin), g, dv: Math.round(dv), rate: h.rate }; }
+    const credit = P.cash < 0 ? Math.round(-P.cash * HOME.credit) : 0;
+    const rec = (P.recur ||= []).filter((r) => r.left > 0), recAmt = rec.reduce((a, r) => a + r.amt, 0);
+    rec.forEach((r) => r.left--); P.recur = P.recur.filter((r) => r.left > 0);
+    const net = Math.round((th - sp) * 12 - gift + dB - (hl ? hl.intr + hl.prin : 0) - credit - recAmt);
     P.cash += net;
-    lines.push({ kind: "money", net, cash: P.cash, th: Math.round(th), sp: Math.round(sp), gift, grp: grp.name, dB: Math.round(dB), text: `올해 자산 ${manwon(net, true)} 원 → ${manwon(P.cash)} 원`,
-      why: `신한은행 보통사람 금융생활 보고서 2024: '${grp.name}' 그룹은 소득 구간에 따라 소득의 ${Math.round(Math.min(...grp.sav) * 100)}~${Math.round(Math.max(...grp.sav) * 100)}%를 저축·투자하고 ${Math.round(Math.min(...grp.debt) * 100)}~${Math.round(Math.max(...grp.debt) * 100)}%를 빚 갚는 데 쓴다. 하위 20% 구간의 월 소비는 ${grp.floor}만 원이다. 내 소득 구간에서 저축·투자 비중과 부채상환의 절반만 자산으로 남고, 나머지(소비와 예비자금)는 쓴다고 두었다. 경조사 참석은 이 나이대 연평균 ${GIFT_N(P.age)}회(같은 보고서), 한 번에 11만 7천 원(NH농협은행 2025 축의금 평균). 세전 월급에서 4대보험 근로자 부담 약 9.4%(2025 요율)와 소득세를 뺐다. 부채상환의 절반을 원금으로 본 것, 예비자금을 모두 쓴다고 본 것, 기혼은 배우자도 나만큼 번다고 본 것, 소득세 근사, 반려동물 월 ${MONEY.pet}만 원, 이자 없음은 설계상 가정.`, grade: "C" });
+    const nw = netWorth(P);
+    lines.push({ kind: "money", net, cash: nw, home: !!h, hl, credit, rec: rec.map((r) => [r.what, r.amt]), th: Math.round(th), sp: Math.round(sp), gift, grp: grp.name, dB: Math.round(dB), text: `올해 남은 돈 ${manwon(net, true)} 원 → 자산 ${manwon(nw)} 원`,
+      why: `신한은행 보통사람 금융생활 보고서 2024: '${grp.name}' 그룹은 소득 구간에 따라 소득의 ${Math.round(Math.min(...grp.sav) * 100)}~${Math.round(Math.max(...grp.sav) * 100)}%를 저축·투자하고 ${Math.round(Math.min(...grp.debt) * 100)}~${Math.round(Math.max(...grp.debt) * 100)}%를 빚 갚는 데 쓴다. 하위 20% 구간의 월 소비는 ${grp.floor}만 원이다. 내 소득 구간에서 저축·투자 비중과 부채상환의 절반만 자산으로 남고, 나머지(소비와 예비자금)는 쓴다고 두었다. 경조사 참석은 이 나이대 연평균 ${GIFT_N(P.age)}회(같은 보고서), 한 번에 11만 7천 원(NH농협은행 2025 축의금 평균). 세전 월급에서 4대보험 근로자 부담 약 9.4%(2025 요율)와 소득세를 뺐다. 부채상환의 절반을 원금으로 본 것, 예비자금을 모두 쓴다고 본 것, 기혼은 배우자도 나만큼 번다고 본 것, 소득세 근사, 반려동물 월 ${MONEY.pet}만 원, 예금 이자 없음은 설계상 가정.${hl ? ` 집: 생활비의 부채상환 몫 대신 주담대 원리금을 따로 냈다. 금리 연 ${(hl.rate * 100).toFixed(2)}%(한국은행 2025년 9월 예금은행 주담대 신규취급액 3.96%에서 시작), 30년 원금 균등 상환(설계상 가정). 집값은 지표누리 '주택매매가격 동향'(한국부동산원·KB)의 2007~2022년 전국 연간 변동률 중 한 해를 뽑았다(올해 ${hl.g}%).` : ""}${credit ? ` 현금이 마이너스라 신용대출 이자 연 5.31%(한국은행 2025년 9월 예금은행 일반신용대출)를 붙였다.` : ""}`, grade: "C" });
   }
   const yearT = P.t;
   const peerLines = [];
@@ -4172,8 +4286,8 @@ function lineHtml(l) {
       ${l.carry ? `<div class="sub">올해는 대표 프로젝트가 없다. 지난해 리뷰가 올해도 평판과 이직 가능성에 이어진다.</div>` : ""}${p.ev ? `<div class="sub">돌발 상황 ‘${esc(p.ev)}’</div>` : ""}${p.promo ? `<div class="pj-promo">${esc(josaRo(p.promo))} 승진했다</div>` : ""}</div>`;
   }
   if (l.card) return `<div class="ev"><div class="ev-t">${esc(l.card.title)}</div><div class="ev-c">→ ${esc(l.card.label)}</div><div class="ev-r">${esc(l.card.result)}${l.card.money ? ` <span class="cash ${l.card.money < 0 ? "dn" : "up"}">자산 ${manwon(l.card.money, true)}</span>` : ""}${w}</div></div>`;
-  if (l.kind === "money") return `<div class="moneyline"><span>올해 남은 돈 <b class="num cash ${l.net < 0 ? "dn" : "up"}">${manwon(l.net, true)}</b></span><span>자산 <b class="num ${l.cash < 0 ? "neg" : ""}">${manwon(l.cash)}</b></span>${w}
-    <div class="sub">실수령 월 ${won(l.th)}만 − 생활비 월 ${won(l.sp)}만(${esc(l.grp || "")}) − 경조사 ${l.gift || 0}만${l.dB ? ` · 카드 ${manwon(l.dB, true)}` : ""}</div></div>`;
+  if (l.kind === "money") return `<div class="moneyline"><span>올해 남은 돈 <b class="num cash ${l.net < 0 ? "dn" : "up"}">${manwon(l.net, true)}</b></span><span>자산${l.home ? "(집 포함)" : ""} <b class="num ${l.cash < 0 ? "neg" : ""}">${manwon(l.cash)}</b></span>${w}
+    <div class="sub">실수령 월 ${won(l.th)}만 − 생활비 월 ${won(l.sp)}만(${esc(l.grp || "")}) − 경조사 ${l.gift || 0}만${l.dB ? ` · 카드 ${manwon(l.dB, true)}` : ""}${l.hl ? ` · 주담대 원리금 −${won(l.hl.intr + l.hl.prin)}만 · 집값 ${l.hl.g > 0 ? "+" : ""}${l.hl.g}%(${manwon(l.hl.dv, true)})` : ""}${l.credit ? ` · 신용대출 이자 −${won(l.credit)}만` : ""}${(l.rec || []).map(([w2, a]) => ` · ${esc(w2)} −${won(a)}만`).join("")}</div></div>`;
   return `<div class="line ${l.big ? "big" : ""} ${l.kind === "fx" ? "fx" : ""}">${esc(l.text)}${w}</div>`;
 }
 function yearHtml(y) {
@@ -4225,7 +4339,7 @@ function renderPlay() {
       <div class="where">${P.age}세 · <span class="num">${START_YEAR + P.t}</span> · ${statusText(P)}</div>
       ${limitHtml(P)}
       <div class="meters">${mt("에너지", Math.round(P.energy), P.energy, P.energy < 25)}${mt("실력", Math.round(P.skill), P.skill)}${mt("평판", Math.round(P.rep), P.rep)}${mt("만족", last == null ? "—" : last.toFixed(1), last == null ? 0 : (last - 1) / 4 * 100)}</div>
-      <div class="id-foot"><span>자산 <b class="${P.cash < 0 ? "neg" : ""}">${manwon(P.cash)}</b></span>${P.best ? `<span>최고 리뷰 <b>${P.best.toFixed(1)}</b></span>` : ""}${avg != null ? `<span title="만족도: 노동패널 직무 만족 평균에 에너지와 월급 수준, 올해 고른 카드를 더한 값(1~5점)">평균 만족 <b class="${happy ? (avg >= HAPPY ? "ok" : "behind") : ""}">${avg.toFixed(2)}</b>${happy ? ` / 목표 <b>${HAPPY}</b>` : ""}</span>` : happy ? `<span>행복 목표 평균 만족 <b>${HAPPY}</b></span>` : ""}</div>
+      <div class="id-foot"><span>자산 <b class="${netWorth(P) < 0 ? "neg" : ""}">${manwon(netWorth(P))}</b></span>${P.best ? `<span>최고 리뷰 <b>${P.best.toFixed(1)}</b></span>` : ""}${avg != null ? `<span title="만족도: 노동패널 직무 만족 평균에 에너지와 월급 수준, 올해 고른 카드를 더한 값(1~5점)">평균 만족 <b class="${happy ? (avg >= HAPPY ? "ok" : "behind") : ""}">${avg.toFixed(2)}</b>${happy ? ` / 목표 <b>${HAPPY}</b>` : ""}</span>` : happy ? `<span>행복 목표 평균 만족 <b>${HAPPY}</b></span>` : ""}</div>
     </div>
     ${sceneHtml(P)}
     <div class="scroll" id="feed"><div class="feed">${feed}${intro}</div></div>
@@ -4600,7 +4714,7 @@ function endTraits(P) {
   if (burn >= 2 && key !== "burnout") out.push(`${burn}번 바닥을 친`);
   if (P.kids.length >= 2) out.push(`아이 ${P.kids.length}명을 키운`);
   else if (P.kids.length === 1) out.push("아이를 키운");
-  if (P.cash >= 30000 && key !== "h_rich") out.push(`${Math.floor(P.cash / 10000)}억을 모은`);
+  if (netWorth(P) >= 30000 && key !== "h_rich") out.push(`${Math.floor(netWorth(P) / 10000)}억을 모은`);
   if (jobs >= 5 && !["retire_many"].includes(key)) out.push(`회사 ${jobs}곳을 거친`);
   if (avg >= 3.8) out.push("대체로 즐거웠던");
   else if (avg && avg < 3) out.push("자주 지쳤던");
@@ -4650,7 +4764,7 @@ function endingKey(P) {
   if (ty === "retire" && jobs <= 2 && !back && !self) return "h_onecompany";
   if (ty === "retire" && P.flags.degree) return "h_degree";
   if (back >= 2) return "h_thrice";
-  if (P.cash >= (P.origRole === "developer" ? 100000 : 50000)) return "h_rich";
+  if (netWorth(P) >= (P.origRole === "developer" ? 100000 : 50000)) return "h_rich";
   if (ty === "retire") {
     if (back) return "retire_back";
     if (jobs <= 3) return "retire_one";
@@ -4943,7 +5057,7 @@ function renderRecord() {
     </section>
     <div class="facts">
       <div><b class="num">${eok(earned)}</b><span>일해서 번 돈 (물가 보정 전)</span></div>
-      <div><b class="num ${P.cash < 0 ? "neg" : ""}">${manwon(P.cash)}</b><span>마지막 자산 · 가구 평균 순자산 4억 7,144만(2025)</span></div>
+      <div><b class="num ${netWorth(P) < 0 ? "neg" : ""}">${manwon(netWorth(P))}</b><span>마지막 자산${P.home ? "(집 포함)" : ""} · 가구 평균 순자산 4억 7,144만(2025)</span></div>
       <div><b class="num">${won(peak)}만</b><span>가장 많이 받은 월급</span></div>
       <div><b class="num">${marryAt ? marryAt.age + "세" : "—"}${P.kids.length ? ` · ${P.kids.length}명` : ""}</b><span>결혼${P.kids.length ? " · 아이" : ""}</span></div>
     </div>
@@ -5076,6 +5190,20 @@ function renderData() {
       ${["female", "male"].map((sx) => `<tr><td>${SEX[sx]}</td>${[24, 26, 28, 30, 32, 34, 36, 38, 40].map((a) => `<td class="r num">${pct(G.life.marry[sx][a] * G.life.marry_scale[sx], 1)}<br><span class="fine">n=${G.life.marry_n[sx][a]}</span></td>`).join("")}</tr>`).join("")}
       </tbody></table></div>
       <p class="fine" style="margin-top:6px">출산은 결혼 다음 해부터 첫째 연 30%(3년까지), 12%(6년까지), 이후 3%, 둘째는 첫째 다음 해부터 4년간 연 13%로 두었습니다. 통계청 2024년 출생통계의 첫째 33.1세·둘째 34.4세에 맞춘 값이고, 게임 속 여성은 첫째 32.9세, 둘째 34.5세, 1인당 아이 0.94명입니다. 2024년 합계출산율 0.75명보다는 조금 많습니다(등급 C). 이혼·별거는 노동패널 기혼자의 연간 비율 ${pct(G.life.divorce.female["35~44"], 2)}~${pct(G.life.divorce.male["~34"], 2)}를 그대로 씁니다. 육아휴직을 쓸지는 플레이어가 고르고, 카드에 2023년 실제 사용률(엄마 84.5%, 아빠 16.1%)을 보여 줍니다.</p></section>
+    <section><h2>큰돈: 집 · 자녀 · 부모 · 차</h2>
+      <p class="fine">살면서 한 번에 크게 나가는 돈입니다. 금액은 아래 통계에서 가져왔고, 언제 나오는지와 얼마를 낼지 고르는 선택지는 설계상 가정입니다.</p>
+      <div class="tw"><table><thead><tr><th>항목</th><th>게임 속 값</th><th>근거</th></tr></thead><tbody>
+        <tr><td>집값</td><td>가구 연소득 × 수도권 ${HOME.pir.metro}배 / 외곽 ${HOME.pir.all}배</td><td>국토교통부 2024년도 주거실태조사 자가 가구 PIR(중위수)</td></tr>
+        <tr><td>주담대</td><td>집값의 ${HOME.ltv * 100}%, 최대 6억, DSR ${HOME.dsr * 100}%, 연 ${(HOME.rate * 100).toFixed(2)}%, 30년</td><td>금융위원회 2025.6.27 가계부채 관리 강화 방안 · 한국은행 2025년 9월 가중평균금리</td></tr>
+        <tr><td>신용대출</td><td>연 ${(HOME.credit * 100).toFixed(2)}%</td><td>한국은행 2025년 9월 예금은행 일반신용대출</td></tr>
+        <tr><td>취득세 · 중개보수</td><td>1~3% + 지방교육세 · 0.4~0.7%</td><td>지방세법 · 공인중개사법 시행규칙(2021.10.19)</td></tr>
+        <tr><td>집값 변동</td><td>해마다 ${HOME.hpi.join(", ")}% 중 하나</td><td>지표누리 주택매매가격 동향(한국부동산원·KB) 연간 전국 변동률</td></tr>
+        <tr><td>대학 등록금</td><td>사립 평균 연 800만 원 × 4년</td><td>교육부·대교협 대학정보공시 2025(평균 710만 6,500원)</td></tr>
+        <tr><td>학원비 추가</td><td>연 300만 원(월 77.2만 − 52만)</td><td>교육부·통계청 2024년 초중고 사교육비 조사(고등학생)</td></tr>
+        <tr><td>요양원</td><td>월 94만 원(본인부담 54만 + 비급여 40만)</td><td>2025년 장기요양 수가 1등급 시설 하루 9만 450원(언론 보도)</td></tr>
+        <tr><td>자녀 결혼</td><td>보증금 지원 5,000만 원</td><td>듀오 2026 결혼비용 보고서(신혼집 평균 3억 2,201만 원, 언론 보도)</td></tr>
+        <tr><td>자동차</td><td>신차 4,420만 원(5년 할부)</td><td>한국자동차산업협회 2021년 신차 등록 분석</td></tr>
+      </tbody></table></div></section>
     <section><h2>설계상 가정 (D)</h2><ul class="sources" style="list-style:disc">
       <li>한 턴은 1년입니다. PRD의 반기 턴은 연간 자료를 그대로 쓰기 위해 1년으로 바꿨습니다.</li>
       <li>프로젝트: 프로젝트 유형 ${Object.keys(PTYPES).length}종과 업계 ${Object.keys(TOPICS).length}종의 '맞는 배분', 리뷰 점수 공식, 직급 조건(일한 햇수·평판), 승진 때 월급 +3%. 대표 프로젝트는 일하는 동안 2년에 하나이고, 리뷰 점수는 그해와 다음 해 두 번 반영됩니다. 리뷰 평균이 8점 이상이면 그해 다른 직업으로 옮길 확률 ×0.75·쉬게 될 확률 ×0.85, 4점 이하면 ×1.3·×1.2. 평판은 이직 확률에 ×0.9~1.3, 떠나 있는 동안 최고 리뷰 점수는 복귀 확률에 ×0.8~1.25를 겁니다. 점수에 따른 월급 변화는 해마다 ±2% 안쪽입니다. 확률표 자체는 노동패널 그대로입니다.</li>
@@ -5106,6 +5234,16 @@ function renderData() {
       <li><a href="https://economist.co.kr/article/view/ecn202608140074" target="_blank" rel="noopener">한국소비자원 결혼서비스 계약금액 분석</a>(2025.4~2026.6, 이코노미스트 2026.8.14 보도) — 예식장·스드메 평균 2,156만 원(성수기)</li>
       <li>4대보험 근로자 부담 요율(2025: 국민연금 4.5%, 건강보험 3.545%, 장기요양 건강보험료의 12.95%, 고용보험 0.9%)</li>
       <li>NH농협은행 축의금 이체 분석(2023~2025) · 농림축산식품부 2025 반려동물 양육현황조사(29.2%) · 직장갑질119 직장인 1,000명 설문(2025년 10월, 괴롭힘 경험 33%)</li>
+      <li><a href="https://www.korea.kr/news/policyNewsView.do?newsId=148909633" target="_blank" rel="noopener">국토교통부 2024년도 주거실태조사</a>(2025.11 발표) — 자가 가구 PIR 수도권 8.7배·전국 6.3배·도 4.0배(중위수), 생애 첫 집까지 7.9년</li>
+      <li><a href="https://fsc.go.kr/edu/news/84845" target="_blank" rel="noopener">금융위원회 가계부채 관리 강화 방안</a>(2025.6.27) — 수도권·규제지역 생애최초 LTV 70%, 주택구입 주담대 6억 원 상한</li>
+      <li>한국은행 2025년 9월 금융기관 가중평균금리(2025.10.31 발표, 언론 보도) — 예금은행 주담대 3.96%, 일반신용대출 5.31% · 2025년 1월 4.27%, 5월 3.87%</li>
+      <li>지방세법 주택 유상취득 세율(6억 이하 1%, 6~9억 누진, 9억 초과 3%) · 공인중개사법 시행규칙 중개보수 상한(2021.10.19 시행: 6~9억 0.4%, 9~12억 0.5%, 12~15억 0.6%, 15억 이상 0.7%)</li>
+      <li><a href="https://www.index.go.kr/unity/potal/main/EachDtlPageDetail.do?idx_cd=1240" target="_blank" rel="noopener">지표누리 주택매매가격 동향</a>(한국부동산원 전국주택가격동향조사, 2012년까지 KB) — 연간 전국 변동률 2007~2022년 중 14개 연도</li>
+      <li>교육부·한국대학교육협의회 2025 대학정보공시(2025.4) — 4년제 연평균 등록금 710만 6,500원, 사립 800만 2,400원, 국공립 423만 8,900원</li>
+      <li>교육부·통계청 2024년 초중고 사교육비 조사(2025.3) — 고등학생 1인당 월 52만 원, 참여 학생 77만 2천 원</li>
+      <li>보건복지부 2025년 장기요양 수가(언론 보도) — 노인요양시설 1등급 하루 9만 450원, 시설 본인부담 20%</li>
+      <li>듀오 2026 결혼비용 보고서(언론 보도) — 총 결혼비용 평균 3억 8,113만 원, 신혼집 3억 2,201만 원 · 혼인·출산 증여재산공제 최대 1억 5,000만 원</li>
+      <li>한국자동차산업협회 2021년 신차 등록 분석(2022.4.6) — 평균 신차 판매가격 4,420만 원</li>
       <li><a href="https://1in8b.life/ko/" target="_blank" rel="noopener">80억 분의 1 (1in8b.life)</a> — 영감을 받은 작품</li>
     </ol></section>
     <section><h2>방문 통계</h2><p>이 사이트는 방문 수와 게임 진행(시작, 중간 점검, 엔딩, 공유)을 익명으로 세기 위해 Google 애널리틱스를 씁니다. 이름이나 연락처는 모으지 않습니다. 원하지 않으면 브라우저의 추적 차단 기능으로 막을 수 있습니다.</p></section>
