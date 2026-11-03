@@ -303,3 +303,10 @@ PRD 본문은 claude.ai 문서에 있다: https://claude.ai/artifact/892mSfiMXa6
 ## v16 — 자동 진행 중 조작
 - 자동 진행인데 자동 선택이 꺼져 있으면 프로젝트·카드 창이 열린 채 기다리며 아래 조작 막대(자동 선택 체크박스)를 덮었다. 창 맨 위에 '자동 선택 켜기/끄기'(`sheetsHtml`, `[data-autopick]`)를 넣었다.
 - 빠른 배속에서 누르는 사이 다시 그려져 클릭이 사라지던 문제: 버튼·체크박스를 누르고 있는 동안 `render()`를 미루고(`uiHold`) 손을 뗀 뒤 그린다.
+
+## v17 — Google Analytics
+
+- GA4 측정 ID `G-GL3KYL9MQM`. `src.html` 머리의 스크립트가 호스트가 `favorite.kr`일 때만 gtag.js를 불러온다(로컬·아티팩트에서는 꺼짐).
+- `track(name, params)`로 보내는 이벤트: `game_start`(role, sex, start_age), `checkpoint`(year, age), `game_end`(end_type, ending, years, rank, end_age), `share`(method: native/copy/text/image), `reset_records`.
+- 데이터 화면 끝에 "방문 통계" 안내 문단.
+- GA 맞춤 측정기준으로 `end_type`, `ending`, `method`를 등록해야 보고서에서 나눠 볼 수 있다.
