@@ -245,8 +245,13 @@ details.more[open] { display: flex; flex-direction: column; gap: 24px; }
 .sheet {
   width: 100%; max-width: 560px; max-height: 88%; overflow-y: auto; background: var(--surface); border-radius: 10px 10px 0 0;
   padding: 20px max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
-  display: flex; flex-direction: column; gap: 14px; animation: rise .25s ease-out;
+  display: flex; flex-direction: column; gap: 14px;
 }
+.sheet.rise { animation: rise .25s ease-out; }
+.sheet:focus { outline: none; }
+/* 주 버튼은 시트가 길어도 아래에 붙어 있게 */
+.sheet .form-row:has(#notice-ok, #mood-save, #proj-go, #proj-done) { position: sticky; bottom: calc(-20px - env(safe-area-inset-bottom, 0px)); z-index: 2; background: var(--surface); margin: 0 0 calc(-20px - env(safe-area-inset-bottom, 0px)); padding: 6px 0 calc(20px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -10px 12px -10px color-mix(in oklab, var(--ink) 25%, transparent); }
+.sheet .form-row:has(#notice-ok, #mood-save) + .autobar { order: -1; }
 @keyframes rise { from { transform: translateY(24px); opacity: .6; } }
 .sheet h2 { font-size: 22px; }
 .choices { display: flex; flex-direction: column; gap: 8px; }
@@ -268,7 +273,7 @@ th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--line
 th { font-weight: 500; color: var(--muted); font-size: 11px; letter-spacing: .04em; }
 td.r, th.r { text-align: right; }
 .tw { overflow-x: auto; }
-.tag { display: inline-block; font-size: 11px; padding: 0 6px; border-radius: 3px; border: 1px solid; }
+.tag { display: inline-block; white-space: nowrap; font-size: 11px; padding: 0 6px; border-radius: 3px; border: 1px solid; }
 .tag.designer { color: var(--des); } .tag.developer { color: var(--dev); } .tag.planner { color: var(--plan); } .tag.other { color: var(--muted); }
 td:first-child, th:last-child, td.r { white-space: nowrap; }
 tr.me td { font-weight: 600; background: color-mix(in oklab, var(--accent) 8%, var(--surface)); }
@@ -427,6 +432,8 @@ dialog.confirm .form-row { justify-content: flex-end; margin-top: 14px; gap: 8px
 .scene { width: min(100%, calc(26vh * 192 / 60)); aspect-ratio: 192 / 60; height: auto; margin-inline: auto; }
 .scene-wrap { text-align: center; }
 .scene-cap { text-align: left; }
+@media (max-width: 719px) { .sheet .form-row .btn { flex: 1 1 auto; } }
+@media (pointer: coarse) { .seg button, .chips button, .focus button, .crunch .seg button { min-height: 44px; } .moodbox summary { padding-block: 10px; } }
 @media (min-width: 720px) {
   .app:not([data-screen="play"]) { max-width: 720px; }
   .facts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -2953,6 +2960,9 @@ function whyHtml(why, grade, label = "근거", open = false) {
 /* 빠른 자동 진행 중에는 화면이 자주 다시 그려져, 누르는 사이 버튼·체크박스가 바뀌면 클릭이 사라진다.
    누르고 있는 동안에는 다시 그리기를 미뤘다가 손을 떼고 클릭이 처리된 뒤에 그린다. */
 let uiHold = false, uiPending = false, uiT = null;
+/* 대화창이 막 열린 직후의 탭은 '1년 보내기' 연타일 수 있어 무시한다 */
+let sheetKey = null, sheetAt = 0;
+document.addEventListener("click", (e) => { if (performance.now() - sheetAt < 450 && e.target.closest && e.target.closest(".sheet")) { e.stopPropagation(); e.preventDefault(); } }, true);
 function uiRelease() { if (!uiHold) return; uiHold = false; clearTimeout(uiT); if (uiPending) { uiPending = false; render(); } }
 document.addEventListener("pointerdown", (e) => {
   if (!$app.contains(e.target) || !e.target.closest("button, label, input, summary, a, [role=button]")) return;
@@ -3181,7 +3191,16 @@ function sheetsHtml() {
     : `<div class="auto-offer"><span>자동 진행 중 · 선택은 직접</span><button type="button" class="textlink" data-autopick="1">자동 선택 켜기</button></div>`;
   return ov.replace(/(<div class="sheet(?: [^"]*)?"[^>]*>)/, `$1${bar}`);
 }
+/* 대화창: 새로 열릴 때만 올라오는 애니메이션·포커스 이동, 다시 그릴 때는 포커스 유지. 열려 있는 동안 뒤 화면은 키보드로 닿지 않게 */
+function sheetAfterRender(fid) {
+  const sh = $app.querySelector(".sheet"), key = S.proj || S.card || S.notice || S.check || null;
+  $app.querySelectorAll(":scope > :not(.sheet-wrap)").forEach((e) => { e.inert = !!sh; });
+  if (!sh) { sheetKey = null; return; }
+  if (key !== sheetKey) { sheetKey = key; sheetAt = performance.now(); sh.classList.add("rise"); sh.tabIndex = -1; sh.focus({ preventScroll: true }); return; }
+  const f = fid && document.getElementById(fid); if (f && sh.contains(f)) f.focus({ preventScroll: true });
+}
 function renderPlay() {
+  const fid = document.activeElement && document.activeElement.id;
   const P = S.player;
   const w = currentWage(P);
   const feed = S.feed.map(yearHtml).join("");
@@ -3219,6 +3238,7 @@ function renderPlay() {
     </div>
     ${sheetsHtml()}`;
   const feedEl = $app.querySelector("#feed"); feedEl.scrollTop = feedEl.scrollHeight;
+  sheetAfterRender(fid);
   $app.querySelectorAll("[data-focus]").forEach((b) => b.onclick = () => { S.focus = b.dataset.focus; playYear(); render(); schedule(); });
   $app.querySelectorAll("[data-speed]").forEach((b) => b.onclick = () => { ffStop(); setSpeed(+b.dataset.speed); });
   const ffb = $app.querySelector("#ff"); if (ffb) ffb.onclick = () => ffStart();
