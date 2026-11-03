@@ -1976,6 +1976,7 @@ const tv = (v, ...a) => typeof v === "function" ? v(...a) : v;
          통계청 2024 출생통계 첫째아 33.1세·둘째 34.4세에 맞췄다. 게임 속 여성: 첫째 32.8세, 둘째 34.4세, 1인당 아이 0.94명(등급 C).
    이혼: 노동패널 기혼 → 다음 해 이혼·별거 비율(성별 x 나이대), 연 0.4~0.6%. */
 function marryP(P) {
+  if (P.age > 49) return 0; // KLIPS 표본이 48~49세 구간까지만 있다
   const L = G.life, a = Math.max(20, Math.min(48, P.age - (P.age % 2)));
   return Math.min(.6, (L.marry[P.sex][a] || 0) * L.marry_scale[P.sex] * (P.dating || 1));
 }
@@ -2605,6 +2606,7 @@ function finishYear(ctx) {
   }
   const yearT = P.t;
   const peerLines = [];
+  S.peerWedding = null; // 청첩장은 소식을 들은 해에만
   for (const x of S.peers) {
     if (x.end) continue;
     const ev = step(x).filter((e) => e.big);
