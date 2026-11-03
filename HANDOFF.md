@@ -310,3 +310,8 @@ PRD 본문은 claude.ai 문서에 있다: https://claude.ai/artifact/892mSfiMXa6
 - `track(name, params)`로 보내는 이벤트: `game_start`(role, sex, start_age), `checkpoint`(year, age), `game_end`(end_type, ending, years, rank, end_age), `share`(method: native/copy/text/image), `reset_records`.
 - 데이터 화면 끝에 "방문 통계" 안내 문단.
 - GA 맞춤 측정기준으로 `end_type`, `ending`, `method`를 등록해야 보고서에서 나눠 볼 수 있다.
+
+## v18 — 재취업 안내
+
+- 일을 다시 시작하는 해에도 공백기 안내처럼 `notice: { type: "work", from }`를 띄운다. from: none(공백 뒤 재취업), away(디자이너 복귀), self(프리랜서→회사), leave(복직), school(졸업 후 취업).
+- 다음 해 프로젝트가 바로 나오는지(`projDue`)를 안내 문구에 미리 적어, 복귀 직후 프로젝트가 갑자기 뜨는 느낌을 줄였다.

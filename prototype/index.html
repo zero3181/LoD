@@ -657,11 +657,12 @@ function goAway(P, dest, reason) {
   P.jobs.push({ company: josaRo(AWAY_NAME[dest]) + " 일함", size: null, role: dest, from: P.t + 1, to: null, kind: "away", reason });
 }
 function comeback(P, out, text, why) {
+  const ay = P.awayYears;
   P.status = "wage"; P.awayYears = 0; P.flags.comeback = (P.flags.comeback || 0) + 1;
   P.size = pick({ S: .65, M: .21, L: .14 }); P.company = choose(COMPANY[P.role][P.size]);
   P.jobs.at(-1).to = P.t + 1;
   P.jobs.push({ company: P.company, size: P.size, role: P.role, from: P.t + 1, to: null, kind: "wage", reason: "디자이너 복귀" });
-  out.push({ kind: "comeback", big: true, text: `${text} ${P.company}(${SIZE3[P.size]}).`, why, grade: "B" });
+  out.push({ kind: "comeback", big: true, text: `${text} ${P.company}(${SIZE3[P.size]}).`, why, grade: "B", notice: { type: "work", from: "away", dest: P.awayKind, gap: P.jobs.at(-2) ? P.t + 1 - P.jobs.at(-2).from : 0, rate: ay <= 1 ? RET.other_first.back : RET.other_later.back } });
 }
 
 /* 올해 선택(초점·카드)이 확률을 얼마나 움직였는지 한 줄로 */
@@ -714,7 +715,7 @@ function step(P, mods = {}) {
       const gapY = P.noneYears;
       P.size = pick(G.size_move[P.size]); P.company = choose(COMPANY[P.role][P.size]); P.status = "wage"; P.noneYears = 0;
       P.jobs.push({ company: P.company, size: P.size, role: P.role, from: P.t + 1, to: null, kind: "wage" });
-      out.push({ kind: "back", big: true, text: `공백 ${gapY}년 만에 ${roleName}로 다시 일을 시작했다. ${P.company}, ${SIZE3[P.size]}.`, why, grade: "B" });
+      out.push({ kind: "back", big: true, text: `공백 ${gapY}년 만에 ${roleName}로 다시 일을 시작했다. ${P.company}, ${SIZE3[P.size]}.`, why, grade: "B", notice: { type: "work", from: "none", gap: gapY, rate: re.back } });
     } else if (k === "other") {
       const dest = r.dest ? pick(r.dest) : "other";
       goAway(P, dest, null);
@@ -760,7 +761,7 @@ function step(P, mods = {}) {
       P.status = "wage"; P.size = pick({ S: .65, M: .21, L: .14 }); P.company = choose(COMPANY[P.role][P.size]);
       P.jobs.at(-1).to = P.t + 1;
       P.jobs.push({ company: P.company, size: P.size, role: P.role, from: P.t + 1, to: null, kind: "wage" });
-      out.push({ kind: "back", big: true, text: `프리랜서를 접고 ${P.company}(${SIZE3[P.size]})에 들어갔다.`, why: `${SRC.klips}: 자영업 ${roleName}가 다음 해 임금근로로 돌아가는 비율 연 ${pct(r.self_to_wage, 1)}. 규모는 소규모 출발 행을 썼다.`, grade: "B" });
+      out.push({ kind: "back", big: true, text: `프리랜서를 접고 ${P.company}(${SIZE3[P.size]})에 들어갔다.`, why: `${SRC.klips}: 자영업 ${roleName}가 다음 해 임금근로로 돌아가는 비율 연 ${pct(r.self_to_wage, 1)}. 규모는 소규모 출발 행을 썼다.`, grade: "B", notice: { type: "work", from: "self", rate: r.self_to_wage } });
     } else {
       // 이직자 웃돈만큼 남은 사람은 조금 덜 올라, 평균은 나이별 곡선에 머문다
       if (P.status === "wage") P.p *= 1 - jobBump(P.role) * cell.new_job_same_occupation;
@@ -2739,11 +2740,11 @@ function pauseLine(P) {
 }
 function endPause(P) {
   const kind = P.pause.kind; P.pause = null;
-  if (kind === "leave") { P.status = "wage"; return { kind: "back", big: true, text: `${P.company}에 복직했다.`, why: "휴직 뒤 원래 직장으로 돌아간다고 두었다(설계상 가정). 다음 해부터는 다시 노동패널 확률을 따른다.", grade: "D" }; }
+  if (kind === "leave") { P.status = "wage"; return { kind: "back", big: true, text: `${P.company}에 복직했다.`, why: "휴직 뒤 원래 직장으로 돌아간다고 두었다(설계상 가정). 다음 해부터는 다시 노동패널 확률을 따른다.", grade: "D", notice: { type: "work", from: "leave" } }; }
   P.flags.degree = true; P.status = "wage";
   P.size = pick(G.size_move[P.size || "S"]); P.company = choose(COMPANY[P.role][P.size]); P.p *= 1.06;
   P.jobs.push({ company: P.company, size: P.size, role: P.role, from: P.t, to: null, kind: "wage", reason: "석사 졸업" });
-  return { kind: "back", big: true, text: `석사를 마치고 ${josaRo(P.company)} 들어갔다(${SIZE3[P.size]}).`, why: "졸업 후 월급 +6%와 회사 규모는 설계상 가정(규모 이동은 청년패널 행 사용).", grade: "D" };
+  return { kind: "back", big: true, text: `석사를 마치고 ${josaRo(P.company)} 들어갔다(${SIZE3[P.size]}).`, why: "졸업 후 월급 +6%와 회사 규모는 설계상 가정(규모 이동은 청년패널 행 사용).", grade: "D", notice: { type: "work", from: "school" } };
 }
 
 function finishYear(ctx) {
@@ -3402,6 +3403,20 @@ function noticeHtml() {
     rules = [`이 1년은 회사 사건 없이 지나갑니다.`,
       n.care ? `휴직하는 동안 월급은 없습니다.` : `월급 대신 육아휴직급여 월 약 ${won(n.pay)}만 원을 받습니다(2025년 상한 기준).`,
       `휴직이 끝나면 ${josaRo(esc(n.co))} 복직합니다. 그 뒤로는 다시 노동패널 확률을 따릅니다.`];
+  } else if (n.type === "work") {
+    const co = `${esc(P.company)}(${SIZE3[P.size]})`;
+    tag = n.from === "away" ? "디자이너로 복귀" : n.from === "leave" ? "복직" : n.from === "school" ? "졸업 후 취업" : "재취업";
+    title = n.from === "none" ? `공백 ${n.gap}년 만에 다시 출근한다` : n.from === "away" ? `${roleName}로 돌아왔다` : n.from === "self" ? "프리랜서를 접고 회사에 들어간다" : n.from === "leave" ? "휴직을 마치고 복직한다" : "석사를 마치고 회사에 들어간다";
+    lead = n.from === "none" ? `쉬는 동안 지원을 이어 왔고, ${co}에 ${roleName}로 합격했다.`
+      : n.from === "away" ? `${AWAY_NAME[n.dest] || "다른"} 일을 정리하고 ${co}에 ${roleName}로 들어갔다.`
+      : n.from === "self" ? `들어오던 외주를 정리하고 ${co}에 들어갔다.`
+      : n.from === "leave" ? `비워 두었던 ${esc(P.company)} 자리로 돌아간다.`
+      : `학위를 받고 ${co}에 들어갔다.`;
+    if (n.rate) stat = n.from === "self" ? `프리랜서 ${roleName} 중 한 해에 <b>${pct(n.rate, 1)}</b>가 회사로 돌아갑니다(노동패널).` : `같은 처지의 사람 중 한 해에 <b>${pct(n.rate, 1)}</b>가 ${roleName}로 돌아갑니다(노동패널).`;
+    rules = [`월급이 다시 들어옵니다. 월 약 ${won(currentWage(P))}만 원${n.from === "school" ? "(졸업으로 6% 올랐습니다)" : ""}.`,
+      projDue(P) ? `회사 일이 다시 시작됩니다. 내년 초에 새 프로젝트를 맡고, 그 뒤로 2년마다 대표 프로젝트가 나옵니다.` : `회사 일이 다시 시작됩니다. 대표 프로젝트는 2년마다 나옵니다.`,
+      ...(n.from === "none" || n.from === "away" ? [`올해의 초점이 다시 '지금 일에 집중·실력 키우기·이직 준비' 같은 회사 생활 선택지로 바뀝니다.`] : []),
+      `다음 해부터 다시 노동패널의 이직·퇴사 확률을 따릅니다.`];
   } else {
     tag = "학업 시작"; title = "대학원에 들어간다";
     lead = `회사를 그만두고 전일제 석사 과정을 시작했다.`;
