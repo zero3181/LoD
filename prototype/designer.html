@@ -691,7 +691,10 @@ h1 { font-weight: 800; letter-spacing: -.02em; }
 .record .facts div { padding: 12px 14px; }
 .record .facts b { font-size: 22px; line-height: 28px; }
 .record .facts span { font-size: 12px; line-height: 16px; }
-.slots { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; }
+.slots { display: grid; grid-template-columns: repeat(15, 1fr); gap: 4px; }
+.slots i.hid:not(.got):not(.me) { background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
+.traits { display: flex; gap: 6px; flex-wrap: wrap; }
+.endings span.hid:not(.got) { border-style: dotted; }
 .slots i { height: 20px; border-radius: 4px; background: var(--sunk); }
 .slots i.got { background: var(--graphite-300); } .slots i.me { background: var(--fill-accent); }
 .record h2 { font: 600 12px/16px var(--font-body); letter-spacing: .14em; color: var(--muted); border-bottom: .5px solid var(--line); }
@@ -1461,6 +1464,8 @@ function achCheck(P) {
   if (got.length) { try { localStorage.setItem(ACH_STORE, JSON.stringify(m)); } catch (e) {} got.forEach((n, i) => setTimeout(() => { toast("업적 달성", n); SFX.ach(); }, 400 + i * 900)); }
 }
 function toast(head, body) {
+  // 엔딩 화면에서는 업적을 제목 아래 요약 한 줄로 보여 주므로 알림을 띄우지 않는다(기록 지우기 안내는 예외)
+  if (S && S.screen === "record" && head === "업적 달성") return;
   try {
     let box = document.getElementById("toasts");
     if (!box) { box = document.createElement("div"); box.id = "toasts"; box.className = "toasts"; box.setAttribute("aria-live", "polite"); document.body.appendChild(box); }
@@ -3416,7 +3421,7 @@ function to60(g) {
 /* 기록실: 엔딩·업적·인사이트 (이 브라우저에 저장) */
 function vaultHtml(open = false) {
   const a = loadAch(), ins = loadIns(), e = loadEndings();
-  const nA = ACH.filter(([k]) => a[k]).length, nI = Object.keys(ins).length, nE = ENDINGS.filter(([k]) => e[k]).length;
+  const nA = ACH.filter(([k]) => a[k]).length, nI = Object.keys(ins).length, nE = endCount(e).n + endCount(e).h;
   const cell = (v) => v ? `<td class="${v}">${IMP[v]}</td>` : `<td class="unk">?</td>`;
   return `<details class="vault" ${open ? "open" : ""}><summary>기록실 · 엔딩 ${nE}/${ENDINGS.length} · 업적 ${nA}/${ACH.length} · 인사이트 ${nI}/${INS_TOTAL}</summary>
     <div class="achs">${ACH.map(([k, n, d]) => `<div class="${a[k] ? "got" : ""}"><b>${a[k] ? esc(n) : "???"}</b>${esc(d)}</div>`).join("")}</div>
@@ -3449,7 +3454,7 @@ function bindVault() {
   };
 }
 function renderStart() {
-  const d = R.designer, e = loadEndings(), nE = ENDINGS.filter(([k]) => e[k]).length;
+  const d = R.designer, e = loadEndings(), nE = endCount(e).n + endCount(e).h;
   const rules = [["프로젝트", "2년마다 대표 프로젝트를 맡아 시간을 나누고 리뷰를 받습니다."], ["팀", "리드가 되면 팀원이 생깁니다. 지치면 떠납니다."], ["성장", "잘하면 평판이 오르고 승진합니다."], ["현실", "이직·전향·공백은 실제 통계의 확률대로 옵니다."]];
   $app.innerHTML = `
   <div class="scroll"><div class="start">
@@ -4008,50 +4013,97 @@ const NAT = { marry: { female: 31.6, male: 33.9 }, firstBirth: 33.1 };
 const endAge = (P) => (P.end && P.end.type === "retire" ? P.age : P.age - 1); // 피드의 마지막 줄 나이
 const yrs = (j) => j.to == null ? `${START_YEAR + j.from}–` : j.to - 1 > j.from ? `${START_YEAR + j.from}–${START_YEAR + j.to - 1}` : `${START_YEAR + j.from}`;
 function lifetime(P) { return P.wages.reduce((s, w) => s + w * 12, 0); } // 세전 월급 합. 카드로 들어오고 나간 돈은 자산에만
-function titleFor(P) {
-  const self = P.statuses.filter((x) => x === "self").length;
-  const jobs = P.jobs.filter((j) => j.kind === "wage").length;
-  if (P.end.type === "retire" && P.flags.comeback) return `돌아와서 끝까지 남은 ${ROLE[P.role]}`;
-  if (P.end.type === "retire" && P.role === P.origRole && jobs <= 2) return `한 우물을 판 ${ROLE[P.role]}`;
-  if (P.end.type === "retire" && P.role !== P.origRole) return `두 번 시작한 ${ROLE[P.role]}`;
-  if (P.end.type === "retire" && self >= P.sats.length / 2) return "혼자 일한 사람";
-  if (P.end.type === "retire" && jobs >= 6) return `${jobs}개의 회사를 거친 ${ROLE[P.role]}`;
-  if (P.end.type === "retire") return `끝까지 남은 ${ROLE[P.role]}`;
-  if (P.end.type === "planner") return "기획자가 된 " + ROLE[P.origRole];
-  if (P.flags.comeback) return `한 번 돌아왔다가 ${workYears(P)}년 만에 떠난 ${ROLE[P.origRole]}`;
-  if (P.end.type === "break") return "잠시 멈춰 선 사람";
-  return `${workYears(P)}년 동안 일한 ${ROLE[P.origRole]}`;
+function titleFor(P) { return endingName(endingKey(P)); }
+/* 이번 판의 특징: 엔딩 이름이 말하지 않는 것만 짧은 수식어로. 많아야 셋 */
+function endTraits(P) {
+  const key = endingKey(P), out = [];
+  const jobs = P.jobs.filter((j) => j.kind === "wage").length, self = P.statuses.filter((x) => x === "self").length;
+  const avg = satAvg(P) || 0, burn = P.flags.burnoutN || 0;
+  if (P.rank >= 4 && key !== "retire_director") out.push("디렉터까지 간");
+  else if (P.rank === 3 && !["planner_lead", "long_lead"].includes(key)) out.push("리드까지 간");
+  if (self >= 3 && key !== "retire_self") out.push(`프리랜서로 ${self}년 일한`);
+  if (P.flags.degree && key !== "h_degree") out.push("석사를 마친");
+  if (burn >= 2 && key !== "burnout") out.push(`${burn}번 바닥을 친`);
+  if (P.kids.length >= 2) out.push(`아이 ${P.kids.length}명을 키운`);
+  else if (P.kids.length === 1) out.push("아이를 키운");
+  if (P.cash >= 30000 && key !== "h_rich") out.push(`${Math.floor(P.cash / 10000)}억을 모은`);
+  if (jobs >= 5 && !["retire_many"].includes(key)) out.push(`회사 ${jobs}곳을 거친`);
+  if (avg >= 3.8) out.push("대체로 즐거웠던");
+  else if (avg && avg < 3) out.push("자주 지쳤던");
+  return out.slice(0, 3);
 }
-/* 엔딩 모음: 엔딩 종류 12가지. 이 기기 브라우저에만 저장한다. */
+/* 엔딩 모음: 33가지(일반 29 + 숨은 엔딩 4). 어떻게 끝났나(정년·기획·다른 일·공백) × 어떤 길을 걸었나(시기·이유·직급·복귀).
+   예전 12가지의 키는 그대로 두어 모아 둔 기록이 이어진다. 이 기기 브라우저에만 저장한다. */
 const ENDINGS = [
-  ["retire_back", "돌아와서 끝까지 남은 디자이너"], ["retire_one", "한 우물을 판 디자이너"], ["retire_switch", "직군을 바꿔 정년까지 간 사람"],
+  // 정년
+  ["retire_one", "한 우물을 판 디자이너"], ["retire_back", "돌아와서 끝까지 남은 디자이너"], ["retire_director", "디렉터로 정년을 맞은 디자이너"],
   ["retire_self", "혼자 일한 사람"], ["retire_many", "여러 회사를 거친 디자이너"], ["retire", "끝까지 남은 디자이너"],
-  ["planner", "기획자가 된 디자이너"], ["comeback", "한 번 돌아왔다가 떠난 디자이너"], ["break", "잠시 멈춰 선 사람"],
-  ["short", "3년 안에 떠난 디자이너"], ["mid", "10년 안에 떠난 디자이너"], ["long", "10년 넘게 일하고 떠난 디자이너"],
+  // 기획으로
+  ["planner_early", "일찍 기획으로 건너간 디자이너"], ["planner_lead", "팀을 이끌다 기획으로 간 디자이너"], ["planner", "기획자가 된 디자이너"],
+  // 다른 일로
+  ["dev", "개발자가 된 디자이너"], ["short_fit", "맞지 않는 옷을 벗은 디자이너"], ["short_cond", "첫 직장을 버티지 못한 디자이너"], ["short_lost", "회사가 먼저 문을 닫은 디자이너"], ["short", "3년 안에 떠난 디자이너"],
+  ["mid_better", "더 나은 조건을 찾아 떠난 디자이너"], ["mid_fit", "다른 길이 더 맞았던 디자이너"], ["mid_lost", "회사 사정으로 떠난 디자이너"], ["mid", "10년 안에 떠난 디자이너"], ["long_lead", "팀을 이끌다 떠난 디자이너"], ["long", "10년 넘게 일하고 떠난 디자이너"],
+  ["comeback", "한 번 돌아왔다가 떠난 디자이너"], ["burnout", "번아웃 끝에 떠난 디자이너"], ["away_60", "다른 일로 60세를 맞은 사람"],
+  // 공백으로
+  ["break_care", "아이를 키우며 멈춘 사람"], ["break_lost", "일자리를 잃고 멈춘 사람"], ["break_health", "몸이 먼저 멈춘 사람"], ["break_young", "첫 직장 뒤 길을 찾는 사람"],
+  ["break", "잠시 멈춰 선 사람"], ["break_60", "쉬던 중에 60세를 맞은 사람"],
+  // 숨은 엔딩
+  ["h_onecompany", "두 회사 안에서 정년을 맞은 디자이너", true], ["h_degree", "공부하고 돌아와 정년까지 간 디자이너", true],
+  ["h_thrice", "세 번 시작한 디자이너", true], ["h_rich", "5억을 모은 디자이너", true],
 ];
+const endingName = (k) => (ENDINGS.find(([kk]) => kk === k) || [k, k])[1];
+const REASON_FIT = ["적성 불일치", "기술 부족"], REASON_COND = ["근무조건·환경", "동료·상사 불화", "보수·승진 불만", "건강"], REASON_BETTER = ["보수·승진 불만", "전망 없음"], REASON_LOST = ["폐업·해고·사업종료", "계약 만료"];
+/* 떠나거나 멈춘 이유: 다른 일로 옮긴 때는 그 일자리 줄의 이유, 공백이면 마지막으로 그만둔 일자리의 이유 */
+function endReason(P) {
+  if (P.end.type === "break") { const j = [...P.jobs].reverse().find((x) => x.reason && x.kind !== "away"); return j ? j.reason : ""; }
+  const j = [...P.jobs].reverse().find((x) => x.kind === "away"); return j ? j.reason || "" : "";
+}
 function endingKey(P) {
+  const ty = P.end.type, wy = workYears(P), why = endReason(P);
   const self = P.statuses.filter((x) => x === "self").length, jobs = P.jobs.filter((j) => j.kind === "wage").length;
-  if (P.end.type === "retire") {
-    if (P.flags.comeback) return "retire_back";
-    if (P.role === P.origRole && jobs <= 2) return "retire_one";
-    if (P.role !== P.origRole) return "retire_switch";
+  const back = P.flags.comeback || 0, burn = P.flags.burnoutN || 0;
+  // 숨은 엔딩: 드문 조합
+  if (ty === "retire" && jobs <= 2 && !back && !self) return "h_onecompany";
+  if (ty === "retire" && P.flags.degree) return "h_degree";
+  if (back >= 2) return "h_thrice";
+  if (P.cash >= 50000) return "h_rich";
+  if (ty === "retire") {
+    if (back) return "retire_back";
+    if (jobs <= 3) return "retire_one";
     if (self >= P.sats.length / 2) return "retire_self";
     if (jobs >= 6) return "retire_many";
+    if (P.rank >= 4) return "retire_director";
     return "retire";
   }
-  if (P.end.type === "planner") return "planner";
-  if (P.flags.comeback) return "comeback";
-  if (P.end.type === "break") return "break";
-  const y = workYears(P);
-  return y <= 3 ? "short" : y <= 10 ? "mid" : "long";
+  if (ty === "planner") {
+    if (back) return "comeback";
+    if (P.rank >= 3) return "planner_lead";
+    return wy <= 4 ? "planner_early" : "planner";
+  }
+  if (ty === "break") {
+    if (P.end.age60) return "break_60";
+    if (why === "육아·가사") return "break_care";
+    if (REASON_LOST.includes(why)) return "break_lost";
+    if (why === "건강" || burn) return "break_health";
+    return wy <= 2 ? "break_young" : "break";
+  }
+  // 다른 일로
+  if (P.end.age60) return "away_60";
+  if (back) return "comeback";
+  if (burn >= 2) return "burnout";
+  if (P.awayKind === "developer") return "dev";
+  if (wy <= 3) return REASON_FIT.includes(why) ? "short_fit" : REASON_COND.includes(why) ? "short_cond" : REASON_LOST.includes(why) ? "short_lost" : "short";
+  if (wy <= 10) return REASON_BETTER.includes(why) ? "mid_better" : REASON_FIT.includes(why) ? "mid_fit" : REASON_LOST.includes(why) ? "mid_lost" : "mid";
+  return P.rank >= 3 ? "long_lead" : "long";
 }
 const END_STORE = "lod-endings-v1";
 function loadEndings() { try { return JSON.parse(localStorage.getItem(END_STORE) || "{}") || {}; } catch (e) { return {}; } }
 function saveEnding(k) { const m = loadEndings(), isNew = !m[k]; m[k] = (m[k] || 0) + 1; try { localStorage.setItem(END_STORE, JSON.stringify(m)); } catch (e) {} return isNew; }
+const endCount = (m) => ({ n: ENDINGS.filter(([k, , h]) => !h && m[k]).length, N: ENDINGS.filter((e) => !e[2]).length, h: ENDINGS.filter(([k, , h]) => h && m[k]).length, H: ENDINGS.filter((e) => e[2]).length });
 function endingsHtml(key, isNew) {
-  const m = loadEndings(), n = ENDINGS.filter(([k]) => m[k]).length;
-  return `<section><h2>엔딩 모음 · ${n}/${ENDINGS.length}</h2>${isNew ? `<p class="newend">새 엔딩을 모았어요: ${esc(ENDINGS.find(([k]) => k === key)[1])}</p>` : ""}
-    <div class="endings">${ENDINGS.map(([k, name]) => `<span class="${m[k] ? "got" : ""}${k === key ? " me" : ""}">${m[k] ? esc(name) : "???"}</span>`).join("")}</div>
+  const m = loadEndings(), c = endCount(m);
+  return `<section><h2>엔딩 모음 · ${c.n}/${c.N} · 숨은 엔딩 ${c.h}/${c.H}</h2>${isNew ? `<p class="newend">새 엔딩을 모았어요: ${esc(endingName(key))}</p>` : ""}
+    <div class="endings">${ENDINGS.map(([k, name, h]) => `<span class="${m[k] ? "got" : ""}${k === key ? " me" : ""}${h ? " hid" : ""}">${m[k] ? esc(name) : h ? "숨은 엔딩" : "???"}</span>`).join("")}</div>
     <p class="fine" style="margin-top:6px">이 기기의 브라우저에만 저장됩니다.</p></section>`;
 }
 
@@ -4140,10 +4192,10 @@ function cmpHtml(P, rows) {
 }
 function rarity(P, mc) {
   const me = P.end.type;
-  const my = workYears(P);
+  const my = workYears(P), myT = my <= 1 ? "1년 남짓" : `${my}년 앞뒤`;
   const hit = mc.ends.filter((e) => e.type === me && (me === "retire" ? e.same === (P.role === P.origRole) : Math.abs(e.years - my) <= 2)).length;
   const what = me === "retire" ? (P.role === P.origRole ? `60세까지 ${ROLE[P.origRole]}로 남은 사람` : "중간에 직군을 바꿔 60세까지 일한 사람")
-    : me === "planner" ? `디자이너로 ${my}년 앞뒤 일하고 기획 쪽으로 옮긴 사람` : me === "break" ? `디자이너로 ${my}년 앞뒤 일하고 긴 쉼에 들어간 사람` : `디자이너로 ${my}년 앞뒤 일하고 다른 직업으로 옮긴 사람`;
+    : me === "planner" ? `디자이너로 ${myT} 일하고 기획 쪽으로 옮긴 사람` : me === "break" ? `디자이너로 ${myT} 일하고 긴 쉼에 들어간 사람` : `디자이너로 ${myT} 일하고 다른 직업으로 옮긴 사람`;
   return { hit, what };
 }
 function neverMarriedP(P) { // 시작 나이부터 지금까지 결혼하지 않았을 확률 (데이터 확률만으로)
@@ -4290,12 +4342,13 @@ function renderRecord() {
       ${epi.map((t) => `<p>${esc(t)}</p>`).join("")}
       <div class="sign"><span>${endYear}년, 기록 마감</span><span class="badge danger">${STAMP[P.end.type]}</span></div>
     </section>`;
-  const endM = loadEndings(), nE = ENDINGS.filter(([k]) => endM[k]).length;
+  const endM = loadEndings(), ec = endCount(endM), nE = ec.n + ec.h, traits = endTraits(P);
   const marryAt = P.life.find((e) => e.kind === "marry");
   $app.innerHTML = `<div class="scroll"><div class="record">
     <header>
       <div class="eyebrow end">엔딩 · ${STAMP[P.end.type]}</div>
       <h1 class="rec-title">${esc(title)}</h1>
+      ${traits.length ? `<div class="traits">${traits.map((t) => `<span class="badge">${esc(t)}</span>`).join("")}</div>` : ""}
       <p class="rec-sum">${P.startAge}세에 시작해 ${endAge(P)}세에 기록을 마쳤다. 디자이너로 ${workYears(P)}년, 일자리 ${P.jobs.filter((j) => j.kind !== "school").length}곳. ${esc(P.end.text)} 목표 ‘${GOALS[S.goal].label}’ ${gr.ok ? "달성" : "실패"}${S.goal === "happy" ? ` (${esc(gr.text)})` : ""}.</p>
     </header>
     ${sceneHtml(P)}
@@ -4310,8 +4363,9 @@ function renderRecord() {
       <div><b class="num">${marryAt ? marryAt.age + "세" : "—"}${P.kids.length ? ` · ${P.kids.length}명` : ""}</b><span>결혼${P.kids.length ? " · 아이" : ""}</span></div>
     </div>
     <section class="stack" style="gap:8px">
-      <div class="bar-sub"><span class="eyebrow">엔딩 모음</span><span class="eyebrow num">${nE} / ${ENDINGS.length}</span></div>
-      <div class="slots" aria-label="엔딩 ${ENDINGS.length}개 중 ${nE}개 모음">${ENDINGS.map(([k]) => `<i class="${k === P.endSaved.key ? "me" : endM[k] ? "got" : ""}" title="${endM[k] ? esc(ENDINGS.find(([kk]) => kk === k)[1]) : "???"}"></i>`).join("")}</div>
+      <div class="bar-sub"><span class="eyebrow">엔딩 모음</span><span class="eyebrow"><span class="num">${ec.n}/${ec.N}</span> · 숨은 엔딩 <span class="num">${ec.h}/${ec.H}</span></span></div>
+      <div class="slots" aria-label="엔딩 ${ENDINGS.length}개 중 ${nE}개 모음">${ENDINGS.map(([k, name, h]) => `<i class="${k === P.endSaved.key ? "me" : endM[k] ? "got" : ""}${h ? " hid" : ""}" title="${endM[k] ? esc(name) : h ? "숨은 엔딩" : "???"}"></i>`).join("")}</div>
+      ${P.endSaved.isNew ? `<div class="fine" style="color:var(--accent)">새 엔딩을 모았어요${ENDINGS.find(([k]) => k === P.endSaved.key)[2] ? " · 숨은 엔딩" : ""}</div>` : ""}
       ${(P.achNew || []).length ? `<div class="fine">업적 ${P.achNew.length}개 새로 얻음 · ${P.achNew.map((k) => esc(ACH.find(([kk]) => kk === k)[1])).join(", ")}</div>` : ""}
     </section>
     ${portfolioHtml(P)}
@@ -4356,7 +4410,7 @@ function renderRecord() {
   mountScene();
   $app.querySelector("#data").onclick = () => { S.screen = "data"; S.back = "record"; render(); };
   const note = (t) => { $app.querySelector("#copy-note").textContent = t; };
-  const shortTxt = `[${title}] ${P.startAge}세 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작해 디자이너로 ${sp.me}년, ${RANKS[P.rank].name}까지, ${STAMP[P.end.type]}. 같은 조건 ${sp.N.toLocaleString()}명 중 오래 일한 순서로 ${topPct(sp.below)}. 과연 정년까지 일할 수 있을까요?`;
+  const shortTxt = `[${title}]${endTraits(P).length ? ` ${endTraits(P).join(" · ")}.` : ""} ${P.startAge}세 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작해 디자이너로 ${sp.me}년, ${RANKS[P.rank].name}까지, ${STAMP[P.end.type]}. 같은 조건 ${sp.N.toLocaleString()}명 중 오래 일한 순서로 ${topPct(sp.below)}. 과연 정년까지 일할 수 있을까요?`;
   const fullTxt = `[${title}]\n${P.startAge}세 ${SEX[P.sex]} ${ROLE[P.origRole]}로 시작 → ${endAge(P)}세. ${P.end.text}\n디자이너로 ${sp.me}년 · 같은 조건 ${sp.N.toLocaleString()}명 중 오래 일한 순서로 ${topPct(sp.below)} · 번 돈 약 ${eok(earned)} 원 · 최고 월 ${won(peak)}만 원\n` +
     scenes.slice(0, 6).map((x) => `${START_YEAR + x.t} ${x.text}`).join("\n") + "\n" + P.jobs.map((j) => `${START_YEAR + j.from} ${ROLE[j.role]} ${j.company}`).join("\n") + `\n\n디자이너로 살아보기 ${SHARE_URL}`;
   const copy = (t, msg) => navigator.clipboard.writeText(t).then(() => note(msg), () => note(t));
