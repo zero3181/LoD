@@ -145,7 +145,7 @@ game = {
     "built": "2026-11-02",
     "life": LIFE,
     # 일반 직장인(임금근로자) 비교 통계 (scripts/build_worker_stats.py → data/19_)
-    "worker": {k: v for k, v in json.load(open(D("data", "19_worker_stats.json"))).items() if k in ["all", "all_male", "all_female", "designer"]},
+    "worker": {k: v for k, v in json.load(open(D("data", "19_worker_stats.json"))).items() if k in ["all", "all_male", "all_female", "designer", "developer"]},
     # 직군을 떠난 뒤 돌아오는 비율 (scripts/klips_return_rates.py → data/20_)
     "ret": json.load(open(D("data", "20_klips_return_rates.json"))),
     "roles": {g: role(g) | {"hetero": HETERO[g], "keep_young": KEEP_YOUNG[g], "keep_band": KEEP_BAND[g], "age_dist": AGE_DIST[g], "self_age_mult": SELF_AGE[g]} for g in ["designer", "developer"]}

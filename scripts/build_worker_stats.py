@@ -4,7 +4,7 @@
     python build_worker_stats.py "<KLIPS 1-27차 release (Excel) 폴더>" <출력 JSON>
 
 한국노동패널 25~27차(2022~2024 조사) 개인용, 20~59세, 임금근로자(p__0211 == 1) 사람-해 단위, 비가중.
-디자이너 = 주된 일자리 KSCO 7차 285. 문항마다 응답이 있는 사람만 센다(해당 차수에 없는 문항은 빈칸).
+디자이너 = 주된 일자리 KSCO 7차 285, 개발자 = 222+223(게임의 개발자 확률표와 같은 정의). 문항마다 응답이 있는 사람만 센다(해당 차수에 없는 문항은 빈칸).
 """
 import json
 import sys
@@ -77,13 +77,13 @@ def stats(x):
 def main():
     d = load(sys.argv[1])
     w = d[(d["0211"] == 1) & d["0107"].between(20, 59)]
-    res = {"meta": {"built": "2026-11-02", "notes": __doc__.strip().splitlines()[3:]},
+    res = {"meta": {"built": "2026-11-04", "notes": __doc__.strip().splitlines()[3:]},
            "all": stats(w), "all_female": stats(w[w["0101"] == 2]), "all_male": stats(w[w["0101"] == 1]),
-           "designer": stats(w[w["0352"] == 285])}
+           "designer": stats(w[w["0352"] == 285]), "developer": stats(w[w["0352"].isin([222, 223])])}
     for lab, (lo, hi) in {"20s": (20, 29), "30s": (30, 39), "40s": (40, 49), "50s": (50, 59)}.items():
         res[f"all_{lab}"] = stats(w[w["0107"].between(lo, hi)])
     json.dump(res, open(sys.argv[2], "w"), ensure_ascii=False, indent=1)
-    print(json.dumps({k: res[k] for k in ["all", "designer"]}, ensure_ascii=False, indent=1))
+    print(json.dumps({k: res[k] for k in ["all", "designer", "developer"]}, ensure_ascii=False, indent=1))
 
 
 if __name__ == "__main__":
