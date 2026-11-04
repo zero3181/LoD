@@ -4592,7 +4592,7 @@ function projHtml() {
     if (pr.stage === "event") {
       const ev = PEV.find((e) => e.id === pr.ev);
       body += `<div class="evcard"><div class="ev-k">돌발 상황</div><h3>${esc(ev.title)}</h3><p>${esc(ev.text)}</p></div>
-        <div class="choices">${ev.opts.map((o, k) => `<button class="choice" data-ev="${k}"><span>${esc(o.label)}</span><small>${esc(evHint(P, o))}</small></button>`).join("")}</div>`;
+        <div class="choices">${ev.opts.map((o, k) => `<button class="choice" data-ev=cc5f8c8"${k}"><span>${esc(o.label)}</span><small>${esc(evHint(P, o))}</small></button>`).join("")}</div>`;
     } else {
       body += `${pr.evRes ? `<div class="evres"><b>${pr.evRes.ok === true ? "성공" : pr.evRes.ok === false ? "실패" : "선택"}</b> ${esc(pr.evRes.text)}</div>` : ""}
       <p class="fine">${CRUNCH[pr.crunch].label} 모드 · 시간 ${sum(pr.alloc)}${pr.team.length ? ` · 팀 +${sum(teamHours(pr))}` : ""}</p>`;
