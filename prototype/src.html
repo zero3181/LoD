@@ -799,6 +799,7 @@ const AWAY_NAME = { designer: "디자이너", developer: "개발자", planner: "
 const WORKING = ["wage", "self", "leave"];
 const workYears = (P) => P.statuses.filter((x) => WORKING.includes(x)).length;
 const SEX = { male: "남성", female: "여성" };
+const mfRatio = (fem) => { const m = Math.round((1 - fem) * 100); return `${m}:${100 - m}`; }; // 합이 100이 되게 남은 쪽을 뺀 값으로
 const BANDS = ["20~24", "25~29", "30~34", "35~39", "40~44", "45~49", "50~54", "55~59", "60+"];
 const BAND_MID = [22, 27, 32, 37, 42, 47, 52, 57, 62];
 const S9_TO_3 = { "1~4": "S", "5~9": "S", "10~29": "S", "30~49": "M", "50~99": "M", "100~299": "M", "300~499": "L", "500~999": "L", "1000+": "L" };
@@ -4225,7 +4226,7 @@ function renderStart() {
       <div class="eyebrow">시작 전에 알아둘 숫자</div>
       <div class="facts">
         <div><b class="num">${people(ROLE_W[role])}명</b><span>한 해 ${ROLE[role]}로 첫 출근</span></div>
-        <div><b class="num">${pct(d.female_share)}</b><span>그중 여성</span></div>
+        <div><b class="num">${mfRatio(d.female_share)}</b><span>남 : 여 비율</span></div>
         <div><b class="num">${pct(d.first_size9["1~4"] + d.first_size9["5~9"] + d.first_size9["10~29"])}</b><span>첫 직장이 30명 미만</span></div>
         <div><b class="num">${pct(d.keep_observed["10y"])}</b><span>10년 뒤에도 ${ROLE[role]}</span></div>
       </div>
@@ -5253,7 +5254,7 @@ function renderData() {
       ${rows.map((x) => `<tr><td>${ROLE[x.g]} 게임</td>${x.age.map((v) => `<td class="r num">${pct(v)}</td>`).join("")}</tr><tr><td>${ROLE[x.g]} 노동패널</td>${x.r.age_dist.share.map((v) => `<td class="r num">${pct(v)}</td>`).join("")}</tr>`).join("")}
       </tbody></table></div></section>
     <section><h2>첫 직장과 월급</h2><div class="tw"><table><thead><tr><th></th><th class="r">디자이너</th><th class="r">개발자</th></tr></thead><tbody>
-      ${[["한 해 첫 출근 추정 (청년패널 가중치, 1993~1996년생)", (g) => ROLE_W[g].toLocaleString("ko-KR") + "명"], ["첫 직장 관찰 수 (청년패널)", (g) => R[g].weight], ["여성 비율", (g) => pct(R[g].female_share)],
+      ${[["한 해 첫 출근 추정 (청년패널 가중치, 1993~1996년생)", (g) => ROLE_W[g].toLocaleString("ko-KR") + "명"], ["첫 직장 관찰 수 (청년패널)", (g) => R[g].weight], ["남 : 여 비율", (g) => mfRatio(R[g].female_share)],
         ["첫 월급 중앙값 여성 / 남성", (g) => `${won(R[g].first_wage.female)} / ${won(R[g].first_wage.male)}`], ["첫 직장 30명 미만", (g) => pct(R[g].first_size9["1~4"] + R[g].first_size9["5~9"] + R[g].first_size9["10~29"])],
         ["나이별 월급 중앙값 45~49세 (노동패널)", (g) => won(R[g].wage_by_age["45~49"])], ["성별 월급 배수 여성 / 남성 (25~44세)", (g) => `${R[g].sex_wage_ratio.female} / ${R[g].sex_wage_ratio.male}`],
         ["다른 직업으로 옮긴 사람의 도착지: 상대 직군 / 기획자", (g) => `${pct(R[g].dest[g === "designer" ? "developer" : "designer"] || 0)} / ${pct(R[g].dest.planner || 0)}`],
