@@ -3697,8 +3697,48 @@ function sceneCaption(P) {
 /* 첫 화면 그림: 결과 화면 장면 중 가장 잘 풀린 경우 (60세 정년, 디자인 디렉터, 수상, 가족) */
 const SHOWCASE = { name: "나", sex: "female", startAge: 24, age: 60, t: 36, end: { type: "retire" }, status: "wage", size: "L", company: "", rank: 4,
   flags: { award: true }, married: true, kids: [20], energy: 70, team: null };
+/* 시작 화면 히어로: 트랙마다 다른 작업 책상. 디자이너는 밝은 방의 시안·팔레트·포스트잇·태블릿, 개발자는 어두운 방의 듀얼 모니터 코드·서버 랙 */
+function sceneShowcase(g, role, frame) {
+  const look = { ...looksFor(7), long: true, shirt: "#2541b2" };
+  if (role === "developer") {
+    PX(g, 0, 0, SW, 50, "#1f252d"); PX(g, 0, 50, SW, 10, "#3a3f4b"); PX(g, 0, 50, SW, 1, "#4a5060");
+    PX(g, 8, 6, 22, 14, "#2b323c"); PX(g, 9, 7, 20, 12, "#0e3a5a"); for (let i = 0; i < 4; i++) PX(g, 11 + i * 4, 9 + (i % 2) * 3, 2, 6 - (i % 2) * 3, "#4d96ff"); // 벽 대시보드
+    const rack = 160; PX(g, rack, 8, 24, 42, "#11151b"); PX(g, rack + 1, 9, 22, 40, "#232a33");
+    for (let r = 0; r < 6; r++) { PX(g, rack + 2, 11 + r * 6, 20, 4, "#171c22"); for (let k = 0; k < 3; k++) PX(g, rack + 4 + k * 3, 12 + r * 6, 1, 1, (frame + r * 2 + k) % 5 ? "#3fd46b" : "#ffb703"); }
+    PX(g, 34, 42, 120, 3, "#5b4a3a"); PX(g, 38, 45, 3, 5, "#4a3c30"); PX(g, 146, 45, 3, 5, "#4a3c30"); // 책상
+    const scr = (x) => { PX(g, x, 14, 46, 26, "#0b0d10"); PX(g, x + 1, 15, 44, 24, "#0d1117"); PX(g, x + 20, 40, 6, 2, "#0b0d10"); };
+    scr(46); scr(96);
+    const r0 = srng(17), col = ["#7ee787", "#79c0ff", "#d2a8ff", "#ffa657", "#8b949e"];
+    const lines = Array.from({ length: 40 }, () => [Math.floor(r0() * 3), 6 + Math.floor(r0() * 26), col[Math.floor(r0() * col.length)]]);
+    for (let i = 0; i < 11; i++) { const L = lines[(i + frame) % lines.length]; PX(g, 49 + L[0] * 3, 17 + i * 2, L[1], 1, L[2]); }
+    PX(g, 99, 17, 2, 1, "#7ee787"); for (let i = 0; i < 5; i++) PX(g, 103, 17 + i * 4, 12 + ((i * 7) % 20), 1, "#8b949e"); // 터미널
+    if (frame % 4 < 2) PX(g, 99 + 2 + (frame % 20), 37, 2, 1, "#7ee787"); // 깜빡이는 커서
+    PX(g, 70, 41, 30, 2, "#2b2f36"); PX(g, 104, 41, 4, 2, "#2b2f36"); // 키보드, 마우스
+    PX(g, 128, 37, 4, 3, "#ffd93d"); PX(g, 131, 36, 2, 2, "#ffd93d"); PX(g, 133, 37, 1, 1, "#f4a261"); // 고무 오리
+    PX(g, 40, 37, 4, 5, "#e5e5e5"); PX(g, 44, 38, 1, 2, "#e5e5e5"); // 머그
+    personBack(g, 84, 34, look);
+    return { me: null };
+  }
+  PX(g, 0, 0, SW, 50, "#f4ecdc"); PX(g, 0, 50, SW, 10, "#c9a27a"); PX(g, 0, 50, SW, 1, "#b08a63");
+  PX(g, 6, 5, 34, 26, "#8a6a4a"); PX(g, 7, 6, 32, 24, "#d9b98c"); // 코르크 보드
+  const pc = ["#ffe066", "#ff9fb2", "#9be7a6", "#9fd3ff", "#ffd8a8"];
+  for (let i = 0; i < 9; i++) PX(g, 9 + (i % 3) * 10, 8 + Math.floor(i / 3) * 7, 7, 5, pc[(i * 2) % pc.length]);
+  PX(g, 150, 6, 30, 20, "#ffffff"); PX(g, 151, 7, 28, 18, "#2541b2"); PX(g, 156, 11, 8, 8, "#ffd93d"); PX(g, 166, 14, 9, 9, "#ef476f"); // 포스터
+  PX(g, 34, 42, 124, 3, "#d8c3a5"); PX(g, 38, 45, 3, 5, "#b49a7a"); PX(g, 150, 45, 3, 5, "#b49a7a");
+  PX(g, 62, 10, 60, 32, "#2b2f36"); PX(g, 63, 11, 58, 28, "#ffffff"); PX(g, 89, 39, 6, 3, "#2b2f36"); // 큰 모니터
+  const sw = ["#ff6b6b", "#ffd93d", "#6bcb77", "#4d96ff", "#c77dff"];
+  for (let i = 0; i < 5; i++) PX(g, 114, 13 + i * 5, 5, 4, sw[i]); // 팔레트
+  const k = Math.floor(frame / 6) % 3; // 시안이 조금씩 바뀐다
+  PX(g, 66, 14, 20, 12, sw[(k + 3) % 5]); PX(g, 89, 14, 21, 5, sw[(k + 1) % 5]); PX(g, 89, 21, 14, 2, "#c8ccd4"); PX(g, 89, 24, 18, 2, "#c8ccd4");
+  PX(g, 66, 29, 13, 7, "#f1f3f5"); PX(g, 81, 29, 13, 7, "#f1f3f5"); PX(g, 96, 29, 13, 7, "#f1f3f5"); PX(g, 68 + k * 15, 31, 9, 3, sw[k]);
+  PX(g, 128, 39, 14, 3, "#3d405b"); PX(g, 136, 36, 1, 4, "#e63946"); PX(g, 137, 35, 1, 1, "#2b2f36"); // 태블릿과 펜
+  PX(g, 44, 37, 4, 5, "#e76f51"); PX(g, 48, 38, 1, 2, "#e76f51"); plant(g, 168, 38); // 머그, 화분
+  personBack(g, 86, 34, look);
+  return { me: null };
+}
 function drawScene(c, frame) {
   const g = c.getContext && c.getContext("2d"); if (!g || !S) return;
+  if (c.dataset && c.dataset.show) { g.imageSmoothingEnabled = false; g.clearRect(0, 0, SW, SH); sceneShowcase(g, S.pickRole === "developer" ? "developer" : "designer", frame); return; }
   const P = c.dataset && c.dataset.show ? SHOWCASE : S.player; if (!P) return;
   const env = sceneEnv(P), place = scenePlace(P);
   g.imageSmoothingEnabled = false; g.clearRect(0, 0, SW, SH);

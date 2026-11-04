@@ -460,3 +460,4 @@ PRD 본문은 claude.ai 문서에 있다: https://claude.ai/artifact/892mSfiMXa6
 - 중복 카드 끔: 옛 `car`(→ `car_buy`), 옛 `move_lease`(→ `rent_renew`, 국내인구이동통계 근거는 rent_renew로 옮김). `jeonse_fraud`는 지금 집이 없을 때(`!P.home`).
 - 대표 프로젝트는 2년차(t=1)부터(`projDue`).
 - 동기 아이콘: 한글 이니셜 → 12×12 도트 얼굴 SVG(`pixelFace`, 장면 속 사람과 같은 `looksFor` 색, 여성은 긴 머리, 50세 이상 흰머리). 바탕색은 상태색 그대로.
+- 시작 화면 히어로를 트랙별로(`sceneShowcase`): 디자이너는 밝은 방의 큰 모니터 시안(조금씩 바뀜)·팔레트·코르크 보드 포스트잇·태블릿 펜, 개발자는 어두운 방의 듀얼 모니터(코드 줄이 흐름, 터미널 커서)·서버 랙 LED·고무 오리. 예전 '정년 축하 파티' 장면(`SHOWCASE`)은 히어로에서 쓰지 않는다.
