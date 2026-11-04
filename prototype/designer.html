@@ -1284,7 +1284,7 @@ let PTYPES = {
   dash: { name: "B2B 대시보드", w: [3, 5, 1, 1], where: "in", brief: "영업팀이 매일 엑셀로 뽑아 보는 숫자를 한 화면에." },
   ds: { name: "디자인 시스템 구축", w: [1, 4, 3, 2], where: "in", rank: 1, brief: "화면마다 버튼이 열두 종류다. 하나로 정리해 달라는 요청." },
   zero: { name: "신규 서비스 0→1", w: [3, 3, 2, 2], where: "any", rank: 2, brief: "아직 이름도 없는 서비스. 무엇을 만들지부터 정해야 한다." },
-  deck: { name: "IR 발표 자료", w: [1, 1, 4, 4], where: "any", brief: "투자 유치 발표가 2주 뒤다. 대표가 직접 발표한다." },
+  deck: { name: "IR 발표 자료", w: [1, 1, 4, 4], where: "any", p: .35, brief: "투자 유치 발표가 2주 뒤다. 대표가 직접 발표한다." },
   brand: { name: "브랜드 아이덴티티", w: [2, 0, 6, 2], where: "out", brief: "로고부터 명함까지, 회사의 얼굴을 새로." },
   landing: { name: "랜딩페이지", w: [1, 2, 4, 3], where: "out", brief: "다음 주 광고가 나간다. 들어온 사람이 신청 버튼을 누르게." },
   detail: { name: "상세페이지", w: [1, 1, 5, 3], where: "out", brief: "제품 상세페이지. 스크롤 끝까지 내리게 만들어야 한다." },
@@ -1359,7 +1359,7 @@ function newProject(P) {
   const where = isClientWork(P) ? "out" : "in";
   const done = new Set(P.projects.map((x) => x.type));
   const types = Object.keys(PTYPES).filter((k) => (PTYPES[k].where === "any" || PTYPES[k].where === where) && (PTYPES[k].rank || 0) <= P.rank);
-  const type = pick(Object.fromEntries(types.map((k) => [k, done.has(k) ? 1 : 2])));
+  const type = pick(Object.fromEntries(types.map((k) => [k, (done.has(k) ? 1 : 2) * (PTYPES[k].p ?? 1)]))); // p: 유형별 빈도 배수(설계상 가정)
   const crunch = P.lastAlloc ? P.lastAlloc.crunch : "norm";
   const fresh = syncTeam(P), team = teamSize(P) ? [...P.team.members] : [];
   return { type, topic: choose(Object.keys(TOPICS)), code: choose(CODENAMES), where, crunch, alloc: spread([1, 1, 1, 1], CRUNCH[crunch].B), stage: "plan", t: P.t,
@@ -4592,7 +4592,7 @@ function projHtml() {
     if (pr.stage === "event") {
       const ev = PEV.find((e) => e.id === pr.ev);
       body += `<div class="evcard"><div class="ev-k">돌발 상황</div><h3>${esc(ev.title)}</h3><p>${esc(ev.text)}</p></div>
-        <div class="choices">${ev.opts.map((o, k) => `<button class="choice" data-ev=40471e5"${k}"><span>${esc(o.label)}</span><small>${esc(evHint(P, o))}</small></button>`).join("")}</div>`;
+        <div class="choices">${ev.opts.map((o, k) => `<button class="choice" data-ev="${k}"><span>${esc(o.label)}</span><small>${esc(evHint(P, o))}</small></button>`).join("")}</div>`;
     } else {
       body += `${pr.evRes ? `<div class="evres"><b>${pr.evRes.ok === true ? "성공" : pr.evRes.ok === false ? "실패" : "선택"}</b> ${esc(pr.evRes.text)}</div>` : ""}
       <p class="fine">${CRUNCH[pr.crunch].label} 모드 · 시간 ${sum(pr.alloc)}${pr.team.length ? ` · 팀 +${sum(teamHours(pr))}` : ""}</p>`;
