@@ -693,7 +693,8 @@ h1 { font-weight: 800; letter-spacing: -.02em; }
 .peer { display: flex; align-items: center; gap: 12px; padding: 10px 8px; border-top: .5px solid var(--line); }
 .peer.me { background: color-mix(in oklab, var(--fill-accent) 9%, var(--surface)); border-radius: var(--radius-md); border-top-color: transparent; }
 .peer.me + .peer { border-top-color: transparent; }
-.av { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: #fff; font: 600 13px var(--font-body); flex: none; }
+.av { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: #fff; font: 600 13px var(--font-body); flex: none; overflow: hidden; }
+.av svg { display: block; image-rendering: pixelated; }
 .peer .pi { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .peer .pn { font: 600 15px var(--font-body); } .peer .pn small { font: 500 12px var(--font-body); margin-left: 4px; }
 .peer .ps { font-size: 13px; line-height: 18px; color: var(--muted); }
@@ -1397,7 +1398,7 @@ function spread(wts, B) {
 function rankOf(P) { let r = 0; RANKS.forEach((x, i) => { if (workYears(P) >= x.yrs && P.rep >= x.rep) r = i; }); return r; }
 const projName = (pr) => `${TOPICS[pr.topic].name} ‘${pr.code}’ ${PTYPES[pr.type].name}`;
 function projTarget(pr) { const w = PTYPES[pr.type].w.map((x, i) => x + (AX[i] === TOPICS[pr.topic].ax ? 2 : 0)), s = sum(w); return w.map((x) => x / s); }
-const projDue = (P) => { const last = P.projects.at(-1); return !last || P.t - last.t >= 2; };
+const projDue = (P) => { const last = P.projects.at(-1); return last ? P.t - last.t >= 2 : P.t >= 1; }; // 첫 프로젝트는 2년차부터
 /* 프로덕트 이름: 이 판에서 아직 안 쓴 이름 중에서 고른다 */
 function freshCode(P) { const used = new Set(P.projects.map((x) => x.code)), left = CODENAMES.filter((n) => !used.has(n)); return choose(left.length ? left : CODENAMES); }
 function newProject(P) {
@@ -1792,11 +1793,11 @@ const CARDS = [
       { label: "사진을 찍어 둔다", hint: "만족도 +, 복귀 확률 ×1.2", apply: (P, c) => { c.sat += .1; mul(c, "back", 1.2); return "그 사진을 한동안 휴대폰 배경으로 썼다."; } },
       { label: "그냥 지나친다", hint: "에너지 +2", apply: (P) => { P.energy += 2; return "다음 역에서 내렸다."; } },
     ] },
-  { id: "away_course", cat: "growth", away: true, when: (P) => P.status === "away", title: "회사가 교육비를 지원한다고 한다",
+  { id: "away_course", cat: "growth", away: true, when: (P) => P.status === "away", title: "새 직장에서 교육비를 지원한다고 한다",
     body: "연 100만 원 한도. 무엇을 배워도 된다.",
     choices: [
       { label: "지금 일의 자격증 과정", hint: "만족도 +, 복귀 확률 ×0.8, 에너지 −4", apply: (P, c) => { c.sat += .1; P.energy -= 4; mul(c, "back", .8); return "주말 수업 여덟 번. 시험은 한 번에 붙었다."; } },
-      { label: "UX 리서치 과정", hint: "실력 +5, 복귀 확률 ×1.6, 에너지 −6", apply: (P, c) => { P.skill += 5; P.energy -= 6; mul(c, "back", 1.6); return "과제로 낸 인터뷰 정리가 강사 추천 사례가 됐다."; } },
+      { label: (P) => P.origRole === "developer" ? "개발 심화 과정" : "UX 리서치 과정", hint: "실력 +5, 복귀 확률 ×1.6, 에너지 −6", apply: (P, c) => { P.skill += 5; P.energy -= 6; mul(c, "back", 1.6); return P.origRole === "developer" ? "과제로 만든 API가 수료 발표에서 박수를 받았다." : "과제로 낸 인터뷰 정리가 강사 추천 사례가 됐다."; } },
     ] },
 
   /* ───── 공백기 (none) ───── 효과는 설계상 가정(D) */
@@ -1885,7 +1886,7 @@ const CARDS = [
       { label: "하나씩 다 고친다", hint: "실력 +4, 에너지 −4", apply: (P) => { P.skill += 4; P.energy -= 4; return "다음 PR에는 코멘트가 세 개였다."; } },
       { label: "팀 코딩 규칙부터 정하자고 한다", hint: "만족도 +, 평판 +1", apply: (P, c) => { c.sat += .1; P.rep = Math.min(100, P.rep + 1); return "린터 설정 파일이 하나 생겼다. 네이밍 논쟁은 기계에게 넘어갔다."; } },
     ] },
-  { id: "dv_ai_code", role: "developer", cat: "work", when: isWork, title: "AI 코딩 도구를 전사 도입했다", body: "코드의 절반을 AI가 쓴다는 말이 나온다. 대신 리뷰할 코드가 두 배가 됐다.",
+  { id: "dv_ai_code", role: "developer", cat: "work", when: isWage, title: "AI 코딩 도구를 전사 도입했다", body: "코드의 절반을 AI가 쓴다는 말이 나온다. 대신 리뷰할 코드가 두 배가 됐다.",
     why: "AI 도구 도입을 연도별로 잰 국내 통계가 없어, 사건과 효과는 설계상 가정이다.",
     choices: [
       { label: "적극적으로 써 본다", hint: "실력 +8, 에너지 −5", apply: (P) => { P.skill += 8; P.energy -= 5; return "테스트 코드 작성이 빨라졌다. 가끔 없는 함수를 자신 있게 부른다."; } },
@@ -2340,7 +2341,7 @@ const CARDS = [
       { label: "연봉 협상 카드로 쓴다", hint: "55% 확률로 월급 +4%", apply: (P) => { if (rand() < .55) { P.p *= 1.04; return "팀장이 연봉을 4% 올려 줬다."; } return "\"다들 그 정도는 받아요.\" 아무것도 바뀌지 않았다."; } },
       { label: "답장하지 않는다", hint: "변화 없음", apply: () => "메시지는 읽음으로 남았다." },
     ] },
-  { id: "ai", cat: "work", when: isWork, w: () => 1, title: "회사가 생성형 AI 도구를 전사 도입했다", body: "다음 달부터 모든 작업에 AI 도구 사용 기록을 남기라는 공지가 내려왔다.",
+  { id: "ai", cat: "work", when: isWage, w: () => 1, title: "회사가 생성형 AI 도구를 전사 도입했다", body: "다음 달부터 모든 작업에 AI 도구 사용 기록을 남기라는 공지가 내려왔다.",
     why: "AI 도구 도입을 연도별로 잰 국내 통계가 없어, 사건과 효과는 설계상 가정이다.",
     choices: [
       { label: "적극적으로 써 본다", hint: "실력 +10, 에너지 −5", apply: (P) => { P.skill += 10; P.energy -= 5; return "반복 작업이 줄었다. 대신 검수할 것이 늘었다."; } },
@@ -2610,7 +2611,7 @@ const CARDS = [
       { label: "장비를 바꾸고 치료를 받는다", hint: "에너지 +6, 자산 −80만", apply: (P) => { P.energy += 6; P.bonus -= 80; return "버티컬 마우스와 스탠딩 데스크가 왔다."; } },
       { label: "참는다", hint: "에너지 −8", apply: (P) => { P.energy -= 8; return "파스 냄새가 자리의 냄새가 됐다."; } },
     ] },
-  { id: "run_club", cat: "body", when: (P) => P.age <= 45, w: () => .5, title: "동료가 러닝 크루에 같이 가자고 한다", body: "토요일 아침 7시, 한강 10km.",
+  { id: "run_club", cat: "body", when: (P) => P.age <= 45 && (isWage(P) || P.status === "away"), w: () => .5, title: "동료가 러닝 크루에 같이 가자고 한다", body: "토요일 아침 7시, 한강 10km.",
     why: "효과는 설계상 가정.",
     choices: [
       { label: "간다", hint: "에너지 +10", apply: (P) => { P.energy += 10; return "처음엔 3km에서 걸었다. 반년 뒤에는 10km를 뛰었다."; } },
@@ -2672,7 +2673,7 @@ const CARDS = [
   /* 전세 만기: 집이 없는 사람은 2년마다 계약이 끝난다(주택임대차보호법: 계약갱신요구권 1회 2년, 증액 상한 5%). 보증금 인상분 3,000만 원(가구)과 월세 전환은 설계상 가정 */
   { id: "rent_renew", cat: "money", repeat: true, when: (P) => !P.home && isWork(P) && P.age >= 27 && P.t - (P.flags.rentT ?? -9) >= 2, due: () => .3,
     title: "전세 계약이 끝나 간다", body: (P) => `집주인 문자: "만기 때 보증금을 ${P.flags.rentRenew ? "시세대로" : "좀"} 올려야 할 것 같아요."${P.flags.rentRenew ? " 갱신청구권은 지난번에 썼다." : ""}`,
-    why: "주택임대차보호법(2020.7.31 개정): 세입자는 한 번 계약 갱신을 요구할 수 있고(2년), 이때 보증금·월세 인상은 5% 이내. 국토교통부 2024년도 주거실태조사(2025.11.17 보도자료): 지금 집에 산 지 2년 이내인 가구 30.3%, 평균 거주기간 자가 11.5년·임차 3.6년, 비자발적으로 이사한 이유 1위 계약 만기 18.1%. 한국부동산원 전월세전환율 전국 주택 2025년 12월 6.6%(2차 자료 인용). 시세대로 올릴 때 보증금 3,000만 원 인상, 이사비 300만 원은 설계상 가정.", grade: "C",
+    why: "주택임대차보호법(2020.7.31 개정): 세입자는 한 번 계약 갱신을 요구할 수 있고(2년), 이때 보증금·월세 인상은 5% 이내. 국토교통부 2024년도 주거실태조사(2025.11.17 보도자료): 지금 집에 산 지 2년 이내인 가구 30.3%, 평균 거주기간 자가 11.5년·임차 3.6년, 비자발적으로 이사한 이유 1위 계약 만기 18.1%. 통계청 2024년 국내인구이동통계: 한 해 628만 3천 명 이사(인구이동률 12.3%), 이유는 주택 34.5%. 한국부동산원 전월세전환율 전국 주택 2025년 12월 6.6%(2차 자료 인용). 시세대로 올릴 때 보증금 3,000만 원 인상, 이사비 300만 원은 설계상 가정.", grade: "C",
     choices: [
       { label: "갱신청구권을 쓴다", ok: (P) => !P.flags.rentRenew, hint: (P) => P.flags.rentRenew ? "이미 한 번 썼다" : "2년 더, 인상은 5% 안쪽. 다음 만기에는 못 쓴다", apply: (P) => { P.flags.rentRenew = true; P.flags.rentT = P.t; return "내용증명 양식을 처음 검색해 봤다."; } },
       { label: "오른 만큼 월세로 돌린다", hint: (P) => `보증금 대신 월세: 연 −${shareTxt(P, 198)}(3,000만 원 × 6.6%), 2년`, apply: (P) => { P.flags.rentT = P.t; P.flags.rentRenew = false; addRecur(P, "월세", 198, 2); return "통장에 월세 자동이체가 하나 생겼다."; } },
@@ -2882,7 +2883,7 @@ const CARDS = [
       { label: "따라 산다", hint: "결과는 운", apply: (P, c) => { const r = rand(); if (r < .35) { P.bonus += 500; return "500만 원이 올랐다. 팔 타이밍은 놓쳤지만."; } if (r < .7) { P.bonus -= 400; c.sat -= .1; return "앱을 지웠다."; } return "본전이다. 시간만 썼다."; } },
       { label: "적금을 든다", hint: "변화 없음", apply: () => "재미는 없지만 마음은 편했다." },
     ] },
-  { id: "car", cat: "money", when: (P) => P.age >= 29, title: "차를 살까", body: "주말마다 렌터카 앱을 여는 것도 지쳤다.",
+  { id: "car", cat: "money", when: () => false, /* car_buy(큰돈)로 대체: 같은 제목의 카드가 두 번 나오지 않게 */ title: "차를 살까", body: "주말마다 렌터카 앱을 여는 것도 지쳤다.",
     why: "효과는 설계상 가정.",
     choices: [
       { label: "중고차를 산다", hint: "에너지 +4, 자산 −1,200만", apply: (P) => { P.energy += 4; P.bonus -= 1200; return "첫 드라이브는 강릉이었다."; } },
@@ -2936,7 +2937,7 @@ const CARDS = [
       { label: "기대하며 기다린다", hint: "50% 확률로 월급 한 달 치", apply: (P, c) => { if (rand() < .5) { const b = Math.round(currentWage(P)); P.bonus += b; c.sat += .2; return `성과급 ${won(b)}만 원. 영업팀은 세 배라고 했다.`; } c.sat -= .15; return "디자인팀은 '지원 조직'으로 분류됐다."; } },
       { label: "없는 셈 친다", hint: "변화 없음", apply: () => "그래서 실망할 일도 없었다." },
     ] },
-  { id: "payday", cat: "money", when: (P) => isWork(P) && P.t >= 1, title: "월급날, 잔고를 본다", body: "월세, 카드값, 통신비, 구독료. 사흘 만에 통장이 원래 자리로 돌아왔다.",
+  { id: "payday", cat: "money", when: (P) => isWage(P) && P.t >= 1, title: "월급날, 잔고를 본다", body: "월세, 카드값, 통신비, 구독료. 사흘 만에 통장이 원래 자리로 돌아왔다.",
     why: () => `노동패널 2022~2024: 임금에 만족하는 임금근로자 ${pct(WK.all.job_sat["임금"].sat.p)}, ${JOB()} ${pct(WK[curRole()].job_sat["임금"].sat.p)}. 가족 수입에 만족 ${pct(WK.all.life_sat["가족의 수입"].sat.p)}. 효과는 설계상 가정.`, grade: "C",
     choices: [
       { label: "가계부를 쓴다", hint: "올해 +300만 모음, 에너지 −2", apply: (P) => { P.bonus += 300; P.energy -= 2; return "배달 앱을 지웠다. 석 달 만에 다시 깔았지만 그래도 남았다."; } },
@@ -3011,7 +3012,7 @@ const CARDS = [
       { label: "여백을 줄이고 아이콘을 넣는다", hint: "에너지 −4", apply: (P) => { P.energy -= 4; return "아이콘 열두 개가 들어갔다. 심플함은 어딘가로 떠났다."; } },
       { label: "여백의 이유를 설명한다", hint: "실력 +3, 40% 확률로 통과", apply: (P, c) => { P.skill += 3; if (rand() < .4) { c.sat += .15; return "\"아, 그래서 고급스러워 보이는 거구나.\" 통과."; } c.sat -= .1; return "\"그래도 좀 채워 주세요.\""; } },
     ] },
-  { id: "fb_bright_black", cat: "work", when: isWork, title: "\"블랙인데, 좀 화사한 블랙으로요\"", body: "#000000과 #111111 사이 어딘가에 정답이 있다고 한다.",
+  { id: "fb_bright_black", role: "designer", cat: "work", when: isWork, title: "\"블랙인데, 좀 화사한 블랙으로요\"", body: "#000000과 #111111 사이 어딘가에 정답이 있다고 한다.",
     choices: [
       { label: "#121212, #141414, #161616을 나란히 보낸다", hint: "에너지 −2", apply: (P) => { P.energy -= 2; return "\"두 번째가 확실히 화사하네요.\" 세 개는 사실 거의 같다."; } },
       { label: "남색을 살짝 섞는다", hint: "실력 +2", apply: (P, c) => { P.skill += 2; c.sat += .1; return "\"오, 이게 화사한 블랙이죠.\" 그건 남색이었다."; } },
@@ -3021,12 +3022,12 @@ const CARDS = [
       { label: "따님 의견을 반영한다", hint: "에너지 −6, 만족도 −", apply: (P, c) => { P.energy -= 6; c.sat -= .15; return "버튼이 형광 보라색이 됐다. 의외로 클릭률이 올랐다."; } },
       { label: "타깃 사용자 인터뷰를 제안한다", hint: "실력 +5, 에너지 −4", apply: (P) => { P.skill += 5; P.energy -= 4; return "인터뷰에서 30대 사용자 다섯 명이 원래 시안을 골랐다. 대표는 조용해졌다."; } },
     ] },
-  { id: "fb_apple", cat: "work", when: isWork, title: "\"애플 느낌으로 가 주세요\"", body: "레퍼런스로 받은 링크 세 개가 전부 애플 홈페이지다. 예산은 애플의 0.0001%다.",
+  { id: "fb_apple", role: "designer", cat: "work", when: isWork, title: "\"애플 느낌으로 가 주세요\"", body: "레퍼런스로 받은 링크 세 개가 전부 애플 홈페이지다. 예산은 애플의 0.0001%다.",
     choices: [
       { label: "흰 배경에 제품 사진만 크게 넣는다", hint: "에너지 −3", apply: (P) => { P.energy -= 3; return "\"너무 비어 보이는데요?\" 애플 느낌이 맞았다."; } },
       { label: "애플 느낌이 무엇인지 같이 정의한다", hint: "실력 +4, 에너지 −5", apply: (P) => { P.skill += 4; P.energy -= 5; return "'정돈된, 자신감 있는' 두 단어로 합의했다. 그 뒤로 회의가 짧아졌다."; } },
     ] },
-  { id: "fb_frankenstein", cat: "work", when: isWork, title: "\"A안 왼쪽이랑 C안 오른쪽을 합쳐 주세요\"", body: "A안은 세리프에 따뜻한 톤, C안은 고딕에 네온이다.",
+  { id: "fb_frankenstein", role: "designer", cat: "work", when: isWork, title: "\"A안 왼쪽이랑 C안 오른쪽을 합쳐 주세요\"", body: "A안은 세리프에 따뜻한 톤, C안은 고딕에 네온이다.",
     choices: [
       { label: "시키는 대로 합친다", hint: "에너지 −5, 만족도 −", apply: (P, c) => { P.energy -= 5; c.sat -= .1; return "결과물을 보고 클라이언트가 말했다. \"음… B안은 어땠죠?\""; } },
       { label: "합쳤을 때의 문제를 한 장으로 보여 준다", hint: "실력 +3, 50% 확률로 설득", apply: (P, c) => { P.skill += 3; if (rand() < .5) { c.sat += .15; return "\"아, 이러면 이상하구나.\" A안으로 정리됐다."; } return "\"그래도 한번 보고 싶어요.\""; } },
@@ -3036,12 +3037,12 @@ const CARDS = [
       { label: "AI로 만든 시안을 그대로 보여 준다", hint: "에너지 −3, 만족도는 반반", apply: (P, c) => { P.energy -= 3; c.sat += rand() < .5 ? .1 : -.2; return "손가락이 여섯 개인 모델이 웃고 있었다. 일정은 다시 2주가 됐다."; } },
       { label: "AI로 초안, 사람이 마무리한다고 제안한다", hint: "실력 +5, 에너지 −6", apply: (P) => { P.skill += 5; P.energy -= 6; return "일정은 1주로 합의됐다. 진짜로 1주가 걸렸다."; } },
     ] },
-  { id: "fb_final_final", cat: "work", when: isWork, title: "최종_진짜최종_수정3_이걸로.fig", body: "열두 번째 수정 끝에 클라이언트가 말했다. \"그냥 처음 1안으로 갈게요.\"",
+  { id: "fb_final_final", role: "designer", cat: "work", when: isWork, title: "최종_진짜최종_수정3_이걸로.fig", body: "열두 번째 수정 끝에 클라이언트가 말했다. \"그냥 처음 1안으로 갈게요.\"",
     choices: [
       { label: "웃으며 1안을 다시 보낸다", hint: "에너지 −4, 만족도 −", apply: (P, c) => { P.energy -= 4; c.sat -= .1; return "1안 파일의 수정 날짜는 석 달 전이었다."; } },
       { label: "다음 계약서에 수정 횟수를 넣는다", hint: "실력 +3, 앞으로 이런 일이 줄어든다", apply: (P, c) => { P.skill += 3; mul(c, "same_job", 1.03); P.flags.revCap = true; return "'수정은 3회까지, 이후 회당 별도 견적.' 가장 잘 쓴 문장이었다."; } },
     ] },
-  { id: "fb_mz", cat: "work", when: isWork, title: "\"MZ 감성으로 부탁드려요\"", body: "회의실의 평균 나이는 52세. MZ 감성의 정의는 각자 달랐다.",
+  { id: "fb_mz", role: "designer", cat: "work", when: isWork, title: "\"MZ 감성으로 부탁드려요\"", body: "회의실의 평균 나이는 52세. MZ 감성의 정의는 각자 달랐다.",
     choices: [
       { label: "밈과 이모지를 듬뿍 넣는다", hint: "에너지 −2, 만족도는 반반", apply: (P, c) => { P.energy -= 2; c.sat += rand() < .5 ? .1 : -.1; return "부장님이 \"이게 요즘 애들 거구나\" 하며 캡처했다."; } },
       { label: "실제 20대에게 물어본다", hint: "실력 +3", apply: (P) => { P.skill += 3; return "인턴이 말했다. \"MZ 감성이라고 하는 게 제일 MZ 감성이 아니에요.\""; } },
@@ -3157,7 +3158,7 @@ const CARDS = [
     ] },
   /* ───── 통계 확률로 일어나는 사건 (2026-11-02) ─────
      roll: 해마다 그 확률로 일어난다. 전국 연간 인원 ÷ 인구(2024년 약 5,120만 명)로 잡은 대략의 확률이고, 직업·나이 차이는 넣지 않았다. */
-  { id: "car_accident", cat: "body", roll: () => .0054, title: "퇴근길 교통사고", body: "신호 대기 중에 뒤차가 들이받았다. 목이 뻐근하고 허리가 저리다.",
+  { id: "car_accident", cat: "body", roll: () => .0054, title: (P) => isWage(P) || P.status === "away" ? "퇴근길 교통사고" : "교통사고", body: "신호 대기 중에 뒤차가 들이받았다. 목이 뻐근하고 허리가 저리다.",
     why: "경찰청: 2024년 교통사고 19만 6,349건, 부상자 27만 8,482명(전년보다 1.9% 감소), 사망자 2,521명. 인구 약 5,120만 명으로 나누면 한 해 약 0.54%가 다친다.", grade: "B",
     choices: [
       { label: "입원해서 제대로 치료한다", hint: "에너지 +5, 2주 결근, 보험금 +150만", apply: (P, c) => { P.energy += 5; P.bonus += 150; mul(c, "same_job", .97); return "병실 창밖으로 회사 건물이 보였다. 2주 동안 메신저를 끄고 있었다."; } },
@@ -3184,14 +3185,14 @@ const CARDS = [
     ] },
 
   /* ───── 생활 통계 카드 (2026-11-02) ───── */
-  { id: "move_lease", cat: "money", when: (P) => P.age <= 45 && !P.flags.house, title: "전세 계약이 끝난다", body: "집주인이 보증금을 3천만 원 올리겠다고 했다. 두 달 안에 정해야 한다.",
+  { id: "move_lease", cat: "money", when: () => false, /* rent_renew(전세 만기)로 대체 */ title: "전세 계약이 끝난다", body: "집주인이 보증금을 3천만 원 올리겠다고 했다. 두 달 안에 정해야 한다.",
     why: "통계청 2024년 국내인구이동통계: 한 해 628만 3천 명이 이사했다(인구이동률 12.3%). 이사 이유는 주택 34.5%, 가족 24.7%, 직업 21.7%.", grade: "A",
     choices: [
       { label: "올려 주고 산다", hint: "−600만(대출 이자 포함)", apply: (P) => { P.bonus -= 600; return "대출 한도를 다시 알아봤다."; } },
       { label: "회사에서 더 먼 곳으로 옮긴다", hint: "에너지 −6, +200만", apply: (P) => { P.energy -= 6; P.bonus += 200; return "출근길이 20분 늘었다. 거실은 넓어졌다."; } },
       { label: "월세로 바꾼다", hint: "−300만", apply: (P) => { P.bonus -= 300; return "매달 나가는 돈이 눈에 보이기 시작했다."; } },
     ] },
-  { id: "jeonse_fraud", cat: "money", when: (P) => P.age >= 25 && P.age <= 39 && !P.flags.house, w: () => .35, title: "집주인과 연락이 끊겼다", body: "만기 한 달 전, 집이 경매에 넘어갔다는 등기우편이 왔다.",
+  { id: "jeonse_fraud", cat: "money", when: (P) => P.age >= 25 && P.age <= 39 && !P.home, w: () => .35, title: "집주인과 연락이 끊겼다", body: "만기 한 달 전, 집이 경매에 넘어갔다는 등기우편이 왔다.",
     why: "국토교통부 국회 보고(2025년 5월 말): 전세사기 피해자로 결정된 사람 3만 400명. 30대 1만 4,983명(49.3%), 20대 7,854명(25.8%)으로 20~30대가 75.1%.", grade: "A",
     choices: [
       { label: "피해자 지원을 신청한다", hint: "에너지 −15, −1,500만", apply: (P, c) => { P.energy -= 15; P.bonus -= 1500; c.sat -= .3; return "서류만 서른 장. 보증금의 절반은 아직 못 받았다."; } },
@@ -4486,7 +4487,7 @@ function renderPlay() {
   const P = S.player;
   const w = currentWage(P);
   const feed = S.feed.slice().reverse().map(yearHtml).join("");
-  const intro = !S.feed.length ? `<article class="yr"><header class="yr-h"><b>${START_YEAR}</b><span>${P.age}세</span></header><div class="chunk"><div class="line">${esc(P.company)}에 첫 출근했다. 아래에서 올해의 초점을 고르고 '1년 보내기'를 누르면 한 해가 지나갑니다. 대표 프로젝트는 2년에 한 번 맡습니다.</div></div></article>` : "";
+  const intro = !S.feed.length ? `<article class="yr"><header class="yr-h"><b>${START_YEAR}</b><span>${P.age}세</span></header><div class="chunk"><div class="line">${esc(P.company)}에 첫 출근했다. 아래에서 올해의 초점을 고르고 '1년 보내기'를 누르면 한 해가 지나갑니다. 대표 프로젝트는 2년차부터 2년에 한 번 맡습니다.</div></div></article>` : "";
   fixFocus();
   const out = isOut(P);
   const last = P.sats.at(-1), avg = satAvg(P), happy = S.goal === "happy";
@@ -4797,11 +4798,22 @@ function noticeHtml() {
 }
 
 const AV_COLOR = { designer: "var(--fill-accent)", planner: "var(--ocre-500)", developer: "#5C7A4A", other: "var(--terre-500)", none: "var(--graphite-400)" };
+/* 동기 아이콘: 장면 속 도트 사람과 같은 색 규칙으로 얼굴을 12×12 도트로 그린다(이름·나이로 고정) */
+function pixelFace(x, isMe) {
+  const l = isMe ? myLook(x) : { ...looksFor(hstr(x.name + x.startAge)), long: x.sex === "female", gray: x.age >= 50 };
+  const hair = l.gray ? "#9a958e" : l.hair, eye = "#1c1c24", R = [];
+  const px = (c, y, w, h, col) => R.push(`<rect x="${c}" y="${y}" width="${w}" height="${h}" fill="${col}"/>`);
+  px(2, 10, 8, 2, l.shirt); px(5, 9, 2, 1, l.skin);          // 옷, 목
+  px(3, 4, 6, 5, l.skin);                                     // 얼굴
+  px(3, 2, 6, 1, hair); px(2, 3, 8, 1, hair); px(2, 4, 1, l.long ? 5 : 2, hair); px(9, 4, 1, l.long ? 5 : 2, hair); px(3, 4, 6, 1, hair); // 머리
+  px(4, 6, 1, 1, eye); px(7, 6, 1, 1, eye); px(5, 8, 2, 1, "#b0614a"); // 눈, 입
+  return `<svg viewBox="0 0 12 12" width="32" height="32" shape-rendering="crispEdges" aria-hidden="true">${R.join("")}</svg>`;
+}
 function peerRow(x, isMe) {
   const w = currentWage(x), out = x.end || x.status === "none";
   const role = x.status === "away" ? AWAY_NAME[x.awayKind] : ROLE[x.role];
   const av = isMe ? "var(--fill-accent)" : out ? AV_COLOR.none : x.status === "away" ? AV_COLOR.other : AV_COLOR[x.role] || AV_COLOR.other;
-  return `<div class="peer ${isMe ? "me" : ""}"><span class="av" style="background:${av}">${isMe ? "나" : esc(x.name[0])}</span>
+  return `<div class="peer ${isMe ? "me" : ""}"><span class="av" style="background:${av}">${pixelFace(x, isMe)}</span>
     <div class="pi"><span class="pn">${isMe ? "나" : esc(x.name)}<small style="color:${x.status === "away" || x.role !== x.origRole ? "var(--faint)" : "var(--accent)"}">${role}</small></span><span class="ps">${statusText(x)}</span></div>
     <span class="pp">${out ? "—" : won(w)}</span></div>`;
 }
