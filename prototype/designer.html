@@ -875,7 +875,20 @@ function avgSizeMult(role) {
   const r = R[role]; if (!r.first_size9) return 1;
   return Object.entries(r.first_size9).reduce((s, [k, w]) => s + w * sizeMult(role, S9_TO_3[k]), 0);
 }
-function marketWage(role, sex, age, size) { return interp(R[role].wage_by_age, age) * sexRatio(role, sex) * sizeMult(role, size); }
+/* 월급 보정: 노동패널 나이별 곡선 위에 승진·이직·규모 이동·연봉 카드가 쌓이면 실제보다 높아진다.
+   게임 속 '그 직군 임금근로자' 나이대별 월급 중앙값이 노동패널 2018~2024년 중앙값(WAGE_TARGET)에 맞도록 나이대별 배수를 곱한다.
+   첫 월급(청년패널)은 levelFor에서 같은 배수로 나눠 그대로 둔다. 배수는 시뮬레이션으로 맞춘 값(scratchpad wageage.js). */
+const WAGE_TARGET = { // 노동패널 12~27차 중 2018~2024년, 그 직군 임금근로자 월평균 임금 중앙값(만 원) [값, n]. 디자이너 40~59세는 칸마다 표본이 작고 들쭉날쭉해(350·300·295) 묶은 값 330(n=128)
+  designer: { "20~24": [205, 21], "25~29": [225, 91], "30~34": [250, 89], "35~39": [300, 70], "40~44": [330, 128], "45~49": [330, 128], "50~54": [330, 128], "55~59": [330, 128], "60+": [330, 128] },
+  developer: { "20~24": [200, 34], "25~29": [250, 185], "30~34": [300, 244], "35~39": [395, 273], "40~44": [450, 263], "45~49": [500, 141], "50~54": [500, 89], "55~59": [500, 40], "60+": [500, 9] },
+};
+/* 첫 월급(청년패널)은 그대로 두고, 25~29세 대비 오르는 폭이 노동패널과 같아지도록 시뮬레이션으로 맞춘 배수 */
+const WAGE_CAL = { // 40대 후반부터는 한 사람의 월급 곡선이 내려가지 않도록 앞 칸 이상으로 둔다(중앙값이 목표보다 3~5% 높아질 수 있다)
+  designer: { "20~24": 1, "25~29": 1, "30~34": .833, "35~39": .836, "40~44": .883, "45~49": 1, "50~54": 1, "55~59": 1, "60+": 1 },
+  developer: { "20~24": 1, "25~29": 1, "30~34": .92, "35~39": 1.012, "40~44": .915, "45~49": .862, "50~54": .862, "55~59": .862, "60+": .862 },
+};
+const calAt = (role, age) => WAGE_CAL[role] ? interp(WAGE_CAL[role], age) : 1;
+function marketWage(role, sex, age, size) { return interp(R[role].wage_by_age, age) * calAt(role, age) * sexRatio(role, sex) * sizeMult(role, size); }
 function transCell(role, sex, age) {
   const r = R[role];
   if (role === "planner") return { cell: r.trans[age3(age)], fallback: true };
@@ -892,7 +905,7 @@ function drawStartAge(role, sex) {
 /* 노동패널 나이별 곡선(2009~2024 합산)을 청년패널 첫 월급 수준으로 끌어올리는 배수 */
 function levelFor(role, sex, age) {
   const r = R[role];
-  const base = role === "planner" ? interp(r.wage_by_age, age) : interp(r.wage_by_age, age) * sexRatio(role, sex) * avgSizeMult(role);
+  const base = role === "planner" ? interp(r.wage_by_age, age) : interp(r.wage_by_age, age) * calAt(role, age) * sexRatio(role, sex) * avgSizeMult(role);
   return (r.first_wage[sex] ?? r.first_wage) / base;
 }
 function josaRo(word) {
@@ -973,9 +986,9 @@ function takeHome(P, w) {
 }
 /* 내 몫 생활비(월): 생애 단계의 소비 비중 × 실수령. 기혼은 배우자도 나만큼 번다고 보고 가구 소득(×2)으로 비중을 찾고, 최저선은 절반이 내 몫(설계상 가정) */
 function spendOf(P, th, gross) {
-  const g = SPEND_G[spendGroup(P)], hh = P.married ? 2 : 1;
-  const v = shareAt(P.home ? g.ptsOwn : g.pts, (gross || 0) * hh) * th * (P.flags.frugal > 0 ? .85 : 1); // 허리띠를 졸라매면 15% 덜 쓴다(설계상 가정)
-  return Math.max(g.floor / hh, v) + (P.flags.pet != null ? MONEY.pet : 0);
+  const g = SPEND_G[spendGroup(P)], hh = P.married ? 2 : 1, so = spouseOff(P) ? 2 : 1; // 배우자가 일을 쉬면 가구 생활비를 혼자 낸다
+  const v = shareAt(P.home ? g.ptsOwn : g.pts, (gross || 0) * hh / so) * th * so * (P.flags.frugal > 0 ? .85 : 1); // 허리띠를 졸라매면 15% 덜 쓴다(설계상 가정)
+  return Math.max(g.floor / hh * so, v) + (P.flags.pet != null ? MONEY.pet : 0);
 }
 /* ── 큰돈: 집 · 자녀 · 부모 · 차 ──
    집값 = 가구 연소득 × PIR(국토교통부 2024년도 주거실태조사, 자가 가구 중위수: 수도권 8.7배, 전국 6.3배, 도 지역 4.0배).
@@ -1001,15 +1014,36 @@ function pensionOf(P) {
   const n = ws.length, b = n ? ws.reduce((a, x) => a + x, 0) / n : 0;
   return { n, b, m: n < PENSION.min ? 0 : PENSION.rate * (PENSION.a + b) / 2 * Math.min(n, 40) / 40 };
 }
+/* 주택연금: 한국주택금융공사 월지급금 예시표(2026.3.1 기준) 일반주택·종신지급·정액형, 60세(부부 중 연소자) 집값 1억당 월 21.07만 원, 12억까지 비례.
+   집 줄이기: 집을 팔고 60% 값의 집으로 옮긴다(설계상 가정), 중개보수·취득세·이사비를 뺀다 */
+const HOUSE_PENSION = { per1e8: 21.07, cap: 120000, down: .6 };
+/* 모은 돈(cash)과 월 수입(60세부터 extra, 65세부터 국민연금 더함)으로 생활비를 대며 버티는 나이 */
+function lastAge(cash, need, pen, extra = 0) {
+  cash = Math.max(0, cash);
+  for (let a = RETIRE_AGE; a < 100; a++) {
+    const inc = extra + (a >= PENSION.age ? pen : 0);
+    cash -= (need - inc) * 12;
+    if (cash < 0) return a + 1 + cash / ((need - inc) * 12);
+  }
+  return extra + pen >= need ? Infinity : 100;
+}
 function retireOf(P) {
-  const pen = pensionOf(P), need = P.married ? PENSION.need2 / 2 : PENSION.need1, cash = Math.max(0, P.cash);
-  const gap = need * 12 * (PENSION.age - RETIRE_AGE);
-  const until = cash < gap ? RETIRE_AGE + cash / (need * 12) : need - pen.m <= 0 ? Infinity : PENSION.age + (cash - gap) / ((need - pen.m) * 12);
-  return { pen, need, until };
+  const pen = pensionOf(P), need = P.married ? PENSION.need2 / 2 : PENSION.need1;
+  const until = lastAge(P.cash, need, pen.m);
+  let hp = null, down = null;
+  if (P.home) {
+    const sh = P.home.sh ?? myShare(P), hh = P.home.value / sh, left = P.cash - P.home.loan; // 남은 대출은 먼저 갚는다
+    const m = HOUSE_PENSION.per1e8 * Math.min(hh, HOUSE_PENSION.cap) / 10000 * sh;
+    hp = { m, until: lastAge(left, need, pen.m, m) };
+    const nv = hh * HOUSE_PENSION.down, freed = (hh - nv - brokerFee(hh) - acqTax(nv) - HOME.move) * sh;
+    down = { freed, until: lastAge(left + freed, need, pen.m) };
+  }
+  return { pen, need, until, hp, down };
 }
 const HOME = { pir: { metro: 8.7, all: 6.3, prov: 4.0 }, ltv: .7, cap: 60000, dsr: .4, rate: .0396, credit: .0531, years: 30, move: 300,
   hpi: [3.1, 3.1, 1.9, 6.9, 0, .31, 3.51, .7, 1.48, 1.10, -.36, 5.36, 9.9, -4.68] }; // 2007 2008 2010 2011 2012 2013 2015~2022
-const hhIncome = (P) => currentWage(P) * 12 * (P.married ? 2 : 1); // 기혼은 배우자도 나만큼 번다(생활비와 같은 가정)
+const spouseOff = (P) => P.married && P.flags.spouseOff > 0;
+const hhIncome = (P) => currentWage(P) * 12 * (P.married && !spouseOff(P) ? 2 : 1); // 기혼은 배우자도 나만큼 번다(생활비와 같은 가정)
 const acqTax = (v) => v * (v <= 60000 ? .01 : v <= 90000 ? (v * 2 / 30000 - 3) / 100 : .03) * 1.1;
 const brokerFee = (v) => v * (v <= 90000 ? .004 : v <= 120000 ? .005 : v <= 150000 ? .006 : .007);
 /* 기혼은 집·자녀·차에 드는 돈을 배우자와 반씩 낸다(생활비의 '내 몫'과 같은 가정) */
@@ -1034,8 +1068,16 @@ function quoteHint(q, P) {
 function buyHome(P, c, q, sat, value = q.price) {
   const sh = q.sh;
   P.cash -= q.down * sh; P.bonus -= Math.round(q.cost * sh);
-  P.home = { value: value * sh, price: q.price * sh, loan: q.loan * sh, loan0: q.loan * sh, rate: HOME.rate, at: P.age };
+  P.home = { value: value * sh, price: q.price * sh, loan: q.loan * sh, loan0: q.loan * sh, rate: HOME.rate, at: P.age, sh };
   P.flags.house = P.age; c.sat += sat; mul(c, "same_job", 1.2); mul(c, "not_employed", .7);
+}
+/* 갈아타기 견적(가구 기준): 지금 집을 팔아 남는 돈 + 새 대출로 새 집을 산다 */
+function upsizeQuote(P) {
+  const sh = P.home.sh ?? myShare(P), old = P.home.value / sh, oldLoan = P.home.loan / sh, price = Math.round(old * 1.35 / 100) * 100;
+  const cost = Math.round(brokerFee(old) + brokerFee(price) + acqTax(price) + HOME.move);
+  const loanMax = Math.min(HOME.cap, price * HOME.ltv, hhIncome(P) * HOME.dsr / (HOME.rate + 1 / HOME.years));
+  const need = price + cost - (old - oldLoan), loan = Math.round(Math.max(0, Math.min(loanMax, need - cost)) / 100) * 100;
+  return { price, loan, cost, cash: Math.max(0, price - (old - oldLoan) - loan), sh };
 }
 const homeEq = (P) => P.home ? P.home.value - P.home.loan : 0;
 const netWorth = (P) => P.cash + homeEq(P);
@@ -2273,10 +2315,14 @@ const CARDS = [
     ] },
   { id: "divorce", cat: "love", trigger: "divorce",
     title: "따로 살기로 했다", body: "오래 이야기했고, 서로 지쳤다는 데 처음으로 의견이 같았다.",
-    why: (P) => lifeWhy(P, "divorce"), grade: "B",
+    why: (P) => lifeWhy(P, "divorce") + " 재산은 반씩 나눈다고 본다(게임은 처음부터 부부 재산의 내 몫만 셌다). 실제 재산분할 비율은 법원이 혼인 기간·기여도로 정하며 공식 평균 통계는 찾지 못했다. 집을 지키려면 배우자 몫을 대출로 사들인다(LTV 70% 안, 넘으면 모은 돈). 양육비는 넣지 않았다.", grade: "B",
     choices: [
-      { label: "일에 몰두한다", hint: "실력 +6, 에너지 −10", apply: (P) => { P.skill += 6; P.energy -= 10; return "야근이 오히려 편했다."; } },
-      { label: "한동안 쉬어 간다", hint: "에너지 +10, 만족도 −", apply: (P, c) => { P.energy += 10; c.sat -= .3; return "주말마다 부모님 집에 갔다."; } },
+      { label: "집을 팔아 나눈다", ok: (P) => !!P.home, hint: (P) => P.home ? `내 몫 ${manwon(P.home.value - P.home.loan)}이 현금으로(중개보수 내 몫 −${won(brokerFee(P.home.value / (P.home.sh ?? .5)) * (P.home.sh ?? .5))}만). 월세방으로 옮긴다, 만족도 −` : "집이 있어야 한다",
+        apply: (P, c) => { const h = P.home, sh = h.sh ?? .5; P.cash += h.value - h.loan; P.bonus -= Math.round(brokerFee(h.value / sh) * sh + HOME.move); P.home = null; c.sat -= .2; return "부동산 사장님이 두 사람에게 따로 전화했다."; } },
+      { label: "대출을 받아 집을 지킨다", ok: (P) => !!P.home, hint: (P) => { if (!P.home) return "집이 있어야 한다"; if ((P.home.sh ?? .5) >= 1) return "결혼 전부터 내 이름으로 된 집이다. 그대로 산다"; const h = P.home, add = h.value - h.loan, room = Math.max(0, h.value * 2 * HOME.ltv - h.loan * 2); return `배우자 몫 ${manwon(add)}을 내가 갚는다: 대출 +${manwon(Math.min(add, room))}${add > room ? `, 모은 돈 −${manwon(add - room)}` : ""}. 에너지 −8`; },
+        apply: (P) => { if ((P.home.sh ?? .5) >= 1) return "원래 내 집이었다. 짐 반이 빠져나갔다."; const h = P.home, add = h.value - h.loan, room = Math.max(0, h.value * 2 * HOME.ltv - h.loan * 2), nl = Math.min(add, room); P.cash -= add - nl; h.loan = h.loan * 2 + nl; h.loan0 = h.loan; h.value *= 2; h.price *= 2; h.sh = 1; P.energy -= 8; return "등기부등본에 이름이 하나만 남았다."; } },
+      { label: "일에 몰두한다", ok: (P) => !P.home, hint: "실력 +6, 에너지 −10", apply: (P) => { P.skill += 6; P.energy -= 10; return "야근이 오히려 편했다."; } },
+      { label: "한동안 쉬어 간다", ok: (P) => !P.home, hint: "에너지 +10, 만족도 −", apply: (P, c) => { P.energy += 10; c.sat -= .3; return "주말마다 부모님 집에 갔다."; } },
     ] },
   { id: "peer_wedding", cat: "friend", when: (P, S) => !!S.peerWedding, w: () => 2.5,
     title: (P, S) => `동기 ${S.peerWedding}의 청첩장`, body: "모바일 청첩장 링크가 단톡방에 올라왔다. 축의금을 얼마 할지 잠깐 고민했다.",
@@ -2622,6 +2668,34 @@ const CARDS = [
     choices: [
       { label: "바로 고친다", hint: (P) => `−${shareTxt(P, 400)}, 에너지 −3`, apply: (P) => { P.bonus -= 400 * myShare(P); P.energy -= 3; return "욕실을 뜯은 김에 타일도 바꿨다."; } },
       { label: "보험 처리를 알아본다", hint: (P) => `60%: −${shareTxt(P, 100)}, 아니면 −${shareTxt(P, 400)}. 에너지 −6`, apply: (P) => { P.energy -= 6; if (rand() < .6) { P.bonus -= 100 * myShare(P); return "일상생활배상책임 특약이 있었다. 자기부담금만 냈다."; } P.bonus -= 400 * myShare(P); return "약관에 '노후로 인한 누수 제외'가 있었다."; } },
+    ] },
+  /* 전세 만기: 집이 없는 사람은 2년마다 계약이 끝난다(주택임대차보호법: 계약갱신요구권 1회 2년, 증액 상한 5%). 보증금 인상분 3,000만 원(가구)과 월세 전환은 설계상 가정 */
+  { id: "rent_renew", cat: "money", repeat: true, when: (P) => !P.home && isWork(P) && P.age >= 27 && P.t - (P.flags.rentT ?? -9) >= 2, due: () => .3,
+    title: "전세 계약이 끝나 간다", body: (P) => `집주인 문자: "만기 때 보증금을 ${P.flags.rentRenew ? "시세대로" : "좀"} 올려야 할 것 같아요."${P.flags.rentRenew ? " 갱신청구권은 지난번에 썼다." : ""}`,
+    why: "주택임대차보호법(2020.7.31 개정): 세입자는 한 번 계약 갱신을 요구할 수 있고(2년), 이때 보증금·월세 인상은 5% 이내. 국토교통부 2024년도 주거실태조사: 최근 2년 안에 이사한 가구 30.3%(언론 보도). 한국부동산원 전월세전환율 전국 주택 2025년 12월 6.6%(2차 자료 인용). 시세대로 올릴 때 보증금 3,000만 원 인상, 이사비 300만 원은 설계상 가정.", grade: "C",
+    choices: [
+      { label: "갱신청구권을 쓴다", ok: (P) => !P.flags.rentRenew, hint: (P) => P.flags.rentRenew ? "이미 한 번 썼다" : "2년 더, 인상은 5% 안쪽. 다음 만기에는 못 쓴다", apply: (P) => { P.flags.rentRenew = true; P.flags.rentT = P.t; return "내용증명 양식을 처음 검색해 봤다."; } },
+      { label: "오른 만큼 월세로 돌린다", hint: (P) => `보증금 대신 월세: 연 −${shareTxt(P, 198)}(3,000만 원 × 6.6%), 2년`, apply: (P) => { P.flags.rentT = P.t; P.flags.rentRenew = false; addRecur(P, "월세", 198, 2); return "통장에 월세 자동이체가 하나 생겼다."; } },
+      { label: "싼 동네로 옮긴다", hint: (P) => `이사비 −${shareTxt(P, HOME.move)}, 출퇴근이 길어진다(에너지 −5)`, apply: (P, c) => { P.flags.rentT = P.t; P.flags.rentRenew = false; P.bonus -= HOME.move * myShare(P); P.energy -= 5; c.sat -= .05; return "새 동네 마트 위치부터 외웠다."; } },
+      { label: "이참에 집을 산다", ok: (P) => currentWage(P) > 0, hint: (P) => quoteHint(homeQuote(P, HOME.pir.all), P), apply: (P, c) => { const q = homeQuote(P, HOME.pir.all); buyHome(P, c, q, .2); return `${manwon(q.price)} 원. 전세 보증금이 계약금이 됐다.`; } },
+    ] },
+  /* 갈아타기: 집을 산 지 5년이 넘은 기혼·자녀 가구. 새 집은 지금 집값의 1.35배(설계상 가정), 대출은 LTV·6억·DSR 안에서, 모자라면 모은 돈 */
+  { id: "home_upsize", cat: "money", when: (P) => !!P.home && P.married && P.kids.length > 0 && P.age - P.home.at >= 5 && P.age <= 52 && currentWage(P) > 0, due: () => .12,
+    title: "더 넓은 집으로 갈아탈까", body: (P) => `아이 방이 모자란다. 지금 집은 ${manwon(P.home.value / (P.home.sh ?? myShare(P)))} 원쯤 한다. 옆 단지 넓은 집은 ${manwon(P.home.value / (P.home.sh ?? myShare(P)) * 1.35)} 원.`,
+    why: "대출 한도는 '집을 살까' 카드와 같다(LTV 70%, 6억 상한, DSR 40%). 1주택 갈아타기는 양도세 비과세로 보고 뺐다. 팔 때·살 때 중개보수와 새 집 취득세, 이사비를 낸다. 1.35배와 만족도 효과는 설계상 가정.", grade: "C",
+    choices: [
+      { label: "갈아탄다", hint: (P) => { const u = upsizeQuote(P); return `새 집 ${manwon(u.price)}, 대출 ${manwon(u.loan)}로 늘어난다. 세금·중개·이사 −${manwon(u.cost * u.sh)}${u.cash > 0 ? `, 모은 돈 −${manwon(u.cash * u.sh)}` : ""}. 만족도 +`; },
+        apply: (P, c) => { const u = upsizeQuote(P), sh = u.sh; P.cash -= u.cash * sh; P.bonus -= Math.round(u.cost * sh); P.home = { value: u.price * sh, price: u.price * sh, loan: u.loan * sh, loan0: u.loan * sh, rate: HOME.rate, at: P.age, sh }; c.sat += .2; P.energy -= 5; return `${manwon(u.price)} 원짜리로 옮겼다. 대출 만기가 다시 30년 뒤가 됐다.`; } },
+      { label: "지금 집에 산다", hint: "변화 없음. 방 하나를 둘이 같이 쓴다", apply: (P, c) => { c.sat -= .05; return "이층 침대를 주문했다."; } },
+    ] },
+  /* 배우자 경력단절: 남성 플레이어의 아내가 아이가 어릴 때 일을 쉰다. 국가데이터처 2025년 상반기 지역별고용조사: 6세 이하 자녀가 있는 기혼여성의 31.6%가 경력단절, 사유 1위 육아 44.3%. 쉬는 기간 3~8년과 돌봄 비용은 설계상 가정 */
+  { id: "spouse_break", cat: "family", when: (P) => P.married && P.sex === "male" && kidAt(P, 0, 1) != null && !P.flags.spouseOff, due: () => .2,
+    title: "아내가 일을 쉬겠다고 한다", body: "어린이집 대기 순번은 아직 멀었다. 둘 다 야근이 잦다. 누군가는 저녁 6시에 집에 있어야 한다.",
+    why: "국가데이터처 2025년 상반기 지역별고용조사(2025.11 발표): 15~54세 기혼여성의 경력단절 비율 14.9%, 6세 이하 자녀가 있으면 31.6%. 경력단절 사유는 육아 44.3%, 결혼 24.2%, 임신·출산 22.1%. 게임은 배우자가 나만큼 번다고 보므로, 쉬는 동안 가구 생활비를 혼자 낸다. 쉬는 기간 3~8년, 돌봄 비용 연 900만 원(3년)은 설계상 가정.", grade: "C",
+    choices: [
+      { label: "아내가 쉰다", hint: "3~8년 동안 생활비를 혼자 낸다(가구 소득 절반), 만족도 +", apply: (P, c) => { P.flags.spouseOff = 3 + Math.floor(rand() * 6); c.sat += .1; return "아내의 사원증이 서랍으로 들어갔다."; } },
+      { label: "둘 다 일하고 돌봄을 산다", hint: (P) => `등하원 도우미 연 −${shareTxt(P, 900)}, 3년. 에너지 −6`, apply: (P) => { addRecur(P, "돌봄 도우미", 900, 3); P.energy -= 6; return "도우미 선생님 연락처가 즐겨찾기 1번이 됐다."; } },
+      { label: "내가 일을 줄인다", hint: "지금 직장 유지 ↓, 쉬게 될 확률 ×1.5, 만족도 +", apply: (P, c) => { mul(c, "same_job", .85); mul(c, "not_employed", 1.5); c.sat += .15; P.flags.spouseOff = 0; return "팀장에게 칼퇴를 선언했다. 반응은 미지근했다."; } },
     ] },
   { id: "kid_college", cat: "family", repeat: true, force: (P) => P.kids.some((k) => P.t - k >= 19 && P.t - k <= 20 && !P.flags["col" + k]),
     title: "아이가 대학에 붙었다", body: "합격 문자 다음 날 등록금 고지서가 왔다. 4년이다.",
@@ -3281,7 +3355,7 @@ function lifeRoll(P) {
 function applyLife(P, kind) {
   if (kind === "marry") { P.married = true; P.marriedAt = P.t; P.life.push({ t: P.t, age: P.age, kind }); }
   if (kind === "birth") { P.kids.push(P.t); P.life.push({ t: P.t, age: P.age, kind, n: P.kids.length }); }
-  if (kind === "divorce") { P.married = false; P.dating = 1; P.life.push({ t: P.t, age: P.age, kind }); }
+  if (kind === "divorce") { P.flags.spouseOff = 0; P.married = false; P.dating = 1; P.life.push({ t: P.t, age: P.age, kind }); }
 }
 function lifeWhy(P, kind) {
   const L = G.life;
@@ -3954,6 +4028,7 @@ function finishYear(ctx) {
     rec.forEach((r) => r.left--); P.recur = P.recur.filter((r) => r.left > 0);
     const net = Math.round((th - sp) * 12 - gift + dB - (hl ? hl.intr + hl.prin : 0) - credit - recAmt + interest + sev + stock + irp);
     if (P.flags.frugal > 0) P.flags.frugal--;
+    if (P.flags.spouseOff > 0) P.flags.spouseOff--;
     P.cash += net;
     const nw = netWorth(P);
     P.flags.debtY = P.cash < 0 ? (P.flags.debtY || 0) + 1 : 0;
@@ -4389,11 +4464,13 @@ function yearHtml(y) {
   return `<article class="yr ${hot ? "hot" : ""}"><header class="yr-h"><b>${y.year}</b><span>${y.age}세</span>${(() => { const sv = S.player && S.player.sats[y.t], pv = S.player && S.player.sats[y.t - 1]; if (sv == null) return ""; const d = pv == null ? 0 : sv - pv; return `<span class="yr-sat" title="그해 만족도(1~5점)">만족도 ${sv.toFixed(1)}${Math.abs(d) >= .05 ? `<i class="${d > 0 ? "up" : "dn"}">${d > 0 ? "▲" : "▼"}${Math.abs(d).toFixed(1)}</i>` : ""}</span>`; })()}${turn ? `<span class="badge ${hot ? "danger" : "neutral"} yr-tag">${turn}</span>` : ""}</header>
     ${chunk("c-proj", "프로젝트", g.proj)}${chunk("c-card", "올해의 일", g.card)}${chunk("c-career", "커리어", g.career)}${chunk("c-money", "돈", g.money)}${chunk("c-peer", "동기 소식", g.peer)}</article>`;
 }
-/* 프로젝트·카드·안내 창. 자동 진행 중에는 창이 아래 조작 막대를 덮으므로, 창 맨 위에 '자동 진행 끄기'를 둔다 */
+/* 프로젝트·카드·안내 창은 아래 조작 막대를 덮으므로, 창 맨 위에 '자동 진행 켜기/끄기'를 둔다 */
 function sheetsHtml() {
   const ov = `${S.proj ? projHtml() : ""}${S.card ? cardHtml() : ""}${S.notice ? noticeHtml() : S.check ? checkHtml() : ""}`;
-  if (!ov || !S.speed) return ov;
-  const bar = `<div class="auto-offer"><span>자동 진행 중 · 알아서 고르고 넘어가요</span><button type="button" class="textlink" data-autopick="0">자동 진행 끄기</button></div>`;
+  if (!ov) return ov;
+  const bar = S.speed
+    ? `<div class="auto-offer"><span>자동 진행 중 · 알아서 고르고 넘어가요</span><button type="button" class="textlink" data-autopick="0">자동 진행 끄기</button></div>`
+    : `<div class="auto-offer"><span>직접 고르는 중</span><button type="button" class="textlink" data-autopick="1">자동 진행 켜기</button></div>`;
   return ov.replace(/(<div class="sheet(?: [^"]*)?"[^>]*>)/, `$1${bar}`);
 }
 /* 대화창: 새로 열릴 때만 올라오는 애니메이션·포커스 이동, 다시 그릴 때는 포커스 유지. 열려 있는 동안 뒤 화면은 키보드로 닿지 않게 */
@@ -4763,7 +4840,7 @@ function satColor(s) { return `color-mix(in oklab, var(--accent) ${Math.round(12
 function wageChart(P) {
   const W = 320, H = 170, L = 34, Rr = 8, T = 10, B = 24;
   const ages = P.wages.map((_, i) => P.startAge + i + 1);
-  const med = ages.map((a, i) => { const role = P.roles[i]; return interp(R[role].wage_by_age, a) * sexRatio(role, P.sex) * levelFor(role, P.sex, P.startAge); });
+  const med = ages.map((a, i) => { const role = P.roles[i]; return interp(R[role].wage_by_age, a) * calAt(role, a) * sexRatio(role, P.sex) * levelFor(role, P.sex, P.startAge); });
   const maxY = Math.max(100, ...P.wages, ...med) * 1.1;
   const step = maxY > 800 ? 200 : 100;
   const x = (a) => L + (a - P.startAge) / Math.max(1, ages.at(-1) - P.startAge) * (W - L - Rr);
@@ -5295,6 +5372,12 @@ function renderData() {
         <tr><td>임금피크·희망퇴직</td><td>56세 전후 월급 −20% · 위로금 24개월 치</td><td>고용노동부 2016(300인 이상 48.6% 도입) · 고령층 부가조사 2025(52.9세), 금액은 가정</td></tr>
         <tr><td>국민연금</td><td>43% × (A값 309만 + 내 평균) ÷ 2 × 가입 햇수 ÷ 40, 65세부터</td><td>2025.3 연금개혁 · 국민연금공단 상한 637만(2025.7)</td></tr>
         <tr><td>노후생활비</td><td>개인 월 197.6만 · 부부 298.1만</td><td>국민연금연구원 국민노후보장패널 10차(2024)</td></tr>
+        <tr><td>주택연금</td><td>60세 집값 1억당 월 21.07만(12억까지), 남은 대출은 먼저 갚음</td><td>한국주택금융공사 월지급금 예시표(2026.3.1, 일반주택·종신·정액형)</td></tr>
+        <tr><td>집 줄이기</td><td>60% 값의 집으로, 중개보수·취득세·이사비 뺌</td><td>설계상 가정</td></tr>
+        <tr><td>전세 만기</td><td>2년마다(연 30%), 갱신청구 1회 5% 이내 · 아니면 월세 연 198만 2년 / 이사 / 매수</td><td>주택임대차보호법 · 전월세전환율 6.6%(한국부동산원 2025.12, 2차 인용) · 인상 3,000만은 가정</td></tr>
+        <tr><td>갈아타기</td><td>산 지 5년 넘은 기혼·자녀 가구, 1.35배 집, 대출 한도 안에서</td><td>대출 규정은 '집을 살까'와 같음 · 1.35배는 가정</td></tr>
+        <tr><td>배우자 경력단절</td><td>아이 0~1세, 쉬는 3~8년 동안 생활비를 혼자 냄</td><td>국가데이터처 지역별고용조사 2025 상반기: 6세 이하 자녀 기혼여성 31.6% · 기간은 가정</td></tr>
+        <tr><td>이혼 재산</td><td>반씩(부부 재산의 내 몫만 셌음), 집은 팔아 나누거나 배우자 몫을 대출로</td><td>공식 분할 비율 통계 없음 · 설계상 가정</td></tr>
         <tr><td>자동차</td><td>신차 4,420만 원(5년 할부)</td><td>한국자동차산업협회 2021년 신차 등록 분석</td></tr>
       </tbody></table></div></section>
     <section><h2>설계상 가정 (D)</h2><ul class="sources" style="list-style:disc">
@@ -5342,6 +5425,12 @@ function renderData() {
       <li>소득세법 연금계좌 세액공제 — 연 900만 원 한도, 총급여 5,500만 원 이하 16.5%·초과 13.2%(지방소득세 포함)</li>
       <li><a href="https://mobile.newsis.com/view/NISX20250320_0003107056" target="_blank" rel="noopener">국민연금 개혁 여야 합의</a>(2025.3) — 보험료율 13%, 소득대체율 43%(2026년부터) · 국민연금공단 기준소득월액 상한 637만 원(2025.7~) · 1969년생부터 65세 지급</li>
       <li>국민연금연구원 2024년 국민노후보장패널 10차 부가조사(언론 보도) — 적정 노후생활비 개인 197만 6천 원, 부부 298만 1천 원</li>
+      <li><a href="https://hf.go.kr/ko/sub03/sub03_01_01_02.do" target="_blank" rel="noopener">한국주택금융공사 주택연금 월지급금 예시표</a>(2026.3.1 기준, 일반주택·종신지급·정액형) — 60세 1억 21만 원 … 5억 105만 3천 원 … 12억 252만 8천 원</li>
+      <li>주택임대차보호법(2020.7.31 개정) 제6조의3·제7조 — 계약갱신요구권 1회(2년), 증액 상한 5%</li>
+      <li><a href="https://biz.newdaily.co.kr/site/data/html/2025/11/15/2025111500090.html" target="_blank" rel="noopener">국토교통부 2024년도 주거실태조사</a>(언론 보도) — 평균 거주 8.4년, 최근 2년 주거이동률 30.3%, 임차가구 소득 대비 임대료 15.8%</li>
+      <li><a href="https://calcfyi.com/guide/kr-real-estate/jeonse-conversion-rate-explained/" target="_blank" rel="noopener">한국부동산원 전월세전환율</a>(2차 인용) — 전국 주택 2024.12 6.2% → 2025.12 6.6%</li>
+      <li><a href="https://www.segye.com/newsView/20251120515171" target="_blank" rel="noopener">국가데이터처 2025년 상반기 지역별고용조사 경력단절여성</a>(언론 보도) — 15~54세 기혼여성 중 14.9%, 18세 미만 자녀 21.3%, 6세 이하 자녀 31.6%, 사유 육아 44.3%</li>
+      <li>노동패널 12~27차 중 2018~2024년 직군별 나이대 월급 중앙값 — 게임 월급의 나이별 오름폭 보정(디자이너 25~29세 225만 → 40~59세 330만, 개발자 250만 → 45~59세 500만)</li>
       <li>고용노동부 임금피크제 도입 현황(2016, 300인 이상 48.6%, 언론 보도) · 통계청 기업생멸행정통계 신생기업 5년 생존율 34.3%(2016년 창업)·36.5%(2025 발표)</li>
       <li><a href="https://www.bok.or.kr/portal/bbs/B0000501/view.do?menuNo=201264&nttId=10094322" target="_blank" rel="noopener">한국은행 2025년 9월 금융기관 가중평균금리</a> — 예금은행 저축성수신금리 2.52%(신규취급액) · 이자소득세 15.4%(소득세법, 지방소득세 포함)</li>
       <li><a href="https://1in8b.life/ko/" target="_blank" rel="noopener">80억 분의 1 (1in8b.life)</a> — 영감을 받은 작품</li>
@@ -5355,15 +5444,17 @@ function renderData() {
 /* 엔딩: 60세 이후 — 국민연금과 모은 현금으로 언제까지 버티나 */
 function retireHtml(P) {
   const r = retireOf(P), age = endAge(P);
-  const u = r.until === Infinity ? "연금으로 충분" : r.until >= 100 ? "100세 넘게" : `${Math.floor(r.until)}세까지`;
+  const ua = (x) => x === Infinity ? "연금으로 충분" : x >= 100 ? "100세 넘게" : `${Math.floor(x)}세까지`, u = ua(r.until);
   return `<section class="stack" style="gap:8px"><div class="eyebrow">${age < RETIRE_AGE ? `${age}세에 멈췄지만, ` : ""}60세 이후</div>
     <div class="facts">
       <div><b class="num">${r.pen.m ? `월 ${won(r.pen.m)}만` : "없음"}</b><span>국민연금 예상(${PENSION.age}세부터, 가입 ${r.pen.n}년${r.pen.n < PENSION.min ? " · 10년 미만" : ""})</span></div>
       <div><b class="num">월 ${won(r.need)}만</b><span>적정 노후생활비 ${P.married ? "(부부 298만의 내 몫)" : "(개인)"}</span></div>
       <div><b class="num">${PENSION.age - RETIRE_AGE}년</b><span>60세부터 연금까지 월급도 연금도 없는 기간</span></div>
       <div><b class="num ${r.until !== Infinity && r.until < 80 ? "neg" : ""}">${u}</b><span>모은 현금으로 버티는 나이(집 제외, 이자 없음)</span></div>
+      ${r.hp ? `<div><b class="num">${ua(r.hp.until)}</b><span>집으로 주택연금(월 ${won(r.hp.m)}만, 60세부터)을 받으면</span></div>
+      <div><b class="num">${ua(r.down.until)}</b><span>집을 줄여 이사하면(${manwon(Math.max(0, r.down.freed))} 손에 쥠)</span></div>` : ""}
     </div>
-    <p class="fine">국민연금은 2026년 개혁 뒤 소득대체율 43%로 단순 계산(A값 약 309만 원, 상한 637만 원, 오늘 돈 기준). 노후생활비는 국민연금연구원 국민노후보장패널 10차(2024). 집은 팔거나 주택연금으로 바꾸면 더 버틸 수 있다.</p></section>`;
+    <p class="fine">국민연금은 2026년 개혁 뒤 소득대체율 43%로 단순 계산(A값 약 309만 원, 상한 637만 원, 오늘 돈 기준). 노후생활비는 국민연금연구원 국민노후보장패널 10차(2024). ${r.hp ? "주택연금은 한국주택금융공사 월지급금 예시표(2026.3.1 기준, 일반주택·종신·정액형, 60세)로, 남은 주택담보대출은 먼저 갚는다고 쳤다. 집 줄이기는 지금 집값의 60%짜리로 옮긴다는 가정." : "집이 있었다면 주택연금이나 집 줄이기로 더 버틸 수 있었다."}</p></section>`;
 }
 
 /* ── 시작 ── */
