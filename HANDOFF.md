@@ -192,7 +192,7 @@ PRD 본문은 claude.ai 문서에 있다: https://claude.ai/artifact/892mSfiMXa6
 - 청년패널 코드북: https://survey.keis.or.kr/yp/ypcodebook/List.jsp
 - KLIPS 코드북: https://www.kli.re.kr/menu.es?mid=a40302000000
 - SW기술자 평균임금 2025 적용: https://files-scs.pstatic.net/2024/12/29/Yp9k9cqjwa/2025%EB%85%84_%EC%A0%81%EC%9A%A9_SW%EA%B8%B0%EC%88%A0%EC%9E%90_%ED%8F%89%EA%B7%A0%EC%9E%84%EA%B8%88_%EA%B3%B5%ED%91%9C.pdf
-- 2024년도 주거실태조사(국토교통부, 2025.11): https://www.korea.kr/news/policyNewsView.do?newsId=148909633 · 보도 https://www.newsis.com/view/NISX20251116_0003404516
+- 2024년도 주거실태조사(국토교통부, 2025.11): https://www.korea.kr/news/policyNewsView.do?newsId=148909633 · 보도 https://www.newsis.com/view/NISX20251116_0003404516 · 원문 https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?lcmspage=1&id=95091415
 - 가계부채 관리 강화 방안(금융위원회 2025.6.27, LTV·6억 상한): https://fsc.go.kr/edu/news/84845
 - 한국은행 2025년 9월 가중평균금리(주담대 3.96%, 신용대출 5.31%) 보도: https://biz.sbs.co.kr/amp/article/20000269097
 - 지표누리 주택매매가격 동향(한국부동산원): https://www.index.go.kr/unity/potal/main/EachDtlPageDetail.do?idx_cd=1240
@@ -453,4 +453,4 @@ PRD 본문은 claude.ai 문서에 있다: https://claude.ai/artifact/892mSfiMXa6
 - 배우자 경력단절 `spouse_break`(남성 플레이어, 아이 0~1세, 연 20%): 아내가 3~8년 쉼(`P.flags.spouseOff`: 생활비를 혼자 냄 = `spendOf` ×2, 가구 소득 ×1) / 돌봄 도우미 연 900만 3년 / 내가 일을 줄임. 근거: 국가데이터처 2025 상반기 지역별고용조사 6세 이하 자녀 기혼여성 경력단절 31.6%.
 - 이혼 재산: 반씩(원래 내 몫만 셌으므로 그대로). 집이 있으면 팔아 나누기 / 배우자 몫을 대출로 사들이기(LTV 70% 안, 넘으면 현금). 결혼 전 내 집(`sh`=1)은 그대로. 재산분할 공식 통계는 못 찾음(가정), 양육비는 미반영.
 - 검증: 두 트랙 오류 0, 선택지 전부 막힘 0. 등장률(1,500판): 전세 만기 디자이너 47%·개발자 67%, 갈아타기 5%·11%, 배우자 경력단절 1.4%·1.6%(남성·기혼·출산 판에 한정). 판 끝 자가 보유 14% → 27%(디자이너), 27% → 45%(개발자) — 전세 만기의 '이참에 산다' 때문. 정년자 자산 중앙값 디자이너 약 4.4~4.8억, 개발자 약 6.9~7.4억.
-- 출처 링크: [한국주택금융공사 월지급금 예시표](https://hf.go.kr/ko/sub03/sub03_01_01_02.do) · [2024년도 주거실태조사(뉴데일리)](https://biz.newdaily.co.kr/site/data/html/2025/11/15/2025111500090.html) · [전월세전환율(2차 인용)](https://calcfyi.com/guide/kr-real-estate/jeonse-conversion-rate-explained/) · [경력단절여성 2025 상반기(세계일보)](https://www.segye.com/newsView/20251120515171) · 주택임대차보호법 제6조의3·제7조 · 노동패널 12~27차(2018~2024 연도 한정 재계산).
+- 출처 링크: [한국주택금융공사 월지급금 예시표](https://hf.go.kr/ko/sub03/sub03_01_01_02.do) · [국토교통부 「2024년도 주거실태조사」 결과 보도자료(2025.11.17)](https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?lcmspage=1&id=95091415) — 원문 PDF로 확인: 평균 거주 8.4년(자가 11.5·임차 3.6년), 주거이동률 30.3%, 비자발 이사 1위 계약 만기 18.1%, RIR 15.8% · [전월세전환율(2차 인용)](https://calcfyi.com/guide/kr-real-estate/jeonse-conversion-rate-explained/) · [경력단절여성 2025 상반기(세계일보)](https://www.segye.com/newsView/20251120515171) · 주택임대차보호법 제6조의3·제7조 · 노동패널 12~27차(2018~2024 연도 한정 재계산).
