@@ -281,6 +281,7 @@ details.more[open] { display: flex; flex-direction: column; gap: 24px; }
 .autopick input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
 .autopick .fine { font-size: 11.5px; }
 .go .btn:first-child { flex: 1; white-space: nowrap; padding-inline: 12px; }
+.go .auto-go { white-space: nowrap; padding-inline: 16px; }
 .career-svg { display: block; max-width: 520px; }
 @media (max-width: 374px) { .go .seg button { padding-inline: 9px; } }
 
@@ -1295,7 +1296,7 @@ const TOPICS = {
   mobility: { name: "모빌리티", ax: "ux" }, shop: { name: "커머스", ax: "vis" }, game: { name: "게임", ax: "vis" },
   travel: { name: "여행", ax: "vis" }, gov: { name: "공공기관", ax: "com" }, food: { name: "식품", ax: "com" },
 };
-const CODENAMES = ["모아", "하루", "온길", "다솜", "루트", "보다", "씨앗", "결", "새벽", "파도", "너울", "바람", "솔", "이음", "마루", "별빛", "한결", "나래"];
+const CODENAMES = ["모아", "하루", "온길", "다솜", "루트", "보다", "씨앗", "결", "새벽", "파도", "너울", "바람", "이음", "마루", "별빛", "한결", "나래", "도담", "가람", "누리", "미르", "아라", "햇살", "오름", "여울", "꽃길", "단비", "윤슬", "노을", "은하", "소나기", "들꽃", "반디", "링크업", "핏", "데일리", "픽셀", "스테이", "웨이브", "루프", "노트", "포켓", "큐브", "스텝", "브릿지", "하이브", "오빗", "레일", "젤리", "페이지", "토스트", "밀크", "레몬", "블루", "민트", "코랄", "올리브", "캐럿", "피치", "부엉", "다람", "고래", "펭귄", "판다", "수달", "여우", "두더지", "프로젝트K", "넥스트원", "플랜B", "원스텝", "오늘한끼", "우리동네", "바로가", "이따가", "같이가치", "한입", "쓱", "툭"];
 const CRUNCH = { off: { label: "칼퇴", B: 8, q: .93, energy: 4 }, norm: { label: "보통", B: 10, q: 1, energy: -2 }, crunch: { label: "야근", B: 13, q: 1.08, energy: -12 } };
 let RANKS = [
   { name: "주니어 디자이너", yrs: 0, rep: 0 }, { name: "디자이너", yrs: 2, rep: 18 }, { name: "시니어 디자이너", yrs: 5, rep: 38 },
@@ -1355,6 +1356,8 @@ function rankOf(P) { let r = 0; RANKS.forEach((x, i) => { if (workYears(P) >= x.
 const projName = (pr) => `${TOPICS[pr.topic].name} ‘${pr.code}’ ${PTYPES[pr.type].name}`;
 function projTarget(pr) { const w = PTYPES[pr.type].w.map((x, i) => x + (AX[i] === TOPICS[pr.topic].ax ? 2 : 0)), s = sum(w); return w.map((x) => x / s); }
 const projDue = (P) => { const last = P.projects.at(-1); return !last || P.t - last.t >= 2; };
+/* 프로덕트 이름: 이 판에서 아직 안 쓴 이름 중에서 고른다 */
+function freshCode(P) { const used = new Set(P.projects.map((x) => x.code)), left = CODENAMES.filter((n) => !used.has(n)); return choose(left.length ? left : CODENAMES); }
 function newProject(P) {
   const where = isClientWork(P) ? "out" : "in";
   const done = new Set(P.projects.map((x) => x.type));
@@ -1362,7 +1365,7 @@ function newProject(P) {
   const type = pick(Object.fromEntries(types.map((k) => [k, (done.has(k) ? 1 : 2) * (PTYPES[k].p ?? 1)]))); // p: 유형별 빈도 배수(설계상 가정)
   const crunch = P.lastAlloc ? P.lastAlloc.crunch : "norm";
   const fresh = syncTeam(P), team = teamSize(P) ? [...P.team.members] : [];
-  return { type, topic: choose(Object.keys(TOPICS)), code: choose(CODENAMES), where, crunch, alloc: spread([1, 1, 1, 1], CRUNCH[crunch].B), stage: "plan", t: P.t,
+  return { type, topic: choose(Object.keys(TOPICS)), code: freshCode(P), where, crunch, alloc: spread([1, 1, 1, 1], CRUNCH[crunch].B), stage: "plan", t: P.t,
     team, assign: team.map((m) => AX.indexOf(m.ax)), fresh, evQ: 1, revAdj: {}, extra: AX.map((k) => P.rank >= 4 && P.flags.principle === k ? 1 : 0) };
 }
 /* 아는 인사이트로 배분을 짐작한다(자동 선택용) */
@@ -1432,7 +1435,7 @@ function projApply(P, pr, ctx) {
   P.energy = Math.max(0, Math.min(100, P.energy + CRUNCH[pr.crunch].energy));
   if (pr.revs.some((r) => r.score === 10)) P.flags.ten = true;
   if (pr.crunch === "crunch") P.flags.crunchN = (P.flags.crunchN || 0) + 1;
-  P.projects.push({ t: P.t, name: projName(pr), type: pr.type, topic: pr.topic, avg: a, crunch: pr.crunch });
+  P.projects.push({ t: P.t, name: projName(pr), code: pr.code, type: pr.type, topic: pr.topic, avg: a, crunch: pr.crunch });
   P.best = Math.max(P.best || 0, a);
   P.lastAlloc = { alloc: [...pr.alloc], crunch: pr.crunch };
   const promo = promote(P);
@@ -3988,7 +3991,7 @@ function finishYear(ctx) {
   S.feed.push({ t: yearT, year: START_YEAR + yearT, age: P.age - 1, lines: [...lines, ...peerLines.slice(0, 3)] });
   achCheck(P);
   if (lines.some((l) => l.kind === "comeback" || l.kind === "back")) SFX.up(); else if (lines.some((l) => l.kind === "end" || l.kind === "leave_role" || l.kind === "none")) SFX.bad();
-  if (P.end) { S.speed = 0; S.ff = false; S.screen = "record"; render(); return; }
+  if (P.end) { S.speed = 0; S.autoPick = false; S.ff = false; S.screen = "record"; render(); return; }
   if (CHECKS.includes(P.t)) { S.check = { t: P.t }; track("checkpoint", { year: P.t, age: P.age }); }
   if (S.ff && !isOut(P)) S.ff = false;
   render();
@@ -4112,7 +4115,15 @@ function projDone() {
   S.proj = null; yearCards(pr.ctx);
 }
 function autoCrunch(P) { return P.energy < 40 ? "off" : P.energy > 75 ? pick({ norm: 2, crunch: 1 }) : "norm"; }
-function setAutoPick(v) { S.autoPick = v; if (v && !S.speed) S.speed = 1; for (const o of [S.card, S.check, S.notice]) if (o) delete o.auto; render(); schedule(); }
+/* 자동 진행 켜기/끄기. 켜면 선택도 알아서(2배 속도), 끄면 타이머를 모두 멈추고 직접 고른다 */
+const AUTO_SPEED = 2;
+function setAuto(v) {
+  S.autoPick = v; S.speed = v ? AUTO_SPEED : 0;
+  clearTimeout(timer); clearTimeout(projTimer);
+  for (const o of [S.card, S.check, S.notice]) if (o) delete o.auto;
+  render(); schedule();
+}
+const setAutoPick = setAuto;
 
 /* ── 그리기 ── */
 const $app = document.getElementById("app");
@@ -4207,8 +4218,8 @@ function setTrack(role, dir) {
 function renderStart() {
   const role = S.pickRole === "developer" ? "developer" : "designer", d = R[role], e = loadEndings(), nE = endCount(e).n + endCount(e).h;
   const rules = role === "developer"
-    ? [["프로젝트", "2년마다 대표 프로젝트를 맡아 설계·구현·테스트에 시간을 나누고 리뷰를 받습니다."], ["팀", "테크 리드가 되면 팀원이 생깁니다. 지치면 떠납니다."], ["갈등", "디자이너와 같은 장면을 반대편에서 겪습니다."], ["현실", "이직·전향·공백은 실제 통계의 확률대로 옵니다."]]
-    : [["프로젝트", "2년마다 대표 프로젝트를 맡아 시간을 나누고 리뷰를 받습니다."], ["팀", "리드가 되면 팀원이 생깁니다. 지치면 떠납니다."], ["갈등", "개발자와 같은 장면을 반대편에서 겪습니다."], ["현실", "이직·전향·공백은 실제 통계의 확률대로 옵니다."]];
+    ? [["프로젝트", "2년마다 대표 프로젝트를 맡아 설계·구현·테스트에 시간을 나누고 리뷰를 받습니다."], ["팀", "테크 리드가 되면 팀원이 생깁니다. 지치면 떠납니다."], ["성장", "잘하면 평판이 오르고 승진합니다."], ["현실", "이직·전향·공백은 실제 통계의 확률대로 옵니다."]]
+    : [["프로젝트", "2년마다 대표 프로젝트를 맡아 시간을 나누고 리뷰를 받습니다."], ["팀", "리드가 되면 팀원이 생깁니다. 지치면 떠납니다."], ["성장", "잘하면 평판이 오르고 승진합니다."], ["현실", "이직·전향·공백은 실제 통계의 확률대로 옵니다."]];
   const slide = S.slide; S.slide = null;
   $app.innerHTML = `
   <div class="scroll" id="start-scroll"><div class="start ${slide ? "slide-" + slide : ""}">
@@ -4232,13 +4243,6 @@ function renderStart() {
       </div>
     </section>
     ${vaultHtml()}
-    <details class="manual" id="manual" ${S.manual ? "open" : ""}>
-      <summary>성별 직접 고르기</summary>
-      <div class="form-row">
-        <div class="seg" role="group" aria-label="성별">${["female", "male"].map((x) => `<button id="pick-${x}" aria-pressed="${S.pickSex === x}" data-pick-sex="${x}">${SEX[x]}</button>`).join("")}</div>
-        <button class="btn ghost" id="go-manual">이 조건으로 시작</button>
-      </div>
-    </details>
     <p class="fine">${TRACK_NOTE[role]} 월급은 세전 월평균이고 물가 보정 전입니다.</p>
     <div class="dock">
       <button class="btn" id="go-random">${ROLE[role]}로 시작</button>
@@ -4257,10 +4261,7 @@ function renderStart() {
     startGame(role, rand() < R[role].female_share ? "female" : "male");
   };
   $app.querySelector("#go-data").onclick = () => { S.screen = "data"; S.back = "start"; render(); };
-  $app.querySelector("#manual").ontoggle = (e) => { S.manual = e.target.open; };
   $app.querySelectorAll("[data-pick-role]").forEach((b) => b.onclick = () => { S.pickRole = b.dataset.pickRole; render(); });
-  $app.querySelectorAll("[data-pick-sex]").forEach((b) => b.onclick = () => { S.pickSex = b.dataset.pickSex; render(); });
-  $app.querySelector("#go-manual").onclick = () => startGame(S.pickRole, S.pickSex);
   bindVault();
   mountScene();
 }
@@ -4388,13 +4389,11 @@ function yearHtml(y) {
   return `<article class="yr ${hot ? "hot" : ""}"><header class="yr-h"><b>${y.year}</b><span>${y.age}세</span>${(() => { const sv = S.player && S.player.sats[y.t], pv = S.player && S.player.sats[y.t - 1]; if (sv == null) return ""; const d = pv == null ? 0 : sv - pv; return `<span class="yr-sat" title="그해 만족도(1~5점)">만족도 ${sv.toFixed(1)}${Math.abs(d) >= .05 ? `<i class="${d > 0 ? "up" : "dn"}">${d > 0 ? "▲" : "▼"}${Math.abs(d).toFixed(1)}</i>` : ""}</span>`; })()}${turn ? `<span class="badge ${hot ? "danger" : "neutral"} yr-tag">${turn}</span>` : ""}</header>
     ${chunk("c-proj", "프로젝트", g.proj)}${chunk("c-card", "올해의 일", g.card)}${chunk("c-career", "커리어", g.career)}${chunk("c-money", "돈", g.money)}${chunk("c-peer", "동기 소식", g.peer)}</article>`;
 }
-/* 프로젝트·카드·안내 창. 자동 진행 중인데 자동 선택이 꺼져 있으면 창이 아래 조작 막대를 덮으므로, 창 맨 위에 '자동 선택 켜기'를 둔다 */
+/* 프로젝트·카드·안내 창. 자동 진행 중에는 창이 아래 조작 막대를 덮으므로, 창 맨 위에 '자동 진행 끄기'를 둔다 */
 function sheetsHtml() {
   const ov = `${S.proj ? projHtml() : ""}${S.card ? cardHtml() : ""}${S.notice ? noticeHtml() : S.check ? checkHtml() : ""}`;
   if (!ov || !S.speed) return ov;
-  const bar = S.autoPick
-    ? `<div class="auto-offer"><span>자동 선택 중 · 알아서 고르고 넘어가요</span><button type="button" class="textlink" data-autopick="0">자동 선택 끄기</button></div>`
-    : `<div class="auto-offer"><span>자동 진행 중 · 선택은 직접</span><button type="button" class="textlink" data-autopick="1">자동 선택 켜기</button></div>`;
+  const bar = `<div class="auto-offer"><span>자동 진행 중 · 알아서 고르고 넘어가요</span><button type="button" class="textlink" data-autopick="0">자동 진행 끄기</button></div>`;
   return ov.replace(/(<div class="sheet(?: [^"]*)?"[^>]*>)/, `$1${bar}`);
 }
 /* 대화창: 새로 열릴 때만 올라오는 애니메이션·포커스 이동, 다시 그릴 때는 포커스 유지. 열려 있는 동안 뒤 화면은 키보드로 닿지 않게 */
@@ -4417,7 +4416,7 @@ function renderPlay() {
   const clamp = (v) => Math.max(0, Math.min(100, v));
   const mt = (k, v, p, low) => `<div class="meter ${low ? "low" : ""}"><div class="mk"><span>${k}</span><b>${v}</b></div><i style="--v:${clamp(p).toFixed(0)}%"></i></div>`;
   const showFocus = !P.end && !P.pause && !S.ff;
-  const fq = S.speed ? (S.autoPick ? "자동 진행 · 선택도 알아서" : "자동 진행 · 선택은 직접") : out ? `${JOB()}로 돌아갈까?` : `${START_YEAR + P.t}년에는 어디에 힘을 쓸까?`;
+  const fq = S.speed ? "자동 진행 중 · 선택도 알아서" : out ? `${JOB()}로 돌아갈까?` : `${START_YEAR + P.t}년에는 어디에 힘을 쓸까?`;
   const who = P.status === "away" ? `${JOB()}를 떠난 지 ${P.awayYears + 1}년째` : P.status === "none" ? `공백기 ${P.noneYears}년째` : `${P.t + 1}년차 ${RANKS[P.rank].name}`;
   $app.innerHTML = `
     <div class="idcard">
@@ -4436,7 +4435,7 @@ function renderPlay() {
       <div class="focus-desc">${esc(FOCUS[S.focus].hint)}</div>` : ""}
       <div class="go">
         <button class="btn" id="go-year">1년 보내기</button>
-        <div class="seg" role="group" aria-label="자동 진행 속도 (2×·4×는 선택도 자동)">${[0, 1, 2, 4].map((v) => `<button id="speed-${v}" data-speed="${v}" aria-pressed="${S.speed === v}">${v ? v + "×" : "Ⅱ"}</button>`).join("")}</div>
+        <button class="btn ghost auto-go" id="auto-go" type="button" aria-pressed="${!!S.speed}">${S.speed ? "자동 진행 끄기" : "자동 진행"}</button>
         <button class="btn icon" id="snd" aria-label="효과음" aria-pressed="${SFX.on}">${sndIcon()}</button>
       </div>
     </div>
@@ -4445,16 +4444,16 @@ function renderPlay() {
   sheetAfterRender(fid);
   // 초점은 고르기만 하고, '1년 보내기'로 한 해를 보낸다
   $app.querySelectorAll("[data-focus]").forEach((b) => b.onclick = () => { S.focus = b.dataset.focus; render(); });
-  // 2×·4×는 선택도 자동(시안 1a: 자동 선택 체크박스를 속도에 흡수). 대화창 안에서 따로 끌 수 있다
-  $app.querySelectorAll("[data-speed]").forEach((b) => b.onclick = () => { ffStop(); const v = +b.dataset.speed; S.autoPick = v >= 2; setSpeed(v); });
+  // 자동 진행: 켜면 선택도 알아서 하며 2배 속도로 넘어가고, 끄면 모두 멈춘다(속도 설정 없음)
+  const ag = $app.querySelector("#auto-go"); if (ag) ag.onclick = () => { ffStop(); setAuto(!S.speed); };
   const ffb = $app.querySelector("#ff"); if (ffb) ffb.onclick = () => ffStart();
   const ffs = $app.querySelector("#ff-stop"); if (ffs) ffs.onclick = () => { ffStop(); render(); };
   const ap = $app.querySelector("#auto-pick"); if (ap) ap.onchange = () => setAutoPick(ap.checked);
-  $app.querySelectorAll("[data-autopick]").forEach((b) => b.onclick = (e) => { e.stopPropagation(); setAutoPick(b.dataset.autopick === "1"); });
+  $app.querySelectorAll("[data-autopick]").forEach((b) => b.onclick = (e) => { e.stopPropagation(); setAuto(b.dataset.autopick === "1"); });
   $app.querySelector("#go-year").onclick = () => {
     ffStop();
     if (S.player.pause) { playYear(); return; }
-    if (S.autoPick) S.focus = autoFocus();
+    if (S.speed) S.focus = autoFocus();
     playYear(); render(); schedule();
   };
   // 사건 카드: 누르면 고르기만 하고(자동 진행은 멈춤), '이렇게 한다'로 확정한다
@@ -5370,7 +5369,7 @@ function retireHtml(P) {
 /* ── 시작 ── */
 function boot(saved) {
   S = saved && saved.S ? saved.S : freshState();
-  if (S.screen === "play" && S.player) S.speed = 0;
+  if (S.screen === "play" && S.player) { S.speed = 0; S.autoPick = false; }
   render();
 }
 window.claude?.hot?.snapshot?.(() => ({ S }));
